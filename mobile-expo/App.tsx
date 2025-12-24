@@ -115,7 +115,7 @@ export default function App() {
       // Find and store surveyor name
       const surveyor = surveyors.find((s) => s.id === id);
       if (surveyor) {
-        setSurveyorName(surveyor.name);
+        setSurveyorName(surveyor.display_name);
       }
     }
   };
@@ -208,7 +208,7 @@ export default function App() {
               <View style={styles.registeredContainer}>
                 <View style={styles.statusCard}>
                   <Text style={styles.registeredText}>
-                    Registered as: {surveyorName || selectedSurveyor?.name}
+                    Registered as: {surveyorName || selectedSurveyor?.display_name}
                   </Text>
                   <Text style={styles.waitingText}>
                     Waiting for appointment notifications...

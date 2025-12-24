@@ -44,17 +44,30 @@ class NotificationService {
     }
 
     try {
-      const tokenData = await Notifications.getExpoPushTokenAsync({
-        projectId: Constants.expoConfig?.extra?.eas?.projectId,
-      });
+      // Get the native FCM token (for Firebase Cloud Messaging)
+      // This is the token format that Firebase Admin SDK expects
+      const tokenData = await Notifications.getDevicePushTokenAsync();
 
       // Save the token
       await storageService.setPushToken(tokenData.data);
 
+      console.log('FCM Token obtained:', tokenData.data);
       return tokenData.data;
     } catch (error) {
       console.error('Error getting push token:', error);
-      return null;
+
+      // Fallback: try Expo push token if FCM fails
+      try {
+        const expoTokenData = await Notifications.getExpoPushTokenAsync({
+          projectId: Constants.expoConfig?.extra?.eas?.projectId,
+        });
+        await storageService.setPushToken(expoTokenData.data);
+        console.log('Expo Push Token obtained:', expoTokenData.data);
+        return expoTokenData.data;
+      } catch (expoError) {
+        console.error('Error getting Expo push token:', expoError);
+        return null;
+      }
     }
   }
 
