@@ -9,5 +9,6 @@ FROM node:20-alpine
 WORKDIR /app
 RUN npm install -g serve
 COPY --from=build /app/dist/cmx-surveyor-calendar-ui/browser ./dist
-EXPOSE 80
-CMD ["serve", "-s", "dist", "-l", "80"]
+ENV PORT=3000
+EXPOSE 3000
+CMD serve -s dist -l $PORT
