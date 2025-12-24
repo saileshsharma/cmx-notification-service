@@ -1,8 +1,9 @@
-// CMX Surveyor Calendar v1.0.1
+// CMX Surveyor Calendar v1.0.2
 import { Component, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { API_BASE } from './core/services/api-config';
 
 import { FullCalendarModule } from '@fullcalendar/angular';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -33,7 +34,7 @@ type DashboardWidget = { id: string; title: string; type: 'stat' | 'chart' | 'li
   templateUrl: './app.component.html'
 })
 export class AppComponent implements OnInit {
-  apiBase = (window as any).__API_BASE__ || `${window.location.protocol}//${window.location.hostname}:8080/api`;
+  apiBase = API_BASE;
 
   surveyors: Surveyor[] = [];
   allSurveyors: Surveyor[] = []; // All surveyors without status filter
