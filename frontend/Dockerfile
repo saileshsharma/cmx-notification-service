@@ -11,4 +11,4 @@ RUN npm install -g serve
 COPY --from=build /app/dist/cmx-surveyor-calendar-ui/browser ./dist
 ENV PORT=3000
 EXPOSE 3000
-CMD serve -s dist -l $PORT
+CMD ["sh", "-c", "serve -s dist -l $PORT"]
