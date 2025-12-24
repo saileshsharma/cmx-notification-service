@@ -1,10 +1,15 @@
 export interface Surveyor {
   id: number;
-  name: string;
+  display_name: string;
   email?: string;
   phone?: string;
-  type: string;
+  surveyor_type: string;
   color?: string;
+  code?: string;
+  status?: string;
+  current_status?: string;
+  home_lat?: number;
+  home_lng?: number;
 }
 
 export type NotificationType = 'CREATED' | 'RESCHEDULED' | 'DELETED';

@@ -28,7 +28,7 @@ export const SurveyorPicker: React.FC<Props> = ({
         {surveyors.map((surveyor) => (
           <Picker.Item
             key={surveyor.id}
-            label={`${surveyor.name} (${surveyor.type})`}
+            label={`${surveyor.display_name} (${surveyor.surveyor_type})`}
             value={surveyor.id}
           />
         ))}
