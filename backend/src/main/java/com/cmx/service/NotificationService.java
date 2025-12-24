@@ -74,17 +74,20 @@ public class NotificationService {
         InputStream credentialsStream = null;
 
         try {
+            String jsonContent = null;
+
             // Option 1: Read from JSON environment variable (for cloud deployments)
             if (firebaseCredentialsJson != null && !firebaseCredentialsJson.isBlank()) {
                 log.info("Initializing Firebase from FIREBASE_CREDENTIALS_JSON environment variable");
-                credentialsStream = new ByteArrayInputStream(firebaseCredentialsJson.getBytes(StandardCharsets.UTF_8));
+                jsonContent = firebaseCredentialsJson;
             }
             // Option 2: Read from file path (also check if it looks like JSON content)
             else if (firebaseCredentialsPath != null && !firebaseCredentialsPath.isBlank()) {
-                // Check if the value looks like JSON (starts with {) - treat as inline JSON
-                if (firebaseCredentialsPath.trim().startsWith("{")) {
+                // Check if the value looks like JSON (starts with { or ") - treat as inline JSON
+                String trimmed = firebaseCredentialsPath.trim();
+                if (trimmed.startsWith("{") || trimmed.startsWith("\"")) {
                     log.info("Initializing Firebase from FIREBASE_CREDENTIALS_PATH (detected as JSON content)");
-                    credentialsStream = new ByteArrayInputStream(firebaseCredentialsPath.getBytes(StandardCharsets.UTF_8));
+                    jsonContent = firebaseCredentialsPath;
                 } else {
                     // Treat as file path
                     try {
@@ -98,6 +101,26 @@ public class NotificationService {
                         log.warn("Invalid Firebase credentials path: {}", e.getMessage());
                     }
                 }
+            }
+
+            // Clean up JSON if it has extra quotes (common Railway issue)
+            if (jsonContent != null) {
+                // Remove leading/trailing quotes if present
+                jsonContent = jsonContent.trim();
+                if (jsonContent.startsWith("\"") && jsonContent.endsWith("\"")) {
+                    jsonContent = jsonContent.substring(1, jsonContent.length() - 1);
+                }
+                // Unescape escaped quotes
+                jsonContent = jsonContent.replace("\\\"", "\"");
+
+                // Validate it looks like proper JSON
+                if (!jsonContent.trim().startsWith("{")) {
+                    log.error("Firebase credentials JSON is malformed. Expected JSON starting with '{{'. Got: {}...",
+                            jsonContent.substring(0, Math.min(50, jsonContent.length())));
+                    return;
+                }
+
+                credentialsStream = new ByteArrayInputStream(jsonContent.getBytes(StandardCharsets.UTF_8));
             }
 
             if (credentialsStream == null) {
@@ -115,8 +138,9 @@ public class NotificationService {
             }
             firebaseInitialized = true;
             log.info("Firebase initialized successfully");
-        } catch (IOException e) {
-            log.error("Failed to initialize Firebase: {}", e.getMessage());
+        } catch (Exception e) {
+            log.error("Failed to initialize Firebase: {}. Push notifications will be disabled.", e.getMessage());
+            // Don't rethrow - allow app to start without Firebase
         } finally {
             if (credentialsStream != null) {
                 try { credentialsStream.close(); } catch (IOException ignored) {}
