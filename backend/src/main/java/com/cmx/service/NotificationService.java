@@ -20,8 +20,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -47,6 +52,9 @@ public class NotificationService {
     @Value("${firebase.credentials.path:}")
     private String firebaseCredentialsPath;
 
+    @Value("${firebase.credentials.json:}")
+    private String firebaseCredentialsJson;
+
     public NotificationService(SurveyorRepository surveyorRepository,
                                DeviceTokenRepository deviceTokenRepository,
                                NotificationLogRepository notificationLogRepository,
@@ -63,15 +71,32 @@ public class NotificationService {
 
     @PostConstruct
     public void initFirebase() {
-        if (firebaseCredentialsPath == null || firebaseCredentialsPath.isBlank()) {
-            log.warn("Firebase credentials path not configured. Push notifications disabled. " +
-                    "Set FIREBASE_CREDENTIALS_PATH environment variable to enable.");
-            return;
-        }
+        InputStream credentialsStream = null;
 
-        try (FileInputStream serviceAccount = new FileInputStream(firebaseCredentialsPath)) {
+        try {
+            // Option 1: Read from JSON environment variable (for cloud deployments)
+            if (firebaseCredentialsJson != null && !firebaseCredentialsJson.isBlank()) {
+                log.info("Initializing Firebase from FIREBASE_CREDENTIALS_JSON environment variable");
+                credentialsStream = new ByteArrayInputStream(firebaseCredentialsJson.getBytes(StandardCharsets.UTF_8));
+            }
+            // Option 2: Read from file path
+            else if (firebaseCredentialsPath != null && !firebaseCredentialsPath.isBlank()) {
+                if (Files.exists(Path.of(firebaseCredentialsPath))) {
+                    log.info("Initializing Firebase from file: {}", firebaseCredentialsPath);
+                    credentialsStream = new FileInputStream(firebaseCredentialsPath);
+                } else {
+                    log.warn("Firebase credentials file not found: {}", firebaseCredentialsPath);
+                }
+            }
+
+            if (credentialsStream == null) {
+                log.warn("Firebase credentials not configured. Push notifications disabled. " +
+                        "Set FIREBASE_CREDENTIALS_JSON or FIREBASE_CREDENTIALS_PATH environment variable to enable.");
+                return;
+            }
+
             FirebaseOptions options = FirebaseOptions.builder()
-                    .setCredentials(GoogleCredentials.fromStream(serviceAccount))
+                    .setCredentials(GoogleCredentials.fromStream(credentialsStream))
                     .build();
 
             if (FirebaseApp.getApps().isEmpty()) {
@@ -81,6 +106,10 @@ public class NotificationService {
             log.info("Firebase initialized successfully");
         } catch (IOException e) {
             log.error("Failed to initialize Firebase: {}", e.getMessage());
+        } finally {
+            if (credentialsStream != null) {
+                try { credentialsStream.close(); } catch (IOException ignored) {}
+            }
         }
     }
 
