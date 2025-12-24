@@ -1,3 +1,4 @@
+// CMX Surveyor Calendar v1.0.1
 import { Component, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
