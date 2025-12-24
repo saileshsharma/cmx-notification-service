@@ -32,7 +32,7 @@ type DashboardWidget = { id: string; title: string; type: 'stat' | 'chart' | 'li
   templateUrl: './app.component.html'
 })
 export class AppComponent implements OnInit {
-  apiBase = (window as any).__API_BASE__ || 'http://localhost:8080/api';
+  apiBase = (window as any).__API_BASE__ || `${window.location.protocol}//${window.location.hostname}:8080/api`;
 
   surveyors: Surveyor[] = [];
   allSurveyors: Surveyor[] = []; // All surveyors without status filter

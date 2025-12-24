@@ -1,9 +1,9 @@
 import { bootstrapApplication } from '@angular/platform-browser';
 import { provideHttpClient } from '@angular/common/http';
 import { provideZoneChangeDetection } from '@angular/core';
-import { AppComponentRefactored } from './app/app.component.refactored';
+import { AppComponent } from './app/app.component';
 
-bootstrapApplication(AppComponentRefactored, {
+bootstrapApplication(AppComponent, {
   providers: [
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideHttpClient()

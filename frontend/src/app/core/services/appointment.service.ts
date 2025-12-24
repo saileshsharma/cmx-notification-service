@@ -78,7 +78,7 @@ export class AppointmentService {
   }
 
   createAppointment(request: AppointmentCreateRequest): Observable<any> {
-    return this.http.post(`${this.apiBase}/availability`, request);
+    return this.http.post(`${this.apiBase}/mobile/availability`, request);
   }
 
   updateAppointment(id: number, request: AppointmentUpdateRequest): Observable<any> {

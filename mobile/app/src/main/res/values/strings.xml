@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Surveyor Calendar</string>
+    <string name="notification_channel_name">Appointments</string>
+    <string name="notification_channel_description">Appointment notifications</string>
+    <string name="select_surveyor">Select Your Profile</string>
+    <string name="surveyor_hint">Choose your surveyor profile</string>
+    <string name="register_device">Register Device</string>
+    <string name="registered_success">Device registered successfully!</string>
+    <string name="registered_error">Failed to register device</string>
+    <string name="loading">Loading...</string>
+    <string name="no_surveyors">No surveyors available</string>
+    <string name="waiting_notifications">Waiting for appointment notifications...</string>
+    <string name="recent_notifications">Recent Notifications</string>
+    <string name="no_notifications">No notifications yet</string>
+</resources>
