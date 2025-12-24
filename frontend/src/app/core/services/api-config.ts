@@ -11,7 +11,7 @@ export function getApiBase(): string {
 
   // If running on Railway or production, use the production API
   if (hostname.includes('railway.app') || hostname.includes('up.railway.app')) {
-    return 'https://cmx-notification-service-production.up.railway.app/api';
+    return 'https://cmx-notification-be-production.up.railway.app/api';
   }
 
   // Development: use the current hostname with backend port 8080
