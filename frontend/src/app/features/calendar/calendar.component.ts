@@ -156,29 +156,47 @@ import { CalendarEvent, Surveyor } from '../../core/models';
 
     :host ::ng-deep .fc-timegrid-slot {
       height: 48px !important;
-      border-color: #f1f5f9 !important;
+      border-color: #cbd5e1 !important;
+    }
+
+    :host ::ng-deep .fc-timegrid-slot-lane {
+      border-color: #e2e8f0 !important;
+    }
+
+    :host ::ng-deep .fc-timegrid-slot-minor {
+      border-style: dashed !important;
     }
 
     :host ::ng-deep .fc-timegrid-slot-label {
-      font-size: 0.75rem;
-      font-weight: 500;
-      color: #64748b;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #475569;
       padding-right: 12px !important;
+      background: #f1f5f9;
     }
 
     :host ::ng-deep .fc-col-header-cell {
-      background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
-      font-weight: 600;
+      background: linear-gradient(180deg, #e2e8f0 0%, #cbd5e1 100%);
+      font-weight: 700;
       font-size: 0.875rem;
-      color: #334155;
+      color: #1e293b;
       padding: 14px 8px !important;
-      border-bottom: 2px solid #e2e8f0 !important;
+      border-bottom: 2px solid #94a3b8 !important;
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
 
     :host ::ng-deep .fc-col-header-cell-cushion {
       padding: 8px !important;
+      color: #1e293b;
+    }
+
+    :host ::ng-deep .fc-timegrid-col {
+      border-right: 1px solid #e2e8f0 !important;
+    }
+
+    :host ::ng-deep .fc-timegrid-col:last-child {
+      border-right: none !important;
     }
 
     :host ::ng-deep .fc-day-today {
@@ -227,12 +245,16 @@ import { CalendarEvent, Surveyor } from '../../core/models';
     :host ::ng-deep .fc-scrollgrid {
       border-radius: 12px;
       overflow: hidden;
-      border: 1px solid #e2e8f0 !important;
+      border: 2px solid #94a3b8 !important;
     }
 
     :host ::ng-deep .fc-scrollgrid td,
     :host ::ng-deep .fc-scrollgrid th {
-      border-color: #f1f5f9 !important;
+      border-color: #cbd5e1 !important;
+    }
+
+    :host ::ng-deep .fc-scrollgrid-section-header > td {
+      border-bottom: 2px solid #94a3b8 !important;
     }
 
     :host ::ng-deep .fc-highlight {

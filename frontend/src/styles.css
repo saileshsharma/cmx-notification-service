@@ -663,19 +663,19 @@ header {
 }
 
 .fc .fc-col-header-cell {
-  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
-  font-weight: 600;
+  background: linear-gradient(180deg, #e2e8f0 0%, #cbd5e1 100%);
+  font-weight: 700;
   font-size: 0.875rem;
-  color: #334155;
+  color: #1e293b;
   padding: 14px 8px;
-  border-bottom: 2px solid #e2e8f0;
+  border-bottom: 2px solid #94a3b8;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 .fc .fc-col-header-cell-cushion {
   padding: 10px 8px;
-  color: #475569;
+  color: #1e293b;
 }
 
 .fc .fc-day-today {
@@ -689,14 +689,24 @@ header {
 
 .fc .fc-timegrid-slot {
   height: 48px;
-  border-color: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.fc .fc-timegrid-slot-lane {
+  border-color: #e2e8f0;
+}
+
+.fc .fc-timegrid-slot-minor {
+  border-color: #e2e8f0;
+  border-style: dashed;
 }
 
 .fc .fc-timegrid-slot-label {
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: #64748b;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #475569;
   padding-right: 12px;
+  background: #f8fafc;
 }
 
 .fc .fc-timegrid-now-indicator-line {
@@ -732,12 +742,40 @@ header {
 .fc .fc-scrollgrid {
   border-radius: 12px;
   overflow: hidden;
-  border: 1px solid #e2e8f0;
+  border: 2px solid #cbd5e1;
 }
 
 .fc .fc-scrollgrid td,
 .fc .fc-scrollgrid th {
-  border-color: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.fc .fc-scrollgrid-section-header > td {
+  border-bottom: 2px solid #94a3b8;
+}
+
+.fc .fc-timegrid-axis {
+  border-color: #cbd5e1;
+}
+
+.fc .fc-timegrid-divider {
+  display: none;
+}
+
+.fc .fc-timegrid-body {
+  background: #ffffff;
+}
+
+.fc .fc-timegrid-cols table {
+  border-left: 1px solid #cbd5e1;
+}
+
+.fc .fc-timegrid-col {
+  border-right: 1px solid #e2e8f0;
+}
+
+.fc .fc-timegrid-col:last-child {
+  border-right: none;
 }
 
 .fc .fc-highlight {
