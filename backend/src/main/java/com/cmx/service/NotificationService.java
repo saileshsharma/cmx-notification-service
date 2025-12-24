@@ -79,13 +79,24 @@ public class NotificationService {
                 log.info("Initializing Firebase from FIREBASE_CREDENTIALS_JSON environment variable");
                 credentialsStream = new ByteArrayInputStream(firebaseCredentialsJson.getBytes(StandardCharsets.UTF_8));
             }
-            // Option 2: Read from file path
+            // Option 2: Read from file path (also check if it looks like JSON content)
             else if (firebaseCredentialsPath != null && !firebaseCredentialsPath.isBlank()) {
-                if (Files.exists(Path.of(firebaseCredentialsPath))) {
-                    log.info("Initializing Firebase from file: {}", firebaseCredentialsPath);
-                    credentialsStream = new FileInputStream(firebaseCredentialsPath);
+                // Check if the value looks like JSON (starts with {) - treat as inline JSON
+                if (firebaseCredentialsPath.trim().startsWith("{")) {
+                    log.info("Initializing Firebase from FIREBASE_CREDENTIALS_PATH (detected as JSON content)");
+                    credentialsStream = new ByteArrayInputStream(firebaseCredentialsPath.getBytes(StandardCharsets.UTF_8));
                 } else {
-                    log.warn("Firebase credentials file not found: {}", firebaseCredentialsPath);
+                    // Treat as file path
+                    try {
+                        if (Files.exists(Path.of(firebaseCredentialsPath))) {
+                            log.info("Initializing Firebase from file: {}", firebaseCredentialsPath);
+                            credentialsStream = new FileInputStream(firebaseCredentialsPath);
+                        } else {
+                            log.warn("Firebase credentials file not found: {}", firebaseCredentialsPath);
+                        }
+                    } catch (Exception e) {
+                        log.warn("Invalid Firebase credentials path: {}", e.getMessage());
+                    }
                 }
             }
 
