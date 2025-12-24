@@ -2805,7 +2805,13 @@ export class AppComponent implements OnInit {
       if (token) {
         console.log('FCM Token obtained:', token);
         this.webPushToken = token;
-        this.webPushEnabled = true;
+        // Note: webPushEnabled should only be true when registered with a surveyor
+        // Check if we have a stored surveyorId - if so, we're already registered
+        const storedSurveyorId = localStorage.getItem('fcmSurveyorId');
+        if (storedSurveyorId) {
+          this.webPushEnabled = true;
+          this.registeredPushSurveyorId = parseInt(storedSurveyorId);
+        }
 
         // Store token locally
         localStorage.setItem('fcmToken', token);
