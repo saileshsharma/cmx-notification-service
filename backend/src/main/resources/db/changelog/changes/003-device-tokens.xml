@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="003-device-tokens" author="system">
+
+        <!-- Device token table -->
+        <createTable tableName="device_token">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="surveyor_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_device_token_surveyor"
+                            references="surveyor(id)"/>
+            </column>
+            <column name="token" type="VARCHAR(512)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="platform" type="VARCHAR(16)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addUniqueConstraint
+            tableName="device_token"
+            columnNames="surveyor_id, token"
+            constraintName="uq_device_token_surveyor_token"/>
+
+        <createIndex tableName="device_token" indexName="ix_device_token_surveyor">
+            <column name="surveyor_id"/>
+        </createIndex>
+
+        <!-- Notification log table -->
+        <createTable tableName="notification_log">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="surveyor_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_notification_log_surveyor"
+                            references="surveyor(id)"/>
+            </column>
+            <column name="title" type="VARCHAR(256)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="body" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="data" type="JSON"/>
+            <column name="status" type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="error_message" type="TEXT"/>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName="notification_log" indexName="ix_notification_log_surveyor">
+            <column name="surveyor_id"/>
+        </createIndex>
+
+        <createIndex tableName="notification_log" indexName="ix_notification_log_created">
+            <column name="created_at"/>
+        </createIndex>
+
+    </changeSet>
+
+</databaseChangeLog>

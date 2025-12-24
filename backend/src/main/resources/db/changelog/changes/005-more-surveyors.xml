@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="005-more-surveyors" author="system">
+        <!-- Add 50 more surveyors using SQL for efficiency -->
+        <sql>
+            INSERT INTO surveyor (code, display_name, home_lat, home_lng, surveyor_type) VALUES
+            ('SVY-009', 'Liam Anderson', 1.3100, 103.8600, 'INTERNAL'),
+            ('SVY-010', 'Olivia Martinez', 1.3250, 103.8450, 'EXTERNAL'),
+            ('SVY-011', 'Noah Garcia', 1.3400, 103.8300, 'INTERNAL'),
+            ('SVY-012', 'Emma Thompson', 1.3550, 103.8150, 'EXTERNAL'),
+            ('SVY-013', 'William Davis', 1.3700, 103.8000, 'INTERNAL'),
+            ('SVY-014', 'Ava Rodriguez', 1.2850, 103.8550, 'EXTERNAL'),
+            ('SVY-015', 'James Wilson', 1.3000, 103.8700, 'INTERNAL'),
+            ('SVY-016', 'Isabella Brown', 1.3150, 103.8850, 'EXTERNAL'),
+            ('SVY-017', 'Benjamin Taylor', 1.3300, 103.9000, 'INTERNAL'),
+            ('SVY-018', 'Mia Johnson', 1.3450, 103.7850, 'EXTERNAL'),
+            ('SVY-019', 'Lucas White', 1.3600, 103.7700, 'INTERNAL'),
+            ('SVY-020', 'Charlotte Harris', 1.3750, 103.7550, 'EXTERNAL'),
+            ('SVY-021', 'Henry Clark', 1.2900, 103.8400, 'INTERNAL'),
+            ('SVY-022', 'Amelia Lewis', 1.3050, 103.8250, 'EXTERNAL'),
+            ('SVY-023', 'Alexander Robinson', 1.3200, 103.8100, 'INTERNAL'),
+            ('SVY-024', 'Harper Walker', 1.3350, 103.7950, 'EXTERNAL'),
+            ('SVY-025', 'Daniel Hall', 1.3500, 103.9150, 'INTERNAL'),
+            ('SVY-026', 'Evelyn Young', 1.3650, 103.9300, 'EXTERNAL'),
+            ('SVY-027', 'Matthew Allen', 1.3800, 103.9450, 'INTERNAL'),
+            ('SVY-028', 'Abigail King', 1.2950, 103.7600, 'EXTERNAL'),
+            ('SVY-029', 'Joseph Wright', 1.3100, 103.7450, 'INTERNAL'),
+            ('SVY-030', 'Emily Scott', 1.3250, 103.7300, 'EXTERNAL'),
+            ('SVY-031', 'David Green', 1.3400, 103.8650, 'INTERNAL'),
+            ('SVY-032', 'Elizabeth Adams', 1.3550, 103.8800, 'EXTERNAL'),
+            ('SVY-033', 'Samuel Baker', 1.3700, 103.8950, 'INTERNAL'),
+            ('SVY-034', 'Sofia Nelson', 1.2850, 103.9100, 'EXTERNAL'),
+            ('SVY-035', 'Christopher Hill', 1.3000, 103.9250, 'INTERNAL'),
+            ('SVY-036', 'Avery Ramirez', 1.3150, 103.7800, 'EXTERNAL'),
+            ('SVY-037', 'Andrew Campbell', 1.3300, 103.7650, 'INTERNAL'),
+            ('SVY-038', 'Ella Mitchell', 1.3450, 103.7500, 'EXTERNAL'),
+            ('SVY-039', 'Jack Roberts', 1.3600, 103.8350, 'INTERNAL'),
+            ('SVY-040', 'Scarlett Carter', 1.3750, 103.8500, 'EXTERNAL'),
+            ('SVY-041', 'Ryan Phillips', 1.2900, 103.8050, 'INTERNAL'),
+            ('SVY-042', 'Grace Evans', 1.3050, 103.7900, 'EXTERNAL'),
+            ('SVY-043', 'Nathan Turner', 1.3200, 103.9050, 'INTERNAL'),
+            ('SVY-044', 'Chloe Torres', 1.3350, 103.9200, 'EXTERNAL'),
+            ('SVY-045', 'Christian Parker', 1.3500, 103.9350, 'INTERNAL'),
+            ('SVY-046', 'Victoria Collins', 1.3650, 103.7350, 'EXTERNAL'),
+            ('SVY-047', 'Jonathan Edwards', 1.3800, 103.7200, 'INTERNAL'),
+            ('SVY-048', 'Riley Stewart', 1.2950, 103.8750, 'EXTERNAL'),
+            ('SVY-049', 'Dylan Sanchez', 1.3100, 103.8900, 'INTERNAL'),
+            ('SVY-050', 'Zoey Morris', 1.3250, 103.9500, 'EXTERNAL'),
+            ('SVY-051', 'Gabriel Rogers', 1.3400, 103.7100, 'INTERNAL'),
+            ('SVY-052', 'Penelope Reed', 1.3550, 103.7250, 'EXTERNAL'),
+            ('SVY-053', 'Anthony Cook', 1.3700, 103.8200, 'INTERNAL'),
+            ('SVY-054', 'Layla Morgan', 1.2850, 103.8350, 'EXTERNAL'),
+            ('SVY-055', 'Isaac Bell', 1.3000, 103.9400, 'INTERNAL'),
+            ('SVY-056', 'Nora Murphy', 1.3150, 103.7050, 'EXTERNAL'),
+            ('SVY-057', 'Joshua Bailey', 1.3300, 103.7150, 'INTERNAL'),
+            ('SVY-058', 'Hannah Rivera', 1.3450, 103.8550, 'EXTERNAL');
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="001-init-schema" author="system">
+
+        <!-- Surveyor table -->
+        <createTable tableName="surveyor">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="code" type="VARCHAR(32)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="display_name" type="VARCHAR(128)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="home_lat" type="DECIMAL(9,6)"/>
+            <column name="home_lng" type="DECIMAL(9,6)"/>
+            <column name="status" type="VARCHAR(16)" defaultValue="ACTIVE">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <!-- Surveyor availability table -->
+        <createTable tableName="surveyor_availability">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="surveyor_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_availability_surveyor"
+                            references="surveyor(id)"/>
+            </column>
+            <column name="start_time" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="end_time" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="state" type="VARCHAR(16)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="source" type="VARCHAR(16)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName="surveyor_availability" indexName="ix_av_surveyor_time">
+            <column name="surveyor_id"/>
+            <column name="start_time"/>
+            <column name="end_time"/>
+        </createIndex>
+
+        <!-- Dispatch offer table -->
+        <createTable tableName="dispatch_offer">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="offer_group" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="fnol_id" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="surveyor_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_offer_surveyor"
+                            references="surveyor(id)"/>
+            </column>
+            <column name="status" type="VARCHAR(16)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="expires_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="accepted_at" type="TIMESTAMP"/>
+        </createTable>
+
+        <createIndex tableName="dispatch_offer" indexName="ix_offer_group">
+            <column name="offer_group"/>
+        </createIndex>
+
+        <createIndex tableName="dispatch_offer" indexName="ix_offer_group_status">
+            <column name="offer_group"/>
+            <column name="status"/>
+            <column name="expires_at"/>
+        </createIndex>
+
+        <!-- Job assignment table -->
+        <createTable tableName="job_assignment">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="offer_group" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="fnol_id" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="surveyor_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_assignment_surveyor"
+                            references="surveyor(id)"/>
+            </column>
+            <column name="status" type="VARCHAR(16)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="start_time" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="end_time" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="completed_at" type="TIMESTAMP"/>
+        </createTable>
+
+        <createIndex tableName="job_assignment" indexName="ix_job_surveyor_time">
+            <column name="surveyor_id"/>
+            <column name="start_time"/>
+            <column name="end_time"/>
+        </createIndex>
+
+        <!-- Seed data -->
+        <insert tableName="surveyor">
+            <column name="code" value="SVY-001"/>
+            <column name="display_name" value="John Smith"/>
+            <column name="home_lat" value="1.352100"/>
+            <column name="home_lng" value="103.819800"/>
+        </insert>
+        <insert tableName="surveyor">
+            <column name="code" value="SVY-002"/>
+            <column name="display_name" value="Sarah Johnson"/>
+            <column name="home_lat" value="1.300000"/>
+            <column name="home_lng" value="103.800000"/>
+        </insert>
+        <insert tableName="surveyor">
+            <column name="code" value="SVY-003"/>
+            <column name="display_name" value="Michael Chen"/>
+            <column name="home_lat" value="1.360000"/>
+            <column name="home_lng" value="103.900000"/>
+        </insert>
+
+    </changeSet>
+
+</databaseChangeLog>

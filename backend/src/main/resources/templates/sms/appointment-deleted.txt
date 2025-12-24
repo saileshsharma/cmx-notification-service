@@ -1,0 +1,1 @@
+Appointment DELETED: [(${title != null ? title : 'Your appointment'})] on [(${date})]. Contact us if you have questions. -Appointment Calendar

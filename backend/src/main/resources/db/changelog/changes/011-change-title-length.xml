@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="011-change-title-length" author="system">
+        <!-- Change title column in surveyor_availability from VARCHAR(255) to VARCHAR(100) -->
+        <modifyDataType tableName="surveyor_availability" columnName="title" newDataType="VARCHAR(100)"/>
+
+        <!-- Change title column in notification_log from VARCHAR(256) to VARCHAR(100) -->
+        <modifyDataType tableName="notification_log" columnName="title" newDataType="VARCHAR(100)"/>
+    </changeSet>
+
+</databaseChangeLog>

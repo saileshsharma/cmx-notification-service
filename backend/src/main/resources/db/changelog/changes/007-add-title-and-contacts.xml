@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="007-add-title-and-contacts" author="system">
+
+        <!-- Add title column to surveyor_availability -->
+        <addColumn tableName="surveyor_availability">
+            <column name="title" type="VARCHAR(255)">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+
+        <!-- Add email and phone to surveyor table -->
+        <addColumn tableName="surveyor">
+            <column name="email" type="VARCHAR(255)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="phone" type="VARCHAR(20)">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+
+        <!-- Add sample email and phone data to existing surveyors -->
+        <sql>
+            UPDATE surveyor SET
+                email = CONCAT(LOWER(REPLACE(display_name, ' ', '.')), '@example.com'),
+                phone = CONCAT('+65', LPAD(CAST((id * 1000 + 8000) AS VARCHAR), 8, '0'))
+            WHERE id &lt;= 58;
+        </sql>
+
+    </changeSet>
+
+</databaseChangeLog>

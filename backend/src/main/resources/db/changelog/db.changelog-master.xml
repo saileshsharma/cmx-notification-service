@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <include file="db/changelog/changes/001-init-schema.xml"/>
+    <include file="db/changelog/changes/002-add-unique-constraint.xml"/>
+    <include file="db/changelog/changes/003-device-tokens.xml"/>
+    <include file="db/changelog/changes/004-surveyor-type.xml"/>
+    <include file="db/changelog/changes/005-more-surveyors.xml"/>
+    <include file="db/changelog/changes/006-sample-appointments.xml"/>
+    <include file="db/changelog/changes/007-add-title-and-contacts.xml"/>
+    <include file="db/changelog/changes/008-add-description-field.xml"/>
+    <include file="db/changelog/changes/009-update-phone-numbers.xml"/>
+    <include file="db/changelog/changes/010-update-emails.xml"/>
+    <include file="db/changelog/changes/011-change-title-length.xml"/>
+    <include file="db/changelog/changes/012-notification-audit-enhancement.xml"/>
+
+</databaseChangeLog>

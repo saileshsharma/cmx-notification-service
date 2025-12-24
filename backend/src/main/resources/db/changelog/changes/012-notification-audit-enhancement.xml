@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="012-notification-audit-enhancement" author="system">
+
+        <!-- Add channel column to track notification type (PUSH, EMAIL, SMS) -->
+        <addColumn tableName="notification_log">
+            <column name="channel" type="VARCHAR(16)" defaultValue="PUSH">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+
+        <!-- Add event_type column to categorize notifications -->
+        <addColumn tableName="notification_log">
+            <column name="event_type" type="VARCHAR(64)">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+
+        <!-- Add recipient column to store actual recipient (token, email, phone) -->
+        <addColumn tableName="notification_log">
+            <column name="recipient" type="VARCHAR(512)">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+
+        <!-- Add external_id column to store provider response ID (FCM message ID, Twilio SID, etc.) -->
+        <addColumn tableName="notification_log">
+            <column name="external_id" type="VARCHAR(256)">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+
+        <!-- Create index on channel for filtering -->
+        <createIndex tableName="notification_log" indexName="ix_notification_log_channel">
+            <column name="channel"/>
+        </createIndex>
+
+        <!-- Create index on event_type for filtering -->
+        <createIndex tableName="notification_log" indexName="ix_notification_log_event_type">
+            <column name="event_type"/>
+        </createIndex>
+
+        <!-- Create composite index for common queries -->
+        <createIndex tableName="notification_log" indexName="ix_notification_log_surveyor_channel">
+            <column name="surveyor_id"/>
+            <column name="channel"/>
+            <column name="created_at"/>
+        </createIndex>
+
+    </changeSet>
+
+</databaseChangeLog>

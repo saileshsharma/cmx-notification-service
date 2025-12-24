@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="004-surveyor-type" author="system">
+
+        <!-- Add surveyor_type column -->
+        <addColumn tableName="surveyor">
+            <column name="surveyor_type" type="VARCHAR(16)" defaultValue="INTERNAL">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+
+        <!-- Update existing surveyors -->
+        <update tableName="surveyor">
+            <column name="surveyor_type" value="INTERNAL"/>
+            <where>id = 1</where>
+        </update>
+
+        <update tableName="surveyor">
+            <column name="surveyor_type" value="EXTERNAL"/>
+            <where>id = 2</where>
+        </update>
+
+        <update tableName="surveyor">
+            <column name="surveyor_type" value="INTERNAL"/>
+            <where>id = 3</where>
+        </update>
+
+        <!-- Add more sample surveyors -->
+        <insert tableName="surveyor">
+            <column name="code" value="SVY-004"/>
+            <column name="display_name" value="David Wilson"/>
+            <column name="home_lat" value="1.340000"/>
+            <column name="home_lng" value="103.850000"/>
+            <column name="surveyor_type" value="EXTERNAL"/>
+        </insert>
+        <insert tableName="surveyor">
+            <column name="code" value="SVY-005"/>
+            <column name="display_name" value="Emma Brown"/>
+            <column name="home_lat" value="1.320000"/>
+            <column name="home_lng" value="103.870000"/>
+            <column name="surveyor_type" value="INTERNAL"/>
+        </insert>
+        <insert tableName="surveyor">
+            <column name="code" value="SVY-006"/>
+            <column name="display_name" value="James Lee"/>
+            <column name="home_lat" value="1.380000"/>
+            <column name="home_lng" value="103.750000"/>
+            <column name="surveyor_type" value="EXTERNAL"/>
+        </insert>
+        <insert tableName="surveyor">
+            <column name="code" value="SVY-007"/>
+            <column name="display_name" value="Sophia Wang"/>
+            <column name="home_lat" value="1.290000"/>
+            <column name="home_lng" value="103.820000"/>
+            <column name="surveyor_type" value="INTERNAL"/>
+        </insert>
+        <insert tableName="surveyor">
+            <column name="code" value="SVY-008"/>
+            <column name="display_name" value="Oliver Tan"/>
+            <column name="home_lat" value="1.370000"/>
+            <column name="home_lng" value="103.880000"/>
+            <column name="surveyor_type" value="EXTERNAL"/>
+        </insert>
+
+        <createIndex tableName="surveyor" indexName="ix_surveyor_type">
+            <column name="surveyor_type"/>
+        </createIndex>
+
+    </changeSet>
+
+</databaseChangeLog>

@@ -1,0 +1,1303 @@
+<!-- Toast Notifications -->
+<div class="toast-container">
+  <div *ngFor="let toast of toasts" class="toast" [class]="toast.type" (click)="removeToast(toast.id)">
+    <div class="toast-icon">
+      <span *ngIf="toast.type === 'success'">&#10003;</span>
+      <span *ngIf="toast.type === 'error'">&#10007;</span>
+      <span *ngIf="toast.type === 'warning'">&#9888;</span>
+      <span *ngIf="toast.type === 'info'">&#8505;</span>
+    </div>
+    <div class="toast-content">
+      <div class="toast-title" *ngIf="toast.title">{{toast.title}}</div>
+      <div class="toast-message">{{toast.message}}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Add FAB -->
+<div class="fab-container">
+  <button class="fab" (click)="toggleQuickAddMenu()" [class.active]="showQuickAddMenu">
+    <span>{{showQuickAddMenu ? '&#10005;' : '&#43;'}}</span>
+  </button>
+  <div class="fab-menu" *ngIf="showQuickAddMenu">
+    <div class="fab-item" *ngFor="let template of templates" (click)="quickAddFromTemplate(template)">
+      <span class="fab-icon" [style.background-color]="template.color">{{template.duration}}h</span>
+      <span class="fab-label">{{template.name}}</span>
+    </div>
+    <div class="fab-item" (click)="openQuickAddModal()">
+      <span class="fab-icon custom">&#128397;</span>
+      <span class="fab-label">Custom...</span>
+    </div>
+  </div>
+</div>
+
+<header>
+  <div class="header-left">
+    <div class="logo">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+        <line x1="16" y1="2" x2="16" y2="6"></line>
+        <line x1="8" y1="2" x2="8" y2="6"></line>
+        <line x1="3" y1="10" x2="21" y2="10"></line>
+      </svg>
+      <strong>Dispatcher Calendar</strong>
+    </div>
+  </div>
+
+  <!-- View Toggle (Center) -->
+  <div class="header-center">
+    <div class="view-toggle">
+      <button [class.active]="currentView === 'calendar'" (click)="setView('calendar')" title="Calendar View">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+        </svg>
+        <span>Calendar</span>
+      </button>
+      <button [class.active]="currentView === 'timeline'" (click)="setView('timeline')" title="Timeline View">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="4" y1="6" x2="20" y2="6"></line>
+          <line x1="4" y1="12" x2="16" y2="12"></line>
+          <line x1="4" y1="18" x2="12" y2="18"></line>
+        </svg>
+        <span>Timeline</span>
+      </button>
+      <button [class.active]="currentView === 'heatmap'" (click)="setView('heatmap')" title="Heatmap View">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7"></rect>
+          <rect x="14" y="3" width="7" height="7"></rect>
+          <rect x="14" y="14" width="7" height="7"></rect>
+          <rect x="3" y="14" width="7" height="7"></rect>
+        </svg>
+        <span>Heatmap</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="header-right">
+    <!-- Alerts -->
+    <div class="alerts-container">
+      <button class="btn-icon" (click)="toggleAlertsPanel()" [class.has-alerts]="upcomingAlerts.length > 0" title="Tomorrow's Schedule">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+        </svg>
+        <span class="alerts-badge" *ngIf="upcomingAlerts.length > 0">{{upcomingAlerts.length}}</span>
+      </button>
+      <div class="alerts-panel" *ngIf="showAlertsPanel" (click)="$event.stopPropagation()">
+        <div class="alerts-header">
+          <strong>Tomorrow's Schedule</strong>
+          <button class="close-btn" (click)="toggleAlertsPanel()">&#10005;</button>
+        </div>
+        <div class="alerts-list" *ngIf="upcomingAlerts.length > 0">
+          <div *ngFor="let alert of upcomingAlerts" class="alert-item" [class.busy]="alert.state === 'BUSY'" [class.offline]="alert.state === 'OFFLINE'">
+            <span class="alert-time">{{alert.startTime}}</span>
+            <span class="alert-name">{{alert.surveyorName}}</span>
+            <span class="alert-state">{{alert.state}}</span>
+          </div>
+        </div>
+        <div class="no-alerts" *ngIf="upcomingAlerts.length === 0">
+          No appointments scheduled for tomorrow
+        </div>
+      </div>
+    </div>
+
+    <div class="header-divider"></div>
+
+    <!-- Dashboard Toggle -->
+    <button class="btn-icon" (click)="toggleDashboard()" title="Dashboard (D)" [class.active]="showDashboard">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="7" height="9"></rect>
+        <rect x="14" y="3" width="7" height="5"></rect>
+        <rect x="14" y="12" width="7" height="9"></rect>
+        <rect x="3" y="16" width="7" height="5"></rect>
+      </svg>
+    </button>
+    <!-- Activity Log -->
+    <button class="btn-icon" (click)="toggleActivityLog()" title="Activity Log" [class.active]="showActivityLog">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+        <polyline points="14 2 14 8 20 8"></polyline>
+        <line x1="16" y1="13" x2="8" y2="13"></line>
+        <line x1="16" y1="17" x2="8" y2="17"></line>
+      </svg>
+    </button>
+    <!-- Export -->
+    <button class="btn-icon" (click)="openExportModal()" title="Export Data">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+        <polyline points="7 10 12 15 17 10"></polyline>
+        <line x1="12" y1="15" x2="12" y2="3"></line>
+      </svg>
+    </button>
+    <!-- Test Notifications (Dev) -->
+    <button class="btn-icon dev-btn" (click)="openTestNotificationModal()" title="Test Notifications (Dev)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+        <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+        <line x1="12" y1="2" x2="12" y2="5"></line>
+      </svg>
+    </button>
+    <!-- Refresh -->
+    <button class="btn-icon" (click)="refreshEvents()" title="Refresh (R)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [class.spinning]="loadingEvents">
+        <polyline points="23 4 23 10 17 10"></polyline>
+        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+      </svg>
+    </button>
+  </div>
+</header>
+
+<!-- Dashboard Overlay -->
+<div class="dashboard-overlay" *ngIf="showDashboard" (click)="toggleDashboard()">
+  <div class="dashboard-panel" (click)="$event.stopPropagation()">
+    <div class="dashboard-header">
+      <h2>Dashboard</h2>
+      <button class="close-btn" (click)="toggleDashboard()">&#10005;</button>
+    </div>
+    <div class="dashboard-widgets">
+      <div class="widget" *ngFor="let widget of dashboardWidgets">
+        <div class="widget-title">{{widget.title}}</div>
+        <div class="widget-value">{{widget.value}}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Activity Log Panel -->
+<div class="activity-log-panel" *ngIf="showActivityLog">
+  <div class="activity-header">
+    <h3>Activity Log</h3>
+    <button class="close-btn" (click)="toggleActivityLog()">&#10005;</button>
+  </div>
+  <div class="activity-list">
+    <div *ngFor="let entry of activityLog" class="activity-item">
+      <span class="activity-icon">{{getActivityIcon(entry.action)}}</span>
+      <div class="activity-content">
+        <div class="activity-action">{{entry.action}}: {{entry.details}}</div>
+        <div class="activity-meta">
+          <span *ngIf="entry.surveyorName">{{entry.surveyorName}} &bull; </span>
+          {{formatActivityTime(entry.timestamp)}}
+        </div>
+      </div>
+    </div>
+    <div *ngIf="activityLog.length === 0" class="no-activity">
+      No activity yet
+    </div>
+  </div>
+</div>
+
+<div class="main-layout">
+  <!-- Sidebar -->
+  <aside class="sidebar" [class.collapsed]="sidebarCollapsed">
+    <div class="sidebar-header">
+      <button class="toggle-btn" (click)="toggleSidebar()">
+        {{sidebarCollapsed ? '&#9654;' : '&#9664;'}}
+      </button>
+      <span *ngIf="!sidebarCollapsed">Surveyors</span>
+    </div>
+
+    <div class="sidebar-content" *ngIf="!sidebarCollapsed">
+      <!-- Search -->
+      <div class="search-box">
+        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <path d="M21 21l-4.35-4.35"></path>
+        </svg>
+        <input type="text" placeholder="Search surveyors..." [(ngModel)]="searchQuery" (input)="onSearchChange()">
+        <button class="search-clear" *ngIf="searchQuery" (click)="clearSearch()" title="Clear search">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Search Results Count -->
+      <div class="search-results-count" *ngIf="searchQuery">
+        Found <strong>{{filteredSurveyors.length}}</strong> surveyor{{filteredSurveyors.length !== 1 ? 's' : ''}}
+      </div>
+
+      <!-- Quick Filters -->
+      <div class="quick-filters">
+        <button class="pill" [class.active]="selectedType === 'INTERNAL'" (click)="quickFilterInternal()">
+          Internal
+        </button>
+        <button class="pill" [class.active]="selectedType === 'EXTERNAL'" (click)="quickFilterExternal()">
+          External
+        </button>
+        <button class="pill clear" *ngIf="hasActiveFilters()" (click)="clearFilters()">
+          Clear
+        </button>
+      </div>
+
+      <!-- Surveyor List -->
+      <div class="surveyor-list-sidebar">
+        <!-- Loading Skeleton -->
+        <div *ngIf="loadingSurveyors" class="skeleton-container">
+          <div class="skeleton-item" *ngFor="let i of [1,2,3,4,5,6,7,8]">
+            <div class="skeleton-avatar"></div>
+            <div class="skeleton-text">
+              <div class="skeleton-line"></div>
+              <div class="skeleton-line short"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actual List with Sections -->
+        <div *ngIf="!loadingSurveyors">
+          <div class="sidebar-actions">
+            <button class="small-btn" (click)="selectAllSurveyors()">Select All</button>
+            <button class="small-btn" (click)="clearAllSurveyors()">Clear</button>
+            <span class="count">{{selectedSurveyorIds.length}}/{{filteredSurveyors.length}}</span>
+          </div>
+          <div class="sidebar-actions dispatcher-actions">
+            <button class="action-btn bulk-btn" (click)="openBulkAssignModal()" [disabled]="selectedSurveyorIds.length === 0" title="Bulk Assign (B)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg>
+              Bulk Assign
+            </button>
+          </div>
+
+          <!-- INTERNAL Section -->
+          <div *ngIf="getInternalSurveyors().length > 0">
+            <div class="section-header">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+              <span>Internal</span>
+              <span class="section-count">{{getInternalSurveyors().length}}</span>
+            </div>
+            <div class="section-content">
+            <div *ngFor="let s of getInternalSurveyors()" class="surveyor-card-wrapper">
+              <div class="surveyor-card"
+                   [class.selected]="isSurveyorSelected(s.id)"
+                   (click)="toggleSurveyorSelection(s.id)">
+                <div class="avatar" [style.background-color]="getAvatarColor(s.display_name)">
+                  <img *ngIf="!hasAvatarError(s.id)"
+                       [src]="getAvatarUrl(s.display_name, 40)"
+                       [alt]="s.display_name"
+                       (error)="onAvatarError(s.id)"
+                       class="avatar-img">
+                  <span *ngIf="hasAvatarError(s.id)" class="avatar-initials">{{getInitials(s.display_name)}}</span>
+                </div>
+                <div class="surveyor-info">
+                  <div class="surveyor-name-sidebar" [innerHTML]="highlightSearchTerm(s.display_name)"></div>
+                  <div class="surveyor-meta">
+                    <span class="status-dot" [style.background-color]="getCurrentStatusColor(s.current_status)"></span>
+                    <span class="status-text">{{s.current_status}}</span>
+                  </div>
+                </div>
+                <button class="contact-btn" (click)="toggleContactInfo(s.id); $event.stopPropagation()" title="Contact Info">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                  </svg>
+                </button>
+                <div class="check-mark" *ngIf="isSurveyorSelected(s.id)">✓</div>
+              </div>
+              <!-- Contact Info Panel -->
+              <div class="contact-panel" *ngIf="showContactInfo === s.id">
+                <div class="contact-row" (click)="emailSurveyor(s.email || '')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                    <polyline points="22,6 12,13 2,6"></polyline>
+                  </svg>
+                  <span>{{s.email || 'No email'}}</span>
+                </div>
+                <div class="contact-row" (click)="callSurveyor(s.phone || '')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                  </svg>
+                  <span>{{s.phone || 'No phone'}}</span>
+                </div>
+              </div>
+            </div>
+            </div>
+          </div>
+
+          <!-- EXTERNAL Section -->
+          <div *ngIf="getExternalSurveyors().length > 0">
+            <div class="section-header">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg>
+              <span>External</span>
+              <span class="section-count">{{getExternalSurveyors().length}}</span>
+            </div>
+            <div class="section-content">
+            <div *ngFor="let s of getExternalSurveyors()" class="surveyor-card-wrapper">
+              <div class="surveyor-card"
+                   [class.selected]="isSurveyorSelected(s.id)"
+                   (click)="toggleSurveyorSelection(s.id)">
+                <div class="avatar" [style.background-color]="getAvatarColor(s.display_name)">
+                  <img *ngIf="!hasAvatarError(s.id)"
+                       [src]="getAvatarUrl(s.display_name, 40)"
+                       [alt]="s.display_name"
+                       (error)="onAvatarError(s.id)"
+                       class="avatar-img">
+                  <span *ngIf="hasAvatarError(s.id)" class="avatar-initials">{{getInitials(s.display_name)}}</span>
+                </div>
+                <div class="surveyor-info">
+                  <div class="surveyor-name-sidebar" [innerHTML]="highlightSearchTerm(s.display_name)"></div>
+                  <div class="surveyor-meta">
+                    <span class="status-dot" [style.background-color]="getCurrentStatusColor(s.current_status)"></span>
+                    <span class="status-text">{{s.current_status}}</span>
+                  </div>
+                </div>
+                <button class="contact-btn" (click)="toggleContactInfo(s.id); $event.stopPropagation()" title="Contact Info">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                  </svg>
+                </button>
+                <div class="check-mark" *ngIf="isSurveyorSelected(s.id)">✓</div>
+              </div>
+              <!-- Contact Info Panel -->
+              <div class="contact-panel" *ngIf="showContactInfo === s.id">
+                <div class="contact-row" (click)="emailSurveyor(s.email || '')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                    <polyline points="22,6 12,13 2,6"></polyline>
+                  </svg>
+                  <span>{{s.email || 'No email'}}</span>
+                </div>
+                <div class="contact-row" (click)="callSurveyor(s.phone || '')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                  </svg>
+                  <span>{{s.phone || 'No phone'}}</span>
+                </div>
+              </div>
+            </div>
+            </div>
+          </div>
+
+          <div *ngIf="filteredSurveyors.length === 0" class="no-results">
+            No surveyors found
+          </div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content Area -->
+  <div class="calendar-container">
+    <!-- Calendar View -->
+    <div *ngIf="currentView === 'calendar'">
+      <div class="calendar-loading" *ngIf="loadingEvents">
+        <div class="spinner"></div>
+        <span>Loading events...</span>
+      </div>
+      <full-calendar [options]="calendarOptions"></full-calendar>
+    </div>
+
+    <!-- Resource Timeline View -->
+    <div *ngIf="currentView === 'timeline'" class="timeline-container">
+      <div class="timeline-header">
+        <div class="timeline-nav">
+          <button class="timeline-nav-btn" (click)="prevTimelineDay()" title="Previous Day">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+          </button>
+          <div class="timeline-date-display">
+            <span class="timeline-date-label">{{getTimelineDateLabel()}}</span>
+            <span class="timeline-date-full">{{timelineDate | date:'EEEE, MMMM d, y'}}</span>
+          </div>
+          <button class="timeline-nav-btn" (click)="nextTimelineDay()" title="Next Day">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </button>
+          <button class="timeline-today-btn" (click)="goToTimelineToday()" *ngIf="!isTimelineToday()">
+            Today
+          </button>
+        </div>
+        <div class="timeline-stats">
+          <div class="timeline-stat">
+            <span class="stat-value">{{getTimelineEventCount()}}</span>
+            <span class="stat-label">Appointments</span>
+          </div>
+          <div class="timeline-stat">
+            <span class="stat-value">{{allSurveyors.length}}</span>
+            <span class="stat-label">Surveyors</span>
+          </div>
+        </div>
+        <div class="timeline-legend">
+          <div class="legend-item">
+            <span class="legend-color" style="background: #dc3545"></span>
+            <span>Busy</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-color" style="background: #ffc107"></span>
+            <span>Pending</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-color" style="background: #6c757d"></span>
+            <span>Offline</span>
+          </div>
+        </div>
+      </div>
+      <div class="timeline-grid">
+        <div class="timeline-hours-row">
+          <div class="timeline-surveyor-header">Surveyor</div>
+          <div class="timeline-hours">
+            <div class="hour-label" *ngFor="let hour of timelineHours">{{hour}}</div>
+          </div>
+        </div>
+        <div class="timeline-rows">
+          <!-- Global current time indicator (only for today) -->
+          <div class="current-time-indicator-global"
+               *ngIf="isTimelineToday() && currentTimePosition >= 0 && currentTimePosition <= 100"
+               [style.left]="getCurrentTimeIndicatorStyle()">
+          </div>
+          <div *ngFor="let s of allSurveyors" class="timeline-row" [class.has-events]="getTimelineEventsForSurveyor(s.id).length > 0">
+            <div class="timeline-surveyor">
+              <div class="avatar small" [style.background-color]="getSurveyorColor(s.id)">
+                <img *ngIf="!hasAvatarError(s.id)"
+                     [src]="getAvatarUrl(s.display_name, 32)"
+                     [alt]="s.display_name"
+                     (error)="onAvatarError(s.id)"
+                     class="avatar-img">
+                <span *ngIf="hasAvatarError(s.id)" class="avatar-initials">{{getInitials(s.display_name)}}</span>
+              </div>
+              <div class="surveyor-info">
+                <span class="surveyor-name">{{s.display_name}}</span>
+                <span class="surveyor-event-count">{{getTimelineEventsForSurveyor(s.id).length}} events</span>
+              </div>
+            </div>
+            <div class="timeline-events">
+              <!-- Events -->
+              <div *ngFor="let event of getTimelineEventsForSurveyor(s.id)"
+                   class="timeline-event"
+                   [style.left.%]="getTimelinePosition(event.start)"
+                   [style.width.%]="getTimelineWidth(event.start, event.end)"
+                   [style.background-color]="event.backgroundColor"
+                   [class.event-busy]="event.extendedProps?.state === 'BUSY'"
+                   [class.event-offline]="event.extendedProps?.state === 'OFFLINE'"
+                   (click)="openEditModal(event)"
+                   [title]="event.title + ' (' + formatTimelineEventTime(event.start, event.end) + ')'">
+                <span class="event-label" *ngIf="getTimelineWidth(event.start, event.end) > 8">{{event.title}}</span>
+              </div>
+            </div>
+          </div>
+          <!-- Empty state -->
+          <div *ngIf="allSurveyors.length === 0" class="timeline-empty">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.5">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            <p>No surveyors available</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Heatmap View -->
+    <div *ngIf="currentView === 'heatmap'" class="heatmap-container">
+      <div class="heatmap-header">
+        <button class="nav-btn" (click)="prevHeatmapWeek()">&#9664;</button>
+        <h3>{{getHeatmapWeekLabel()}}</h3>
+        <button class="nav-btn" (click)="nextHeatmapWeek()">&#9654;</button>
+      </div>
+      <div class="heatmap-legend">
+        <span>Less</span>
+        <div class="legend-scale">
+          <div class="legend-cell" style="background: #e8f5e9"></div>
+          <div class="legend-cell" style="background: #c8e6c9"></div>
+          <div class="legend-cell" style="background: #a5d6a7"></div>
+          <div class="legend-cell" style="background: #81c784"></div>
+          <div class="legend-cell" style="background: #66bb6a"></div>
+        </div>
+        <span>More</span>
+      </div>
+      <div class="heatmap-grid">
+        <div class="heatmap-row header">
+          <div class="heatmap-cell name-cell">Surveyor</div>
+          <div class="heatmap-cell day-cell">Sun</div>
+          <div class="heatmap-cell day-cell">Mon</div>
+          <div class="heatmap-cell day-cell">Tue</div>
+          <div class="heatmap-cell day-cell">Wed</div>
+          <div class="heatmap-cell day-cell">Thu</div>
+          <div class="heatmap-cell day-cell">Fri</div>
+          <div class="heatmap-cell day-cell">Sat</div>
+        </div>
+        <div *ngFor="let s of allSurveyors" class="heatmap-row">
+          <div class="heatmap-cell name-cell">
+            <div class="avatar small" [style.background-color]="getSurveyorColor(s.id)">
+              <img *ngIf="!hasAvatarError(s.id)"
+                   [src]="getAvatarUrl(s.display_name, 32)"
+                   [alt]="s.display_name"
+                   (error)="onAvatarError(s.id)"
+                   class="avatar-img">
+              <span *ngIf="hasAvatarError(s.id)" class="avatar-initials">{{getInitials(s.display_name)}}</span>
+            </div>
+            <span>{{s.display_name}}</span>
+          </div>
+          <div *ngFor="let day of workloadData.get(s.id) || []"
+               class="heatmap-cell day-cell"
+               [style.background-color]="getHeatmapColor(day.count)"
+               [title]="day.count + ' appointments'">
+            {{day.count || ''}}
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Create Appointment Modal -->
+<div class="modal-overlay" *ngIf="showCreateModal" (click)="closeCreateModal()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <h3>Create Appointment</h3>
+    <div class="modal-body">
+      <p><strong>Surveyor:</strong> {{modalSurveyorName}}</p>
+      <p><strong>Date:</strong> {{modalDate}}</p>
+      <p><strong>Time:</strong> {{modalStartTime}} - {{modalEndTime}} ({{modalDuration}})</p>
+
+      <label>
+        <strong>📝 Title <span class="required">*</span></strong>
+        <div class="field-with-counter">
+          <input type="text" [(ngModel)]="modalTitle" placeholder="e.g., Client Meeting, Survey Task..." maxlength="100" required [class.invalid]="modalTitle.trim().length === 0">
+          <span class="char-counter" [class]="getTitleCharClass()">{{getTitleCharCount()}}</span>
+        </div>
+        <span class="validation-error" *ngIf="modalTitle.trim().length === 0">Title is required</span>
+      </label>
+
+      <label>
+        <strong>💬 Description <span class="required">*</span></strong>
+        <div class="field-with-counter">
+          <textarea [(ngModel)]="modalDescription" placeholder="Add any additional notes or details..." maxlength="255" rows="3" required [class.invalid]="modalDescription.trim().length === 0"></textarea>
+          <span class="char-counter" [class]="getDescriptionCharClass()">{{getDescriptionCharCount()}}</span>
+        </div>
+        <span class="validation-error" *ngIf="modalDescription.trim().length === 0">Description is required</span>
+      </label>
+
+      <label>
+        <strong>📊 Status</strong>
+        <select [(ngModel)]="modalState">
+          <option value="BUSY">🔴 Busy</option>
+          <option value="OFFLINE">⚫ Offline</option>
+        </select>
+      </label>
+
+      <!-- Recurring Options -->
+      <div class="recurring-section">
+        <label class="checkbox-label">
+          <input type="checkbox" [(ngModel)]="modalRecurring">
+          <span>Repeat this appointment</span>
+        </label>
+        <div class="recurring-options" *ngIf="modalRecurring">
+          <label>
+            Repeat:
+            <select [(ngModel)]="modalRecurringType">
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+            </select>
+          </label>
+          <label>
+            For:
+            <select [(ngModel)]="modalRecurringCount">
+              <option [value]="2">2 times</option>
+              <option [value]="3">3 times</option>
+              <option [value]="4">4 times</option>
+              <option [value]="5">5 times</option>
+              <option [value]="6">6 times</option>
+              <option [value]="8">8 times</option>
+              <option [value]="12">12 times</option>
+            </select>
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" (click)="closeCreateModal()">Cancel</button>
+      <button class="btn-create" (click)="confirmCreate()" [disabled]="!isCreateFormValid()">
+        {{modalRecurring ? 'Create ' + modalRecurringCount + ' Appointments' : 'Create'}}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Appointment Modal -->
+<div class="modal-overlay" *ngIf="showEditModal" (click)="closeEditModal()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <h3>{{editIsPast ? 'View Appointment (Past)' : 'Edit Appointment'}}</h3>
+    <div class="modal-body">
+      <p *ngIf="editIsPast" class="past-warning">This appointment is in the past and cannot be modified.</p>
+      <p><strong>Surveyor:</strong> {{editSurveyorName}}</p>
+      <p><strong>Date:</strong> {{editDate}}</p>
+      <p><strong>Time:</strong> {{editStartTime}} - {{editEndTime}} ({{editDuration}})</p>
+
+      <label>
+        <strong>📝 Title <span class="required">*</span></strong>
+        <div class="field-with-counter">
+          <input type="text" [(ngModel)]="editTitle" placeholder="e.g., Client Meeting, Survey Task..." maxlength="100" [disabled]="editIsPast" required [class.invalid]="editTitle.trim().length === 0 && !editIsPast">
+          <span class="char-counter" [class]="getEditTitleCharClass()">{{getEditTitleCharCount()}}</span>
+        </div>
+        <span class="validation-error" *ngIf="editTitle.trim().length === 0 && !editIsPast">Title is required</span>
+      </label>
+
+      <label>
+        <strong>💬 Description <span class="required">*</span></strong>
+        <div class="field-with-counter">
+          <textarea [(ngModel)]="editDescription" placeholder="Add any additional notes or details..." maxlength="255" rows="3" [disabled]="editIsPast" required [class.invalid]="editDescription.trim().length === 0 && !editIsPast"></textarea>
+          <span class="char-counter" [class]="getEditDescriptionCharClass()">{{getEditDescriptionCharCount()}}</span>
+        </div>
+        <span class="validation-error" *ngIf="editDescription.trim().length === 0 && !editIsPast">Description is required</span>
+      </label>
+
+      <label>
+        <strong>📊 Status</strong>
+        <select [(ngModel)]="editState" [disabled]="editIsPast">
+          <option value="BUSY">🔴 Busy</option>
+          <option value="OFFLINE">⚫ Offline</option>
+        </select>
+      </label>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-delete" (click)="confirmDelete()" [disabled]="editIsPast" [class.btn-disabled]="editIsPast">Delete</button>
+      <button class="btn-reassign" (click)="openReassignFromEdit()" *ngIf="!editIsPast" title="Reassign to another surveyor">Reassign</button>
+      <div class="spacer"></div>
+      <button class="btn-cancel" (click)="closeEditModal()">{{editIsPast ? 'Close' : 'Cancel'}}</button>
+      <button class="btn-create" (click)="confirmUpdate()" *ngIf="!editIsPast" [disabled]="!isEditFormValid()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Reassign Surveyor Picker Modal -->
+<div class="modal-overlay" *ngIf="showReassignPicker" (click)="closeReassignPicker()">
+  <div class="modal reassign-picker-modal" (click)="$event.stopPropagation()">
+    <h3>Reassign To</h3>
+    <div class="modal-body">
+      <p>Select a surveyor to reassign this appointment to:</p>
+      <div class="reassign-surveyor-list">
+        <div *ngFor="let s of getReassignableSurveyors()"
+             class="reassign-surveyor-option"
+             [class.selected]="reassignToSurveyorId === s.id"
+             (click)="selectReassignSurveyor(s.id)">
+          <div class="avatar small" [style.background-color]="getAvatarColor(s.display_name)">
+            {{getInitials(s.display_name)}}
+          </div>
+          <div class="surveyor-option-info">
+            <span class="option-name">{{s.display_name}}</span>
+            <span class="option-status" [style.color]="getCurrentStatusColor(s.current_status)">{{s.current_status}}</span>
+          </div>
+          <span class="option-check" *ngIf="reassignToSurveyorId === s.id">&#10003;</span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" (click)="closeReassignPicker()">Cancel</button>
+      <button class="btn-create" (click)="confirmReassignFromPicker()" [disabled]="reassignToSurveyorId === 0">Reassign</button>
+    </div>
+  </div>
+</div>
+
+<!-- Reschedule Confirmation Modal -->
+<div class="modal-overlay" *ngIf="showRescheduleModal" (click)="closeRescheduleModal()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <h3>Confirm Reschedule</h3>
+    <div class="modal-body">
+      <p><strong>Surveyor:</strong> {{rescheduleSurveyorName}}</p>
+
+      <div class="reschedule-change">
+        <div class="change-from">
+          <span class="change-label">From:</span>
+          <p>{{rescheduleOldDate}}</p>
+          <p>{{rescheduleOldTime}}</p>
+        </div>
+        <div class="change-arrow">&#8594;</div>
+        <div class="change-to">
+          <span class="change-label">To:</span>
+          <p>{{rescheduleNewDate}}</p>
+          <p>{{rescheduleNewTime}}</p>
+          <p class="duration">({{rescheduleNewDuration}})</p>
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" (click)="closeRescheduleModal()">Cancel</button>
+      <button class="btn-create" (click)="confirmReschedule()">Confirm Reschedule</button>
+    </div>
+  </div>
+</div>
+
+<!-- Success Confirmation Modal -->
+<div class="modal-overlay" *ngIf="showSuccessModal" (click)="closeSuccessModal()">
+  <div class="modal success-modal" (click)="$event.stopPropagation()">
+    <div class="success-header">
+      <div class="success-icon">&#10003;</div>
+      <h3>{{successTitle}}</h3>
+    </div>
+    <div class="modal-body">
+      <p class="success-message">{{successMessage}}</p>
+      <div class="success-details">
+        <div class="detail-row">
+          <span class="detail-label">Surveyor</span>
+          <span class="detail-value">{{successSurveyorName}}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Date</span>
+          <span class="detail-value">{{successDate}}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Time</span>
+          <span class="detail-value">{{successTime}}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Status</span>
+          <span class="detail-value status-badge" [class.busy]="successState === 'BUSY'" [class.offline]="successState === 'OFFLINE'">
+            {{successState}}
+          </span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions centered">
+      <button class="btn-success" (click)="closeSuccessModal()">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- Template Modal -->
+<div class="modal-overlay" *ngIf="showTemplateModal" (click)="closeTemplateModal()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <h3>Choose Template</h3>
+    <div class="modal-body">
+      <div class="template-grid">
+        <div *ngFor="let template of templates"
+             class="template-card"
+             [class.selected]="selectedTemplate?.id === template.id"
+             (click)="selectTemplate(template)">
+          <div class="template-icon" [style.background-color]="template.color">{{template.duration}}h</div>
+          <div class="template-name">{{template.name}}</div>
+          <div class="template-state">{{template.state}}</div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" (click)="closeTemplateModal()">Cancel</button>
+      <button class="btn-create" (click)="applyTemplate()" [disabled]="!selectedTemplate">Apply</button>
+    </div>
+  </div>
+</div>
+
+<!-- Export Modal -->
+<div class="modal-overlay" *ngIf="showExportModal" (click)="closeExportModal()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <h3>Export Schedule</h3>
+    <div class="modal-body">
+      <label>
+        <strong>Format:</strong>
+        <select [(ngModel)]="exportFormat">
+          <option value="pdf">PDF (Print)</option>
+          <option value="excel">Excel</option>
+          <option value="csv">CSV</option>
+        </select>
+      </label>
+      <label>
+        <strong>Range:</strong>
+        <select [(ngModel)]="exportRange">
+          <option value="week">This Week</option>
+          <option value="month">This Month</option>
+        </select>
+      </label>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" (click)="closeExportModal()">Cancel</button>
+      <button class="btn-create" (click)="exportSchedule()">Export</button>
+    </div>
+  </div>
+</div>
+
+<!-- Color Picker Modal -->
+<div class="modal-overlay" *ngIf="showColorPicker" (click)="closeColorPicker()">
+  <div class="modal color-picker-modal" (click)="$event.stopPropagation()">
+    <h3>Choose Color</h3>
+    <div class="modal-body">
+      <div class="color-grid">
+        <div *ngFor="let color of customColors"
+             class="color-swatch"
+             [style.background-color]="color"
+             (click)="selectColor(color)">
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" (click)="closeColorPicker()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Notes Modal -->
+<div class="modal-overlay" *ngIf="showNotesModal" (click)="closeNotesModal()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <h3>Notes for {{notesModalSurveyorName}}</h3>
+    <div class="modal-body">
+      <textarea class="notes-textarea" [(ngModel)]="notesModalContent" placeholder="Add notes about this surveyor..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" (click)="closeNotesModal()">Cancel</button>
+      <button class="btn-create" (click)="saveNote()">Save Note</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bulk Assign Modal -->
+<div class="modal-overlay" *ngIf="showBulkAssignModal" (click)="closeBulkAssignModal()">
+  <div class="modal bulk-assign-modal" (click)="$event.stopPropagation()">
+    <h3>Bulk Assign Appointments</h3>
+    <div class="modal-body">
+      <div class="bulk-info">
+        <span class="bulk-count">{{bulkAssignSurveyorIds.length}}</span> surveyors selected
+      </div>
+
+      <div class="bulk-surveyors-list">
+        <div *ngFor="let s of filteredSurveyors"
+             class="bulk-surveyor-chip"
+             [class.selected]="isBulkSurveyorSelected(s.id)"
+             (click)="toggleBulkSurveyorSelection(s.id)">
+          <span class="chip-check" *ngIf="isBulkSurveyorSelected(s.id)">&#10003;</span>
+          {{s.display_name}}
+        </div>
+      </div>
+
+      <div class="bulk-form">
+        <label>
+          <strong>Date</strong>
+          <input type="date" [(ngModel)]="bulkAssignDate">
+        </label>
+
+        <div class="time-row">
+          <label>
+            <strong>Start Time</strong>
+            <input type="time" [(ngModel)]="bulkAssignStartTime">
+          </label>
+          <label>
+            <strong>End Time</strong>
+            <input type="time" [(ngModel)]="bulkAssignEndTime">
+          </label>
+        </div>
+
+        <label>
+          <strong>Status</strong>
+          <select [(ngModel)]="bulkAssignState">
+            <option value="BUSY">Busy</option>
+            <option value="OFFLINE">Offline</option>
+          </select>
+        </label>
+
+        <label>
+          <strong>Title <span class="required">*</span></strong>
+          <input type="text" [(ngModel)]="bulkAssignTitle" placeholder="e.g., Team Meeting, Training..." maxlength="100" [class.invalid]="bulkAssignTitle.trim().length === 0">
+        </label>
+
+        <label>
+          <strong>Description <span class="required">*</span></strong>
+          <textarea [(ngModel)]="bulkAssignDescription" placeholder="Appointment details..." maxlength="255" rows="2" [class.invalid]="bulkAssignDescription.trim().length === 0"></textarea>
+        </label>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" (click)="closeBulkAssignModal()">Cancel</button>
+      <button class="btn-create" (click)="confirmBulkAssign()" [disabled]="!isBulkAssignFormValid()">
+        Create {{bulkAssignSurveyorIds.length}} Appointments
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Keyboard Shortcuts Help Modal -->
+<div class="modal-overlay" *ngIf="showKeyboardHelp" (click)="toggleKeyboardHelp()">
+  <div class="modal keyboard-help-modal" (click)="$event.stopPropagation()">
+    <div class="keyboard-header">
+      <h3>Keyboard Shortcuts</h3>
+      <button class="close-btn" (click)="toggleKeyboardHelp()">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="shortcut-section">
+        <h4>Navigation</h4>
+        <div class="shortcut-row">
+          <kbd>T</kbd>
+          <span>Go to Today</span>
+        </div>
+        <div class="shortcut-row">
+          <kbd>S</kbd>
+          <span>Toggle Sidebar</span>
+        </div>
+        <div class="shortcut-row">
+          <kbd>D</kbd>
+          <span>Toggle Dashboard</span>
+        </div>
+        <div class="shortcut-row">
+          <kbd>O</kbd>
+          <span>Resource Timeline</span>
+        </div>
+      </div>
+
+      <div class="shortcut-section">
+        <h4>Selection</h4>
+        <div class="shortcut-row">
+          <kbd>A</kbd>
+          <span>Select All Surveyors</span>
+        </div>
+        <div class="shortcut-row">
+          <kbd>C</kbd>
+          <span>Clear Selection</span>
+        </div>
+      </div>
+
+      <div class="shortcut-section">
+        <h4>Actions</h4>
+        <div class="shortcut-row">
+          <kbd>B</kbd>
+          <span>Bulk Assign (with selection)</span>
+        </div>
+        <div class="shortcut-row">
+          <kbd>R</kbd>
+          <span>Refresh Events</span>
+        </div>
+        <div class="shortcut-row">
+          <kbd>E</kbd>
+          <span>Export Schedule</span>
+        </div>
+        <div class="shortcut-row">
+          <kbd>Esc</kbd>
+          <span>Close Modal</span>
+        </div>
+        <div class="shortcut-row">
+          <kbd>?</kbd>
+          <span>Show This Help</span>
+        </div>
+      </div>
+
+      <div class="shortcut-section">
+        <h4>Calendar Actions</h4>
+        <div class="shortcut-row">
+          <kbd>Option/Alt</kbd> + <span class="drag-text">Drag</span>
+          <span>Copy Appointment</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Copy Appointment Modal (Alt+Drag to Copy) -->
+<div class="modal-overlay" *ngIf="showCopyModal" (click)="closeCopyModal()">
+  <div class="modal copy-modal" (click)="$event.stopPropagation()">
+    <h3>Copy Appointment</h3>
+    <div class="modal-body">
+      <p><strong>Surveyor:</strong> {{copySurveyorName}}</p>
+
+      <div class="copy-change">
+        <div class="change-from">
+          <span class="change-label">Original:</span>
+          <p>{{copyOriginalDate}}</p>
+          <p>{{copyOriginalTime}}</p>
+        </div>
+        <div class="change-arrow copy-arrow">&#10145;</div>
+        <div class="change-to">
+          <span class="change-label">Copy To:</span>
+          <p>{{copyNewDate}}</p>
+          <p>{{copyNewTime}}</p>
+          <p class="duration">({{copyNewDuration}})</p>
+        </div>
+      </div>
+
+      <div class="copy-details">
+        <label>
+          <strong>Status</strong>
+          <select [(ngModel)]="copyState">
+            <option value="BUSY">Busy</option>
+            <option value="OFFLINE">Offline</option>
+          </select>
+        </label>
+
+        <label>
+          <strong>Title</strong>
+          <input type="text" [(ngModel)]="copyTitle" placeholder="Appointment title..." maxlength="100">
+        </label>
+
+        <label>
+          <strong>Description</strong>
+          <textarea [(ngModel)]="copyDescription" placeholder="Appointment details..." maxlength="255" rows="2"></textarea>
+        </label>
+      </div>
+
+      <p class="copy-hint">The original appointment will be kept. A new copy will be created at the new time.</p>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" (click)="closeCopyModal()">Cancel</button>
+      <button class="btn-create" (click)="confirmCopy()">Create Copy</button>
+    </div>
+  </div>
+</div>
+
+<!-- Reassign Modal (Drag to different surveyor) -->
+<div class="modal-overlay" *ngIf="showReassignModal" (click)="closeReassignModal()">
+  <div class="modal reassign-modal" (click)="$event.stopPropagation()">
+    <h3>Reassign Appointment</h3>
+    <div class="modal-body">
+      <div class="reassign-change">
+        <div class="change-from reassign-from">
+          <span class="change-label">From:</span>
+          <div class="surveyor-chip">
+            <div class="avatar small" [style.background-color]="getAvatarColor(reassignFromSurveyorName)">
+              {{getInitials(reassignFromSurveyorName)}}
+            </div>
+            <span>{{reassignFromSurveyorName}}</span>
+          </div>
+        </div>
+        <div class="change-arrow reassign-arrow">&#10145;</div>
+        <div class="change-to reassign-to">
+          <span class="change-label">To:</span>
+          <div class="surveyor-chip">
+            <div class="avatar small" [style.background-color]="getAvatarColor(reassignToSurveyorName)">
+              {{getInitials(reassignToSurveyorName)}}
+            </div>
+            <span>{{reassignToSurveyorName}}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="reassign-details">
+        <p><strong>Date:</strong> {{reassignDate}}</p>
+        <p><strong>Time:</strong> {{reassignTime}} ({{reassignDuration}})</p>
+        <p><strong>Status:</strong> {{reassignState}}</p>
+        <p *ngIf="reassignTitle"><strong>Title:</strong> {{reassignTitle}}</p>
+      </div>
+
+      <p class="reassign-hint">This will move the appointment from {{reassignFromSurveyorName}} to {{reassignToSurveyorName}}.</p>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" (click)="closeReassignModal()">Cancel</button>
+      <button class="btn-create" (click)="confirmReassign()">Confirm Reassign</button>
+    </div>
+  </div>
+</div>
+
+<!-- Conflict Panel -->
+<div class="side-panel conflict-panel" *ngIf="showConflictPanel">
+  <div class="panel-header">
+    <h3>Scheduling Conflicts</h3>
+    <button class="close-btn" (click)="toggleConflictPanel()">&#10005;</button>
+  </div>
+  <div class="panel-content">
+    <div *ngIf="conflictWarnings.length === 0" class="no-conflicts">
+      <span class="success-icon">&#10003;</span>
+      <p>No scheduling conflicts detected</p>
+    </div>
+    <div *ngFor="let warning of conflictWarnings" class="conflict-group">
+      <div class="conflict-surveyor">
+        <div class="avatar small" [style.background-color]="getAvatarColor(warning.surveyorName)">
+          {{getInitials(warning.surveyorName)}}
+        </div>
+        <span>{{warning.surveyorName}}</span>
+        <span class="conflict-badge">{{warning.conflictCount}}</span>
+      </div>
+      <div class="conflict-list">
+        <div *ngFor="let conflict of warning.conflicts" class="conflict-item" [style.border-left-color]="getConflictColor(conflict.overlapMinutes)">
+          <div class="conflict-time">{{conflict.overlapMinutes}} min overlap</div>
+          <div class="conflict-events">
+            <span>{{conflict.event1.title.split(' - ')[1] || 'Event 1'}}</span>
+            <span class="conflict-vs">vs</span>
+            <span>{{conflict.event2.title.split(' - ')[1] || 'Event 2'}}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Workload Balance Panel -->
+<div class="side-panel workload-panel" *ngIf="showWorkloadPanel">
+  <div class="panel-header">
+    <h3>Workload Balance</h3>
+    <button class="close-btn" (click)="toggleWorkloadPanel()">&#10005;</button>
+  </div>
+  <div class="panel-summary">
+    <div class="summary-stat">
+      <span class="summary-value">{{getAverageWorkload()}}h</span>
+      <span class="summary-label">Avg Weekly</span>
+    </div>
+    <div class="summary-stat">
+      <span class="summary-value" [class]="getWorkloadVariance().toLowerCase()">{{getWorkloadVariance()}}</span>
+      <span class="summary-label">Distribution</span>
+    </div>
+  </div>
+  <div class="panel-content">
+    <div *ngFor="let w of workloadBalance" class="workload-row">
+      <div class="workload-surveyor">
+        <div class="avatar small" [style.background-color]="getAvatarColor(w.surveyorName)">
+          {{getInitials(w.surveyorName)}}
+        </div>
+        <div class="workload-info">
+          <span class="workload-name">{{w.surveyorName}}</span>
+          <span class="workload-stats">{{w.appointmentsToday}} today | {{w.appointmentsWeek}} this week</span>
+        </div>
+      </div>
+      <div class="workload-bar-container">
+        <div class="workload-bar" [style.width.%]="getWorkloadBarWidth(w.hoursWeek)" [style.background-color]="getWorkloadColor(w.hoursWeek)"></div>
+        <span class="workload-hours">{{w.hoursWeek}}h</span>
+      </div>
+      <span class="workload-status" [style.color]="getWorkloadColor(w.hoursWeek)">{{getWorkloadStatus(w.hoursWeek)}}</span>
+    </div>
+  </div>
+</div>
+
+<!-- Dispatcher Tools Bar -->
+<div class="dispatcher-toolbar">
+  <button class="toolbar-btn" (click)="toggleConflictPanel()" [class.active]="showConflictPanel" [class.has-warnings]="conflictWarnings.length > 0" title="Conflict Warnings">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+      <line x1="12" y1="9" x2="12" y2="13"></line>
+      <line x1="12" y1="17" x2="12.01" y2="17"></line>
+    </svg>
+    <span *ngIf="conflictWarnings.length > 0" class="toolbar-badge">{{conflictWarnings.length}}</span>
+  </button>
+  <button class="toolbar-btn" (click)="toggleWorkloadPanel()" [class.active]="showWorkloadPanel" title="Workload Balance">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <line x1="18" y1="20" x2="18" y2="10"></line>
+      <line x1="12" y1="20" x2="12" y2="4"></line>
+      <line x1="6" y1="20" x2="6" y2="14"></line>
+    </svg>
+  </button>
+  <button class="toolbar-btn" (click)="toggleTravelTimes()" [class.active]="showTravelTimes" title="Travel Time">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="12" r="10"></circle>
+      <polyline points="12 6 12 12 16 14"></polyline>
+    </svg>
+  </button>
+  <button class="toolbar-btn push-notification-btn" (click)="toggleWebPushNotifications()"
+          [class.active]="webPushEnabled"
+          [class.permission-denied]="webPushPermission === 'denied'"
+          [title]="webPushEnabled ? 'Push Notifications Enabled (click to disable)' : webPushPermission === 'denied' ? 'Notifications Blocked - Enable in Browser Settings' : 'Enable Push Notifications'">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+      <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+    </svg>
+    <span *ngIf="webPushEnabled" class="push-indicator"></span>
+  </button>
+</div>
+
+<!-- Keyboard Help Hint -->
+<div class="keyboard-hint" (click)="toggleKeyboardHelp()">
+  Press <kbd>?</kbd> for shortcuts
+</div>
+
+<!-- Push Notification Registration Modal -->
+<div class="modal-overlay" *ngIf="showPushRegistrationModal" (click)="closePushRegistrationModal()">
+  <div class="modal push-registration-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Enable Push Notifications</h3>
+      <button class="close-btn" (click)="closePushRegistrationModal()">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <p class="push-info">Select the surveyor you want to receive notifications for. You'll get alerts when appointments are created, updated, or deleted for this surveyor.</p>
+
+      <label>
+        <strong>Search Surveyor</strong>
+        <input type="text" [(ngModel)]="pushRegistrationSurveyorSearch"
+               placeholder="Type to search by name or code..."
+               class="surveyor-search-input">
+      </label>
+
+      <div class="surveyor-list">
+        <div *ngFor="let surveyor of getFilteredPushSurveyors()"
+             class="surveyor-option"
+             [class.selected]="pushRegistrationSurveyorId === surveyor.id"
+             (click)="selectPushSurveyor(surveyor.id)">
+          <div class="surveyor-option-info">
+            <span class="surveyor-name">{{surveyor.display_name}}</span>
+            <span class="surveyor-code">{{surveyor.code}}</span>
+          </div>
+          <span class="surveyor-type-badge" [class.internal]="surveyor.surveyor_type === 'INTERNAL'">
+            {{surveyor.surveyor_type}}
+          </span>
+        </div>
+        <div *ngIf="getFilteredPushSurveyors().length === 0" class="no-surveyors">
+          No surveyors found matching "{{pushRegistrationSurveyorSearch}}"
+        </div>
+      </div>
+
+      <div *ngIf="pushRegistrationSurveyorId" class="selected-surveyor">
+        <strong>Selected:</strong> {{getRegisteredSurveyorName()}}
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closePushRegistrationModal()">Cancel</button>
+      <button class="btn btn-primary" (click)="confirmPushRegistration()" [disabled]="!pushRegistrationSurveyorId">
+        Enable Notifications
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Test Notification Modal (Dev) -->
+<div class="modal-overlay" *ngIf="showTestNotificationModal" (click)="closeTestNotificationModal()">
+  <div class="modal test-notification-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header dev-header">
+      <h3>Test Push Notifications</h3>
+      <span class="dev-badge">DEV</span>
+      <button class="close-btn" (click)="closeTestNotificationModal()">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <p class="dev-warning">This will send push notifications, emails, and SMS to ALL surveyors in the system.</p>
+
+      <label>
+        <strong>Title</strong>
+        <input type="text" [(ngModel)]="testNotificationTitle" placeholder="Notification title..." maxlength="100">
+      </label>
+
+      <label>
+        <strong>Message</strong>
+        <textarea [(ngModel)]="testNotificationMessage" placeholder="Notification message..." maxlength="500" rows="3"></textarea>
+      </label>
+
+      <!-- Results Section -->
+      <div class="test-results" *ngIf="testNotificationResults">
+        <h4>Results</h4>
+        <div class="results-grid">
+          <div class="result-item">
+            <span class="result-value">{{testNotificationResults.surveyorCount}}</span>
+            <span class="result-label">Surveyors</span>
+          </div>
+          <div class="result-item success">
+            <span class="result-value">{{testNotificationResults.pushNotificationsSent}}</span>
+            <span class="result-label">Push Sent</span>
+          </div>
+          <div class="result-item">
+            <span class="result-value">{{testNotificationResults.emailsSent}}</span>
+            <span class="result-label">Emails Sent</span>
+          </div>
+          <div class="result-item">
+            <span class="result-value">{{testNotificationResults.smsSent}}</span>
+            <span class="result-label">SMS Sent</span>
+          </div>
+        </div>
+        <div class="result-note" *ngIf="!testNotificationResults.firebaseEnabled">
+          Firebase is not enabled. Push notifications require FIREBASE_CREDENTIALS_PATH to be configured.
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" (click)="closeTestNotificationModal()">Close</button>
+      <button class="btn-create dev-send-btn" (click)="sendTestNotificationToAll()" [disabled]="testNotificationSending">
+        <span *ngIf="!testNotificationSending">Send to All Surveyors</span>
+        <span *ngIf="testNotificationSending">Sending...</span>
+      </button>
+    </div>
+  </div>
+</div>

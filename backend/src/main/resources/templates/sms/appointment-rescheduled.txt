@@ -1,0 +1,1 @@
+Appointment RESCHEDULED: [(${title != null ? title : 'Your appointment'})] now on [(${date})] at [(${startTime})]-[(${endTime})]. -Appointment Calendar
