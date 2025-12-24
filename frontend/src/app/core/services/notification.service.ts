@@ -9,12 +9,13 @@ import {
   TestNotificationResult,
   ActivityLogEntry
 } from '../models';
+import { API_BASE } from './api-config';
 
 @Injectable({
   providedIn: 'root'
 })
 export class NotificationService {
-  private readonly apiBase = (window as any).__API_BASE__ || 'http://localhost:8080/api';
+  private readonly apiBase = API_BASE;
 
   // Toast management
   private toastsSubject = new BehaviorSubject<Toast[]>([]);

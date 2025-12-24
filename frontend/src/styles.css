@@ -3781,3 +3781,606 @@ textarea.invalid:focus {
   background: #ccc !important;
   cursor: not-allowed;
 }
+
+/* ============================================
+   RESPONSIVE STYLES
+   ============================================ */
+
+/* CSS Variables for responsive breakpoints */
+:root {
+  --sidebar-width: 320px;
+  --sidebar-collapsed-width: 48px;
+  --header-height: 60px;
+  --mobile-breakpoint: 768px;
+  --tablet-breakpoint: 1024px;
+}
+
+/* Mobile menu button (hidden by default) */
+.mobile-menu-btn {
+  display: none;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+}
+
+.mobile-menu-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* Sidebar overlay for mobile */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 199;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.sidebar-overlay.visible {
+  display: block;
+  opacity: 1;
+}
+
+/* ============================================
+   TABLET STYLES (768px - 1024px)
+   ============================================ */
+@media (max-width: 1024px) {
+  /* Header adjustments */
+  header {
+    padding: 8px 16px;
+    gap: 12px;
+  }
+
+  .logo strong {
+    font-size: 16px;
+  }
+
+  .view-tabs button {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  .btn-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+  }
+
+  /* Sidebar narrower */
+  .sidebar {
+    width: 280px;
+  }
+
+  /* Stats bar compact */
+  .stats-bar {
+    padding: 8px;
+  }
+
+  .stat-count {
+    font-size: 20px;
+  }
+
+  .stat-label {
+    font-size: 10px;
+  }
+
+  /* Dashboard overlay */
+  .dashboard-overlay {
+    padding: 16px;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+
+  /* Modal adjustments */
+  .modal-content {
+    max-width: 90%;
+    margin: 20px;
+  }
+
+  /* Calendar font sizes */
+  .fc .fc-col-header-cell-cushion {
+    font-size: 12px;
+  }
+
+  .fc .fc-daygrid-day-number {
+    font-size: 12px;
+  }
+}
+
+/* ============================================
+   MOBILE STYLES (max-width: 768px)
+   ============================================ */
+@media (max-width: 768px) {
+  /* Show mobile menu button */
+  .mobile-menu-btn {
+    display: flex;
+  }
+
+  /* Header mobile layout */
+  header {
+    padding: 8px 12px;
+    gap: 8px;
+  }
+
+  .header-left {
+    flex: 0;
+  }
+
+  .logo svg {
+    width: 28px;
+    height: 28px;
+  }
+
+  .logo strong {
+    display: none;
+  }
+
+  .header-center {
+    flex: 1;
+    justify-content: flex-start;
+    margin-left: 8px;
+  }
+
+  .view-tabs {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    padding: 2px;
+  }
+
+  .view-tabs button {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+
+  .header-right {
+    gap: 4px;
+  }
+
+  .header-divider {
+    display: none;
+  }
+
+  .btn-icon {
+    width: 34px;
+    height: 34px;
+    font-size: 16px;
+  }
+
+  /* Hide some header buttons on mobile */
+  .btn-icon[title="Test Notifications"],
+  .btn-icon[title="Activity Log"] {
+    display: none;
+  }
+
+  /* Main layout - stack vertically */
+  .main-layout {
+    flex-direction: column;
+  }
+
+  /* Sidebar as mobile drawer */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: -320px;
+    width: 300px;
+    height: 100vh;
+    z-index: 200;
+    transition: left 0.3s ease;
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
+  }
+
+  .sidebar.mobile-open,
+  app-sidebar.mobile-open .sidebar {
+    left: 0;
+  }
+
+  .sidebar.collapsed {
+    left: -320px;
+    width: 300px;
+  }
+
+  .sidebar-header {
+    padding: 12px;
+  }
+
+  .sidebar-content {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  /* Stats bar mobile */
+  .stats-bar {
+    padding: 8px;
+  }
+
+  .stat {
+    padding: 4px 6px;
+  }
+
+  .stat-count {
+    font-size: 18px;
+  }
+
+  .stat-label {
+    font-size: 9px;
+  }
+
+  /* Search input */
+  .search-input {
+    padding: 8px 32px 8px 10px;
+    font-size: 13px;
+  }
+
+  /* Filter pills */
+  .filter-pills {
+    gap: 6px;
+  }
+
+  .pill {
+    padding: 5px 10px;
+    font-size: 11px;
+  }
+
+  /* Surveyor cards compact */
+  .surveyor-card {
+    padding: 10px;
+    gap: 10px;
+  }
+
+  .surveyor-card .avatar {
+    width: 36px;
+    height: 36px;
+  }
+
+  .surveyor-card .name {
+    font-size: 13px;
+  }
+
+  .surveyor-card .meta {
+    font-size: 11px;
+  }
+
+  /* Main content full width */
+  .main-content {
+    width: 100%;
+  }
+
+  /* Calendar responsive */
+  .fc {
+    font-size: 12px;
+  }
+
+  .fc .fc-toolbar {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .fc .fc-toolbar-title {
+    font-size: 16px;
+  }
+
+  .fc .fc-button {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .fc .fc-col-header-cell-cushion {
+    font-size: 11px;
+    padding: 4px;
+  }
+
+  .fc .fc-daygrid-day-number {
+    font-size: 11px;
+    padding: 4px;
+  }
+
+  .fc .fc-timegrid-slot-label {
+    font-size: 10px;
+  }
+
+  .fc .fc-event {
+    font-size: 10px;
+    padding: 2px 4px;
+  }
+
+  /* Modal full screen on mobile */
+  .modal-content {
+    max-width: 100%;
+    width: 100%;
+    margin: 0;
+    border-radius: 0;
+    max-height: 100vh;
+    height: 100vh;
+  }
+
+  .modal-header {
+    padding: 12px 16px;
+  }
+
+  .modal-header h2 {
+    font-size: 16px;
+  }
+
+  .modal-body {
+    padding: 16px;
+  }
+
+  .modal-footer {
+    padding: 12px 16px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .modal-footer button {
+    flex: 1;
+    min-width: 100px;
+  }
+
+  /* Form elements */
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    padding: 10px;
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+
+  .form-row {
+    flex-direction: column;
+  }
+
+  /* Dashboard mobile */
+  .dashboard-overlay {
+    padding: 12px;
+  }
+
+  .dashboard-header {
+    flex-direction: column;
+    gap: 12px;
+    text-align: center;
+  }
+
+  .dashboard-header h2 {
+    font-size: 18px;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .dashboard-widget {
+    padding: 16px;
+  }
+
+  .widget-title {
+    font-size: 12px;
+  }
+
+  .widget-value {
+    font-size: 28px;
+  }
+
+  /* Activity log mobile */
+  .activity-log-panel {
+    right: 8px;
+    left: 8px;
+    width: auto;
+    top: 60px;
+    max-height: 60vh;
+  }
+
+  .activity-item {
+    padding: 10px 12px;
+  }
+
+  /* Toast notifications */
+  .toast-container {
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    max-width: none;
+  }
+
+  .toast {
+    padding: 12px 16px;
+    font-size: 13px;
+  }
+
+  /* Timeline view mobile */
+  .timeline-container {
+    overflow-x: auto;
+  }
+
+  .timeline-header,
+  .timeline-row {
+    min-width: 600px;
+  }
+
+  /* Heatmap mobile */
+  .heatmap-container {
+    overflow-x: auto;
+  }
+
+  .heatmap-grid {
+    min-width: 500px;
+  }
+
+  /* Test results grid */
+  .results-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Quick actions bar */
+  .quick-actions {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .quick-actions button {
+    flex: 1;
+    min-width: 80px;
+    font-size: 11px;
+    padding: 8px;
+  }
+}
+
+/* ============================================
+   SMALL MOBILE STYLES (max-width: 480px)
+   ============================================ */
+@media (max-width: 480px) {
+  /* Even smaller header */
+  header {
+    padding: 6px 8px;
+  }
+
+  .view-tabs button {
+    padding: 5px 8px;
+    font-size: 10px;
+  }
+
+  .btn-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
+
+  /* Sidebar narrower */
+  .sidebar {
+    width: 280px;
+  }
+
+  /* Stats even more compact */
+  .stat-count {
+    font-size: 16px;
+  }
+
+  /* Calendar buttons */
+  .fc .fc-button {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+
+  .fc .fc-toolbar-title {
+    font-size: 14px;
+  }
+
+  /* Results grid single column */
+  .results-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Surveyor groups */
+  .group-header {
+    padding: 10px;
+    font-size: 13px;
+  }
+
+  .group-count {
+    font-size: 11px;
+    padding: 2px 6px;
+  }
+}
+
+/* ============================================
+   LANDSCAPE MOBILE
+   ============================================ */
+@media (max-width: 768px) and (orientation: landscape) {
+  /* Modal adjustments for landscape */
+  .modal-content {
+    height: auto;
+    max-height: 100vh;
+    overflow-y: auto;
+  }
+
+  /* Sidebar shorter */
+  .sidebar {
+    height: 100vh;
+    overflow-y: auto;
+  }
+}
+
+/* ============================================
+   TOUCH DEVICE OPTIMIZATIONS
+   ============================================ */
+@media (hover: none) and (pointer: coarse) {
+  /* Larger touch targets */
+  .btn-icon,
+  .pill,
+  .view-tabs button,
+  .fc .fc-button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .surveyor-card {
+    min-height: 60px;
+  }
+
+  /* Remove hover effects on touch */
+  .surveyor-card:hover {
+    transform: none;
+  }
+
+  .btn-icon:hover {
+    background: rgba(255, 255, 255, 0.15);
+  }
+
+  /* Active states instead */
+  .surveyor-card:active {
+    background: #e3f2fd;
+  }
+
+  .btn-icon:active {
+    background: rgba(255, 255, 255, 0.3);
+  }
+}
+
+/* ============================================
+   PRINT STYLES
+   ============================================ */
+@media print {
+  header,
+  .sidebar,
+  .mobile-menu-btn,
+  .modal-overlay,
+  .toast-container,
+  .activity-log-panel,
+  .dashboard-overlay {
+    display: none !important;
+  }
+
+  .main-layout {
+    display: block;
+  }
+
+  .main-content {
+    width: 100%;
+    padding: 0;
+  }
+
+  .fc {
+    font-size: 10px;
+  }
+}
+
+/* ============================================
+   DARK MODE SUPPORT (if user prefers)
+   ============================================ */
+@media (prefers-color-scheme: dark) {
+  /* Future dark mode styles can go here */
+}

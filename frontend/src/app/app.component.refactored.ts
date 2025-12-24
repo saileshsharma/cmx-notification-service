@@ -58,6 +58,7 @@ type ViewType = 'calendar' | 'timeline' | 'heatmap';
       (dashboardToggle)="toggleDashboard()"
       (activityLogToggle)="toggleActivityLog()"
       (testNotificationClick)="openTestNotificationModal()"
+      (mobileMenuToggle)="toggleMobileSidebar()"
       (refresh)="refresh()">
     </app-header>
 
@@ -87,12 +88,16 @@ type ViewType = 'calendar' | 'timeline' | 'heatmap';
       </div>
     </div>
 
+    <!-- Mobile Sidebar Overlay -->
+    <div class="sidebar-overlay" [class.visible]="mobileSidebarOpen" (click)="closeMobileSidebar()"></div>
+
     <!-- Main Layout -->
     <div class="main-layout">
       <!-- Sidebar -->
       <app-sidebar
         [enableMultiSelect]="true"
         [groupByType]="true"
+        [class.mobile-open]="mobileSidebarOpen"
         (selectionChange)="onSurveyorSelectionChange($event)">
       </app-sidebar>
 
@@ -451,6 +456,7 @@ export class AppComponentRefactored implements OnInit, OnDestroy {
   showDashboard = false;
   showActivityLog = false;
   loading = false;
+  mobileSidebarOpen = false;
 
   // Selection state
   selectedSurveyorIds: number[] = [];
@@ -556,6 +562,14 @@ export class AppComponentRefactored implements OnInit, OnDestroy {
 
   toggleActivityLog(): void {
     this.showActivityLog = !this.showActivityLog;
+  }
+
+  toggleMobileSidebar(): void {
+    this.mobileSidebarOpen = !this.mobileSidebarOpen;
+  }
+
+  closeMobileSidebar(): void {
+    this.mobileSidebarOpen = false;
   }
 
   refresh(): void {

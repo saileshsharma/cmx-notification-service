@@ -2,12 +2,13 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { Surveyor, SurveyorWorkload } from '../models';
+import { API_BASE } from './api-config';
 
 @Injectable({
   providedIn: 'root'
 })
 export class SurveyorService {
-  private readonly apiBase = (window as any).__API_BASE__ || 'http://localhost:8080/api';
+  private readonly apiBase = API_BASE;
 
   // State management
   private surveyorsSubject = new BehaviorSubject<Surveyor[]>([]);

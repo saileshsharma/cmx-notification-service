@@ -13,6 +13,14 @@ type ViewType = 'calendar' | 'timeline' | 'heatmap';
   template: `
     <header>
       <div class="header-left">
+        <!-- Mobile Menu Button -->
+        <button class="mobile-menu-btn" (click)="mobileMenuToggle.emit()" title="Menu">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
         <div class="logo">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
@@ -323,13 +331,62 @@ type ViewType = 'calendar' | 'timeline' | 'heatmap';
       to { transform: rotate(360deg); }
     }
 
+    .mobile-menu-btn {
+      display: none;
+      width: 40px;
+      height: 40px;
+      border: none;
+      border-radius: 8px;
+      background: #f0f0f0;
+      color: #667eea;
+      cursor: pointer;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .mobile-menu-btn:hover {
+      background: #e0e0e0;
+    }
+
     @media (max-width: 768px) {
+      .mobile-menu-btn {
+        display: flex;
+      }
+
       .view-toggle span {
         display: none;
       }
 
       .logo strong {
         display: none;
+      }
+
+      .view-toggle button {
+        padding: 8px 12px;
+      }
+
+      .header-divider {
+        display: none;
+      }
+
+      .btn-icon.dev-btn,
+      .alerts-container {
+        display: none;
+      }
+    }
+
+    @media (max-width: 480px) {
+      header {
+        padding: 8px 12px;
+      }
+
+      .view-toggle button {
+        padding: 6px 10px;
+      }
+
+      .btn-icon {
+        padding: 6px;
       }
     }
   `]
@@ -345,6 +402,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   @Output() activityLogToggle = new EventEmitter<void>();
   @Output() testNotificationClick = new EventEmitter<void>();
   @Output() refresh = new EventEmitter<void>();
+  @Output() mobileMenuToggle = new EventEmitter<void>();
 
   upcomingAlerts: UpcomingAlert[] = [];
   showAlertsPanel = false;
