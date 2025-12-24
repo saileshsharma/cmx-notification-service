@@ -7,11 +7,12 @@ import {
   Alert,
   Platform,
   ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import { Surveyor, NotificationItem } from './src/types';
 import { apiService } from './src/services/api';
 import { storageService } from './src/services/storage';
-import { notificationService } from './src/services/notifications';
+import { notificationService, debugLogger } from './src/services/notifications';
 import { SurveyorPicker } from './src/components/SurveyorPicker';
 import { NotificationList } from './src/components/NotificationList';
 
@@ -23,16 +24,26 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [expoPushToken, setExpoPushToken] = useState<string>('');
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [debugLogs, setDebugLogs] = useState<string[]>([]);
+  const [showDebug, setShowDebug] = useState(true);
 
   useEffect(() => {
+    // Subscribe to debug logs
+    const unsubscribe = debugLogger.subscribe((logs) => {
+      setDebugLogs(logs);
+    });
+
     initializeApp();
 
     return () => {
+      unsubscribe();
       notificationService.stopListening();
     };
   }, []);
 
   const initializeApp = async () => {
+    debugLogger.log('App initializing...');
+
     // Load saved state
     await loadSavedState();
 
@@ -47,30 +58,38 @@ export default function App() {
       setNotifications((prev) => [notification, ...prev].slice(0, 50));
     });
     notificationService.startListening();
+
+    debugLogger.log('App initialization complete');
   };
 
   const loadSavedState = async () => {
+    debugLogger.log('Loading saved state...');
     try {
       const savedSurveyorId = await storageService.getSurveyorId();
       const savedSurveyorName = await storageService.getSurveyorName();
       const savedIsRegistered = await storageService.isDeviceRegistered();
       const savedNotifications = await storageService.getNotifications();
 
+      debugLogger.log(`Saved surveyor ID: ${savedSurveyorId}`);
+      debugLogger.log(`Saved registered: ${savedIsRegistered}`);
+
       if (savedSurveyorId) setSelectedSurveyorId(savedSurveyorId);
       if (savedSurveyorName) setSurveyorName(savedSurveyorName);
       if (savedIsRegistered) setIsRegistered(true);
       if (savedNotifications) setNotifications(savedNotifications);
     } catch (error) {
-      console.error('Error loading saved state:', error);
+      debugLogger.error('Error loading saved state', error);
     }
   };
 
   const loadSurveyors = async () => {
+    debugLogger.log('Loading surveyors from API...');
     try {
       const data = await apiService.getSurveyors();
+      debugLogger.log(`Loaded ${data.length} surveyors`);
       setSurveyors(data);
     } catch (error) {
-      console.error('Error loading surveyors:', error);
+      debugLogger.error('Error loading surveyors', error);
       Alert.alert(
         'Error',
         'Could not connect to server. Make sure the backend is running and you are on the same network.'
@@ -81,8 +100,11 @@ export default function App() {
   };
 
   const setupPushNotifications = async () => {
+    debugLogger.log('Setting up push notifications...');
+
     const granted = await notificationService.requestPermissions();
     if (!granted) {
+      debugLogger.log('Push notification permission denied');
       Alert.alert('Warning', 'Push notification permission denied. You may not receive appointment notifications.');
       return;
     }
@@ -90,13 +112,13 @@ export default function App() {
     const token = await notificationService.getExpoPushToken();
     if (token) {
       setExpoPushToken(token);
-      console.log('Expo Push Token:', token);
+      debugLogger.log(`Token set in state: ${token.substring(0, 30)}...`);
 
       // Check if token changed and we need to re-register
       const savedToken = await storageService.getPushToken();
       const wasRegistered = await storageService.isDeviceRegistered();
       if (wasRegistered && savedToken !== token) {
-        // Token changed, need to re-register
+        debugLogger.log('Token changed, need to re-register');
         setIsRegistered(false);
         await storageService.setDeviceRegistered(false);
         Alert.alert(
@@ -104,6 +126,8 @@ export default function App() {
           'Your push token has changed. Please register your device again.'
         );
       }
+    } else {
+      debugLogger.log('FAILED: No token obtained');
     }
 
     await notificationService.setupAndroidChannel();
@@ -111,8 +135,8 @@ export default function App() {
 
   const handleSurveyorSelect = (id: number | null) => {
     setSelectedSurveyorId(id);
+    debugLogger.log(`Surveyor selected: ${id}`);
     if (!isRegistered) {
-      // Find and store surveyor name
       const surveyor = surveyors.find((s) => s.id === id);
       if (surveyor) {
         setSurveyorName(surveyor.display_name);
@@ -121,17 +145,23 @@ export default function App() {
   };
 
   const registerDevice = async () => {
+    debugLogger.log('Register device button pressed');
+    debugLogger.log(`Selected surveyor: ${selectedSurveyorId}`);
+    debugLogger.log(`Current token: ${expoPushToken ? expoPushToken.substring(0, 30) + '...' : 'NONE'}`);
+
     if (!selectedSurveyorId) {
       Alert.alert('Error', 'Please select a surveyor first');
       return;
     }
 
     if (!expoPushToken) {
-      Alert.alert('Error', 'Push token not available. Please try again.');
+      debugLogger.log('ERROR: Token is empty or null');
+      Alert.alert('Error', 'Push token not available. Please check debug logs below.');
       return;
     }
 
     setIsLoading(true);
+    debugLogger.log('Calling API to register device...');
     try {
       const response = await apiService.registerDevice({
         surveyorId: selectedSurveyorId,
@@ -139,19 +169,23 @@ export default function App() {
         platform: Platform.OS === 'ios' ? 'IOS' : 'ANDROID',
       });
 
+      debugLogger.log(`API response: ${JSON.stringify(response)}`);
+
       if (response.ok || response.success) {
-        // Save registration state
         await storageService.setSurveyorId(selectedSurveyorId);
         await storageService.setSurveyorName(surveyorName || '');
         await storageService.setDeviceRegistered(true);
+        await storageService.setPushToken(expoPushToken);
 
         setIsRegistered(true);
+        debugLogger.log('Device registered successfully');
         Alert.alert('Success', 'Device registered successfully! You will now receive appointment notifications.');
       } else {
+        debugLogger.log(`Registration failed: ${response.message}`);
         Alert.alert('Error', response.message || 'Failed to register device');
       }
     } catch (error) {
-      console.error('Error registering device:', error);
+      debugLogger.error('Error registering device', error);
       Alert.alert('Error', 'Could not register device. Please check your connection.');
     } finally {
       setIsLoading(false);
@@ -172,6 +206,7 @@ export default function App() {
             setSelectedSurveyorId(null);
             setSurveyorName(null);
             await storageService.setDeviceRegistered(false);
+            debugLogger.log('Device unregistered');
             Alert.alert('Success', 'Device unregistered');
           },
         },
@@ -187,7 +222,30 @@ export default function App() {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Surveyor Calendar</Text>
         <Text style={styles.headerSubtitle}>Push Notifications</Text>
+        <TouchableOpacity
+          style={styles.debugToggle}
+          onPress={() => setShowDebug(!showDebug)}
+        >
+          <Text style={styles.debugToggleText}>
+            {showDebug ? 'Hide Debug' : 'Show Debug'}
+          </Text>
+        </TouchableOpacity>
       </View>
+
+      {/* Debug Panel */}
+      {showDebug && (
+        <View style={styles.debugCard}>
+          <Text style={styles.debugTitle}>Debug Logs</Text>
+          <Text style={styles.tokenDisplay}>
+            Token: {expoPushToken ? `${expoPushToken.substring(0, 40)}...` : 'NOT SET'}
+          </Text>
+          <ScrollView style={styles.debugScroll}>
+            {debugLogs.map((log, index) => (
+              <Text key={index} style={styles.debugText}>{log}</Text>
+            ))}
+          </ScrollView>
+        </View>
+      )}
 
       {/* Surveyor Selection Card */}
       <View style={styles.card}>
@@ -235,11 +293,13 @@ export default function App() {
         )}
       </View>
 
-      {/* Notifications Card */}
-      <View style={styles.notificationsCard}>
-        <Text style={styles.cardTitle}>Notification History</Text>
-        <NotificationList notifications={notifications} />
-      </View>
+      {/* Notifications Card - only show if debug is hidden */}
+      {!showDebug && (
+        <View style={styles.notificationsCard}>
+          <Text style={styles.cardTitle}>Notification History</Text>
+          <NotificationList notifications={notifications} />
+        </View>
+      )}
     </View>
   );
 }
@@ -264,6 +324,46 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: 'rgba(255,255,255,0.8)',
     marginTop: 4,
+  },
+  debugToggle: {
+    position: 'absolute',
+    right: 20,
+    top: 50,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 4,
+  },
+  debugToggleText: {
+    color: '#fff',
+    fontSize: 12,
+  },
+  debugCard: {
+    backgroundColor: '#263238',
+    margin: 16,
+    padding: 12,
+    borderRadius: 8,
+    maxHeight: 200,
+  },
+  debugTitle: {
+    color: '#4CAF50',
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  tokenDisplay: {
+    color: '#FFC107',
+    fontSize: 10,
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    marginBottom: 8,
+  },
+  debugScroll: {
+    maxHeight: 140,
+  },
+  debugText: {
+    color: '#B0BEC5',
+    fontSize: 10,
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    marginBottom: 2,
   },
   card: {
     backgroundColor: '#fff',

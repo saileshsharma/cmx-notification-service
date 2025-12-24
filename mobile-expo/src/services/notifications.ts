@@ -16,69 +16,147 @@ Notifications.setNotificationHandler({
   }),
 });
 
+// Debug logger that stores messages for UI display
+class DebugLogger {
+  private logs: string[] = [];
+  private listeners: ((logs: string[]) => void)[] = [];
+
+  log(message: string) {
+    const timestamp = new Date().toLocaleTimeString();
+    const logEntry = `[${timestamp}] ${message}`;
+    console.log('[NotificationService]', message);
+    this.logs.push(logEntry);
+    // Keep only last 50 logs
+    if (this.logs.length > 50) {
+      this.logs = this.logs.slice(-50);
+    }
+    this.notifyListeners();
+  }
+
+  error(message: string, error?: unknown) {
+    const errorStr = error instanceof Error ? error.message : String(error);
+    this.log(`ERROR: ${message} - ${errorStr}`);
+  }
+
+  getLogs(): string[] {
+    return [...this.logs];
+  }
+
+  subscribe(listener: (logs: string[]) => void) {
+    this.listeners.push(listener);
+    return () => {
+      this.listeners = this.listeners.filter(l => l !== listener);
+    };
+  }
+
+  private notifyListeners() {
+    this.listeners.forEach(l => l(this.getLogs()));
+  }
+}
+
+export const debugLogger = new DebugLogger();
+
 class NotificationService {
   private notificationListener: Notifications.Subscription | null = null;
   private responseListener: Notifications.Subscription | null = null;
   private onNotificationReceived: ((notification: NotificationItem) => void) | null = null;
 
   async requestPermissions(): Promise<boolean> {
+    debugLogger.log(`Requesting permissions...`);
+    debugLogger.log(`Is physical device: ${Device.isDevice}`);
+    debugLogger.log(`Device brand: ${Device.brand}`);
+    debugLogger.log(`Device model: ${Device.modelName}`);
+    debugLogger.log(`Platform: ${Platform.OS} ${Platform.Version}`);
+
     if (!Device.isDevice) {
-      console.warn('Push notifications only work on physical devices');
+      debugLogger.log('WARNING: Not a physical device - push notifications will not work');
       return false;
     }
 
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
+    try {
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      debugLogger.log(`Existing permission status: ${existingStatus}`);
 
-    if (existingStatus !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
+      let finalStatus = existingStatus;
+
+      if (existingStatus !== 'granted') {
+        debugLogger.log('Requesting new permissions...');
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+        debugLogger.log(`New permission status: ${status}`);
+      }
+
+      const granted = finalStatus === 'granted';
+      debugLogger.log(`Permissions granted: ${granted}`);
+      return granted;
+    } catch (error) {
+      debugLogger.error('Failed to request permissions', error);
+      return false;
     }
-
-    return finalStatus === 'granted';
   }
 
   async getExpoPushToken(): Promise<string | null> {
+    debugLogger.log('Getting push token...');
+
     if (!Device.isDevice) {
+      debugLogger.log('Cannot get token: not a physical device');
       return null;
     }
 
+    // First try native FCM token
+    debugLogger.log('Attempting to get native FCM token...');
     try {
-      // Get the native FCM token (for Firebase Cloud Messaging)
-      // This is the token format that Firebase Admin SDK expects
       const tokenData = await Notifications.getDevicePushTokenAsync();
+      debugLogger.log(`Native token type: ${tokenData.type}`);
+      debugLogger.log(`Native token data: ${tokenData.data.substring(0, 50)}...`);
 
-      // Save the token
       await storageService.setPushToken(tokenData.data);
+      debugLogger.log('FCM token saved to storage');
 
-      console.log('FCM Token obtained:', tokenData.data);
       return tokenData.data;
     } catch (error) {
-      console.error('Error getting push token:', error);
+      debugLogger.error('Failed to get native FCM token', error);
+    }
 
-      // Fallback: try Expo push token if FCM fails
-      try {
-        const expoTokenData = await Notifications.getExpoPushTokenAsync({
-          projectId: Constants.expoConfig?.extra?.eas?.projectId,
-        });
-        await storageService.setPushToken(expoTokenData.data);
-        console.log('Expo Push Token obtained:', expoTokenData.data);
-        return expoTokenData.data;
-      } catch (expoError) {
-        console.error('Error getting Expo push token:', expoError);
-        return null;
+    // Fallback to Expo push token
+    debugLogger.log('Falling back to Expo Push Token...');
+    try {
+      const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+      debugLogger.log(`Project ID: ${projectId || 'NOT FOUND'}`);
+
+      if (!projectId) {
+        debugLogger.log('WARNING: No project ID found in app config');
       }
+
+      const expoTokenData = await Notifications.getExpoPushTokenAsync({
+        projectId: projectId,
+      });
+
+      debugLogger.log(`Expo token: ${expoTokenData.data.substring(0, 30)}...`);
+      await storageService.setPushToken(expoTokenData.data);
+      debugLogger.log('Expo token saved to storage');
+
+      return expoTokenData.data;
+    } catch (expoError) {
+      debugLogger.error('Failed to get Expo push token', expoError);
+      return null;
     }
   }
 
   async setupAndroidChannel(): Promise<void> {
     if (Platform.OS === 'android') {
-      await Notifications.setNotificationChannelAsync('appointments', {
-        name: 'Appointments',
-        importance: Notifications.AndroidImportance.MAX,
-        vibrationPattern: [0, 250, 250, 250],
-        lightColor: '#1976D2',
-      });
+      debugLogger.log('Setting up Android notification channel...');
+      try {
+        await Notifications.setNotificationChannelAsync('appointments', {
+          name: 'Appointments',
+          importance: Notifications.AndroidImportance.MAX,
+          vibrationPattern: [0, 250, 250, 250],
+          lightColor: '#1976D2',
+        });
+        debugLogger.log('Android channel created successfully');
+      } catch (error) {
+        debugLogger.error('Failed to create Android channel', error);
+      }
     }
   }
 
@@ -87,9 +165,12 @@ class NotificationService {
   }
 
   startListening(): void {
+    debugLogger.log('Starting notification listeners...');
+
     // Listen for incoming notifications
     this.notificationListener = Notifications.addNotificationReceivedListener(
       async (notification) => {
+        debugLogger.log(`Notification received: ${notification.request.content.title}`);
         const data = notification.request.content.data;
 
         const type: NotificationType =
@@ -117,10 +198,11 @@ class NotificationService {
     // Listen for notification taps
     this.responseListener = Notifications.addNotificationResponseReceivedListener(
       (response) => {
-        console.log('Notification tapped:', response);
-        // Handle notification tap - could navigate to appointment details
+        debugLogger.log(`Notification tapped: ${response.notification.request.content.title}`);
       }
     );
+
+    debugLogger.log('Notification listeners started');
   }
 
   stopListening(): void {
@@ -132,6 +214,7 @@ class NotificationService {
       this.responseListener.remove();
       this.responseListener = null;
     }
+    debugLogger.log('Notification listeners stopped');
   }
 
   getNotificationColor(type: NotificationType): string {
