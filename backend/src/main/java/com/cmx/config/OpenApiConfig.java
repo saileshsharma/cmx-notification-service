@@ -22,7 +22,7 @@ public class OpenApiConfig {
         return new OpenAPI()
                 .info(new Info()
                         .title("Surveyor Calendar API")
-                        .version("1.0.0")
+                        .version("1.0.1")
                         .description("REST API for managing surveyor appointments, scheduling, and notifications")
                         .contact(new Contact()
                                 .name("CMX Support")
