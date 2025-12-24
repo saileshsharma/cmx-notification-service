@@ -1,20 +1,22 @@
 package com.cmx.service;
 
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.http.*;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
+import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Base64;
 
 @Service
 public class EmailService {
@@ -23,22 +25,30 @@ public class EmailService {
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("EEEE, MMM d, yyyy");
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("h:mm a");
 
-    @Autowired(required = false)
-    private JavaMailSender mailSender;
-
-    @Autowired
-    private TemplateEngine templateEngine;
-
-    @Autowired
-    private NotificationAuditService auditService;
+    private final TemplateEngine templateEngine;
+    private final NotificationAuditService auditService;
+    private final RestTemplate restTemplate;
 
     @Value("${email.enabled:false}")
     private boolean emailEnabled;
 
-    @Value("${email.from:noreply@appointmentcalendar.com}")
+    @Value("${email.from:noreply@example.com}")
     private String fromEmail;
 
-    private Long currentSurveyorId;
+    @Value("${mailgun.api.key:}")
+    private String mailgunApiKey;
+
+    @Value("${mailgun.domain:}")
+    private String mailgunDomain;
+
+    @Value("${mailgun.api.url:https://api.mailgun.net/v3}")
+    private String mailgunApiUrl;
+
+    public EmailService(@Qualifier("templateEngine") TemplateEngine templateEngine, NotificationAuditService auditService) {
+        this.templateEngine = templateEngine;
+        this.auditService = auditService;
+        this.restTemplate = new RestTemplate();
+    }
 
     /**
      * Send appointment created email
@@ -96,43 +106,54 @@ public class EmailService {
     }
 
     /**
-     * Send email with audit logging
+     * Send email via Mailgun HTTP API with audit logging
      */
-    private void sendEmailWithAudit(Long surveyorId, String to, String subject, String body, String eventType) {
+    private void sendEmailWithAudit(Long surveyorId, String to, String subject, String htmlBody, String eventType) {
         if (!emailEnabled) {
             log.info("Email service disabled. Would send email to: {}", to);
-            log.info("Subject: {}", subject);
             auditService.logEmailNotification(surveyorId, eventType, subject, to, "DISABLED", "Email service disabled", null);
             return;
         }
 
-        if (mailSender == null) {
-            log.warn("JavaMailSender not configured. Email not sent to: {}", to);
-            log.info("Subject: {}", subject);
-            auditService.logEmailNotification(surveyorId, eventType, subject, to, "NOT_CONFIGURED", "JavaMailSender not configured", null);
+        if (mailgunApiKey == null || mailgunApiKey.isBlank() || mailgunDomain == null || mailgunDomain.isBlank()) {
+            log.warn("Mailgun not configured. Set MAILGUN_API_KEY and MAILGUN_DOMAIN environment variables.");
+            auditService.logEmailNotification(surveyorId, eventType, subject, to, "NOT_CONFIGURED", "Mailgun API key or domain not configured", null);
             return;
         }
 
         try {
-            log.info("Sending email to: {}", to);
+            log.info("Sending email via Mailgun to: {}", to);
             log.info("Subject: {}", subject);
 
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom(fromEmail);
-            helper.setTo(to);
-            helper.setSubject(subject);
-            helper.setText(body, true); // true = HTML
+            String url = mailgunApiUrl + "/" + mailgunDomain + "/messages";
 
-            mailSender.send(message);
+            // Prepare form data
+            MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+            formData.add("from", fromEmail);
+            formData.add("to", to);
+            formData.add("subject", subject);
+            formData.add("html", htmlBody);
 
-            log.info("Email sent successfully to: {}", to);
-            auditService.logEmailNotification(surveyorId, eventType, subject, to, "SENT", null, null);
-        } catch (MessagingException e) {
-            log.error("Failed to send email to {}: {}", to, e.getMessage());
-            auditService.logEmailNotification(surveyorId, eventType, subject, to, "FAILED", e.getMessage(), null);
+            // Prepare headers with Basic Auth
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+            String auth = "api:" + mailgunApiKey;
+            String encodedAuth = Base64.getEncoder().encodeToString(auth.getBytes(StandardCharsets.UTF_8));
+            headers.set("Authorization", "Basic " + encodedAuth);
+
+            HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(formData, headers);
+
+            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, request, String.class);
+
+            if (response.getStatusCode().is2xxSuccessful()) {
+                log.info("Email sent successfully to: {} - Response: {}", to, response.getBody());
+                auditService.logEmailNotification(surveyorId, eventType, subject, to, "SENT", null, response.getBody());
+            } else {
+                log.error("Failed to send email to {}: {} - {}", to, response.getStatusCode(), response.getBody());
+                auditService.logEmailNotification(surveyorId, eventType, subject, to, "FAILED", response.getBody(), null);
+            }
         } catch (Exception e) {
-            log.error("Unexpected error sending email to {}: {}", to, e.getMessage());
+            log.error("Error sending email to {}: {}", to, e.getMessage());
             auditService.logEmailNotification(surveyorId, eventType, subject, to, "FAILED", e.getMessage(), null);
         }
     }
