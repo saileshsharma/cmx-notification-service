@@ -81,7 +81,7 @@ public class MobileController {
     @ApiResponse(responseCode = "200", description = "Appointments retrieved successfully")
     @GetMapping("/appointments/{surveyorId}")
     public ResponseEntity<List<Map<String, Object>>> getAppointments(
-            @Parameter(description = "Surveyor ID") @PathVariable Long surveyorId,
+            @Parameter(description = "Surveyor ID") @PathVariable("surveyorId") Long surveyorId,
             @Parameter(description = "Only return upcoming appointments") @RequestParam(value = "upcoming", defaultValue = "true") boolean upcomingOnly) {
         return ResponseEntity.ok(availabilityService.getAppointmentsForSurveyor(surveyorId, upcomingOnly));
     }
@@ -93,7 +93,7 @@ public class MobileController {
     @ApiResponse(responseCode = "200", description = "Response recorded successfully")
     @PostMapping("/appointments/{appointmentId}/respond")
     public ResponseEntity<Map<String, Object>> respondToAppointment(
-            @Parameter(description = "Appointment ID") @PathVariable Long appointmentId,
+            @Parameter(description = "Appointment ID") @PathVariable("appointmentId") Long appointmentId,
             @RequestBody Map<String, Object> request) {
         Long surveyorId = ((Number) request.get("surveyorId")).longValue();
         String response = (String) request.get("response"); // ACCEPTED or REJECTED
@@ -179,7 +179,7 @@ public class MobileController {
     @ApiResponse(responseCode = "200", description = "Surveyor details retrieved successfully")
     @GetMapping("/surveyor/{surveyorId}")
     public ResponseEntity<Map<String, Object>> getSurveyorDetails(
-            @Parameter(description = "Surveyor ID") @PathVariable Long surveyorId) {
+            @Parameter(description = "Surveyor ID") @PathVariable("surveyorId") Long surveyorId) {
         return ResponseEntity.ok(surveyorService.getSurveyorDetails(surveyorId));
     }
 }

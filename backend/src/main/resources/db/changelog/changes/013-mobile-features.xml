@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="013-mobile-features" author="system">
+
+        <!-- Add response tracking to surveyor_availability -->
+        <addColumn tableName="surveyor_availability">
+            <column name="response_status" type="VARCHAR(16)" defaultValue="PENDING">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+
+        <addColumn tableName="surveyor_availability">
+            <column name="responded_at" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+
+        <!-- Add current location and status tracking to surveyor -->
+        <addColumn tableName="surveyor">
+            <column name="current_lat" type="DECIMAL(9,6)">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+
+        <addColumn tableName="surveyor">
+            <column name="current_lng" type="DECIMAL(9,6)">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+
+        <addColumn tableName="surveyor">
+            <column name="current_status" type="VARCHAR(16)" defaultValue="AVAILABLE">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+
+        <addColumn tableName="surveyor">
+            <column name="last_location_update" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+
+        <!-- Create index for response status queries -->
+        <createIndex indexName="ix_av_response_status" tableName="surveyor_availability">
+            <column name="response_status"/>
+        </createIndex>
+
+    </changeSet>
+
+</databaseChangeLog>
