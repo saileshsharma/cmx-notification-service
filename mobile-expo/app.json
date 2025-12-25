@@ -14,7 +14,8 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.ch.cmx"
+      "bundleIdentifier": "com.ch.cmx",
+      "buildNumber": "2"
     },
     "android": {
       "adaptiveIcon": {
@@ -45,6 +46,5 @@
       }
     },
     "owner": "saileshsharma"
-    
   }
 }
