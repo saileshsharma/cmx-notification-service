@@ -288,6 +288,15 @@ export class AppComponent implements OnInit {
   notesModalSurveyorName = '';
   notesModalContent = '';
 
+  // Confirmation/Alert Modal
+  showConfirmModal = false;
+  confirmModalType: 'confirm' | 'alert' | 'error' | 'warning' = 'confirm';
+  confirmModalTitle = '';
+  confirmModalMessage = '';
+  confirmModalConfirmText = 'Confirm';
+  confirmModalCancelText = 'Cancel';
+  private confirmModalCallback: (() => void) | null = null;
+
   calendarOptions: CalendarOptions = {
     plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
     headerToolbar: {
@@ -359,6 +368,38 @@ export class AppComponent implements OnInit {
 
   removeToast(id: number) {
     this.toasts = this.toasts.filter(t => t.id !== id);
+  }
+
+  // ============ CONFIRMATION/ALERT MODAL ============
+  showConfirm(title: string, message: string, onConfirm: () => void, confirmText = 'Confirm', cancelText = 'Cancel') {
+    this.confirmModalType = 'confirm';
+    this.confirmModalTitle = title;
+    this.confirmModalMessage = message;
+    this.confirmModalConfirmText = confirmText;
+    this.confirmModalCancelText = cancelText;
+    this.confirmModalCallback = onConfirm;
+    this.showConfirmModal = true;
+  }
+
+  showAlert(title: string, message: string, type: 'alert' | 'error' | 'warning' = 'alert') {
+    this.confirmModalType = type;
+    this.confirmModalTitle = title;
+    this.confirmModalMessage = message;
+    this.confirmModalConfirmText = 'OK';
+    this.confirmModalCallback = null;
+    this.showConfirmModal = true;
+  }
+
+  closeConfirmModal() {
+    this.showConfirmModal = false;
+    this.confirmModalCallback = null;
+  }
+
+  confirmModalAction() {
+    if (this.confirmModalCallback) {
+      this.confirmModalCallback();
+    }
+    this.closeConfirmModal();
   }
 
   // ============ VIEW TOGGLE ============
@@ -1003,7 +1044,7 @@ export class AppComponent implements OnInit {
       },
       error: (e) => {
         console.error(e);
-        alert('Failed to create appointment');
+        this.showAlert('Error', 'Failed to create appointment', 'error');
       }
     });
   }
@@ -1046,7 +1087,7 @@ export class AppComponent implements OnInit {
 
   confirmUpdate() {
     if (this.editIsPast) {
-      alert('Cannot modify past appointments.');
+      this.showAlert('Cannot Modify', 'Cannot modify past appointments.', 'warning');
       return;
     }
 
@@ -1066,30 +1107,36 @@ export class AppComponent implements OnInit {
       },
       error: (e) => {
         console.error(e);
-        alert('Failed to update appointment');
+        this.showAlert('Error', 'Failed to update appointment', 'error');
       }
     });
   }
 
   confirmDelete() {
     if (this.editIsPast) {
-      alert('Cannot delete past appointments.');
+      this.showAlert('Cannot Delete', 'Cannot delete past appointments.', 'warning');
       return;
     }
 
-    if (confirm('Are you sure you want to delete this appointment?')) {
-      this.http.delete(`${this.apiBase}/availability/${this.editId}`).subscribe({
-        next: () => {
-          this.showEditModal = false;
-          this.clearAppointmentCache(true); // Clear FE cache to sync with BE
-          this.refreshEvents();
-        },
-        error: (e) => {
-          console.error(e);
-          alert('Failed to delete appointment');
-        }
-      });
-    }
+    this.showConfirm(
+      'Delete Appointment',
+      'Are you sure you want to delete this appointment?',
+      () => {
+        this.http.delete(`${this.apiBase}/availability/${this.editId}`).subscribe({
+          next: () => {
+            this.showEditModal = false;
+            this.clearAppointmentCache(true); // Clear FE cache to sync with BE
+            this.refreshEvents();
+          },
+          error: (e) => {
+            console.error(e);
+            this.showAlert('Error', 'Failed to delete appointment', 'error');
+          }
+        });
+      },
+      'Delete',
+      'Cancel'
+    );
   }
 
   // DRAG & RESIZE with Confirmation (Alt+Drag to Copy)
@@ -1104,14 +1151,14 @@ export class AppComponent implements OnInit {
     // Check if this is a past event
     if (event.extendedProps['isPast']) {
       dropInfo.revert();
-      alert('Cannot reschedule past appointments.');
+      this.showAlert('Cannot Reschedule', 'Cannot reschedule past appointments.', 'warning');
       return;
     }
 
     // Check if trying to move/copy to past
     if (this.isPastDate(event.start!)) {
       dropInfo.revert();
-      alert('Cannot ' + (isCopyMode ? 'copy' : 'reschedule') + ' appointment to a past date/time.');
+      this.showAlert('Cannot ' + (isCopyMode ? 'Copy' : 'Reschedule'), 'Cannot ' + (isCopyMode ? 'copy' : 'reschedule') + ' appointment to a past date/time.', 'warning');
       return;
     }
 
@@ -1164,7 +1211,7 @@ export class AppComponent implements OnInit {
     // Check if this is a past event
     if (event.extendedProps['isPast']) {
       resizeInfo.revert();
-      alert('Cannot resize past appointments.');
+      this.showAlert('Cannot Resize', 'Cannot resize past appointments.', 'warning');
       return;
     }
 
@@ -1217,7 +1264,7 @@ export class AppComponent implements OnInit {
         this.showRescheduleModal = false;
         this.reschedulePayload = null;
         this.rescheduleRevertFn = null;
-        alert('Failed to reschedule appointment');
+        this.showAlert('Error', 'Failed to reschedule appointment', 'error');
       }
     });
   }
