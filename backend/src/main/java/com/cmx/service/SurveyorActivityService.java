@@ -2,9 +2,10 @@ package com.cmx.service;
 
 import com.cmx.model.Surveyor;
 import com.cmx.model.SurveyorActivityLog;
+import com.cmx.model.JobAssignment;
 import com.cmx.repository.SurveyorActivityLogRepository;
 import com.cmx.repository.SurveyorRepository;
-import com.cmx.repository.AppointmentRepository;
+import com.cmx.repository.JobAssignmentRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
@@ -23,7 +24,7 @@ public class SurveyorActivityService {
 
     private final SurveyorActivityLogRepository activityLogRepository;
     private final SurveyorRepository surveyorRepository;
-    private final AppointmentRepository appointmentRepository;
+    private final JobAssignmentRepository jobAssignmentRepository;
     private final SseService sseService;
 
     @Value("${app.dispatcher.email:dispatcher@example.com}")
@@ -32,11 +33,11 @@ public class SurveyorActivityService {
     public SurveyorActivityService(
             SurveyorActivityLogRepository activityLogRepository,
             SurveyorRepository surveyorRepository,
-            AppointmentRepository appointmentRepository,
+            JobAssignmentRepository jobAssignmentRepository,
             SseService sseService) {
         this.activityLogRepository = activityLogRepository;
         this.surveyorRepository = surveyorRepository;
-        this.appointmentRepository = appointmentRepository;
+        this.jobAssignmentRepository = jobAssignmentRepository;
         this.sseService = sseService;
     }
 
@@ -144,7 +145,7 @@ public class SurveyorActivityService {
     }
 
     /**
-     * Enrich activity logs with surveyor and appointment details
+     * Enrich activity logs with surveyor and job details
      */
     private void enrichActivityLogs(List<SurveyorActivityLog> logs) {
         for (SurveyorActivityLog log : logs) {
@@ -154,10 +155,10 @@ public class SurveyorActivityService {
                 log.setSurveyorCode(surveyor.getCode());
             });
 
-            // Get appointment title if applicable
+            // Get job/appointment details if applicable
             if (log.getAppointmentId() != null) {
-                appointmentRepository.findById(log.getAppointmentId()).ifPresent(appointment -> {
-                    log.setAppointmentTitle(appointment.getTitle());
+                jobAssignmentRepository.findById(log.getAppointmentId()).ifPresent(job -> {
+                    log.setAppointmentTitle("Job #" + job.getFnolId());
                 });
             }
         }
@@ -191,8 +192,8 @@ public class SurveyorActivityService {
 
             if (appointmentId != null) {
                 eventData.put("appointmentId", appointmentId);
-                appointmentRepository.findById(appointmentId).ifPresent(appointment -> {
-                    eventData.put("appointmentTitle", appointment.getTitle());
+                jobAssignmentRepository.findById(appointmentId).ifPresent(job -> {
+                    eventData.put("appointmentTitle", "Job #" + job.getFnolId());
                 });
             }
 

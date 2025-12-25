@@ -61,7 +61,7 @@ export const InspectionScreen: React.FC<InspectionScreenProps> = ({
       {/* Active Job Banner */}
       {currentJob ? (
         <View style={[styles.activeJobBanner, shadows.md]}>
-          <LinearGradient colors={gradients.primaryDark} style={styles.activeJobGradient}>
+          <LinearGradient colors={gradients.primaryVibrant} style={styles.activeJobGradient}>
             <View style={styles.activeJobContent}>
               <View style={styles.activeJobIcon}>
                 <Ionicons name="car" size={24} color={colors.white} />
@@ -189,7 +189,7 @@ export const InspectionScreen: React.FC<InspectionScreenProps> = ({
 
       {/* Submit Button */}
       <TouchableOpacity style={styles.submitButton} onPress={onSubmit}>
-        <LinearGradient colors={gradients.success} style={styles.submitGradient}>
+        <LinearGradient colors={gradients.successVibrant} style={styles.submitGradient}>
           <Ionicons name="cloud-upload" size={24} color={colors.white} />
           <Text style={styles.submitText}>Submit Inspection Report</Text>
         </LinearGradient>

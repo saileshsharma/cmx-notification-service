@@ -53,7 +53,7 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Header Stats */}
       <View style={styles.statsContainer}>
-        <LinearGradient colors={gradients.primary} style={styles.statsCard}>
+        <LinearGradient colors={gradients.ocean} style={styles.statsCard}>
           <View style={styles.statsContent}>
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>{inspectionHistory.length}</Text>
@@ -98,7 +98,7 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({
           >
             <View style={styles.cardContent}>
               <View style={styles.cardIcon}>
-                <LinearGradient colors={gradients.primary} style={styles.iconGradient}>
+                <LinearGradient colors={gradients.purpleVibrant} style={styles.iconGradient}>
                   <Ionicons name="document-text" size={24} color={colors.white} />
                 </LinearGradient>
               </View>

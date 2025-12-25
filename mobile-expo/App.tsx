@@ -24,6 +24,7 @@ import { apiService } from './src/services/api';
 import { storageService } from './src/services/storage';
 import { notificationService } from './src/services/notifications';
 import { locationService } from './src/services/location';
+import { imageUploadService, UploadProgress } from './src/services/imageUpload';
 
 // Screens
 import {
@@ -166,6 +167,7 @@ export default function App() {
   // Network state
   const [isOnline, setIsOnline] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null);
 
   // Animation refs
   const badgeScale = useRef(new Animated.Value(1)).current;
@@ -585,23 +587,32 @@ export default function App() {
 
     Alert.alert(
       'Submit Inspection',
-      `You have ${capturedPhotos.length} photos and ${inspectionNotes.length > 0 ? 'notes' : 'no notes'}. Submit now?`,
+      `You have ${capturedPhotos.length} photos${signatureData ? ' and signature' : ''}${inspectionNotes.length > 0 ? ' and notes' : ''}. Upload and submit now?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Submit',
           onPress: async () => {
             setIsUploading(true);
+            setUploadProgress({ uploaded: 0, total: capturedPhotos.length + (signatureData ? 1 : 0), percentage: 0 });
 
             try {
-              // Simulate upload
-              await new Promise(resolve => setTimeout(resolve, 2000));
+              // Upload photos and signature to ImgBB
+              const uploadResult = await imageUploadService.uploadInspectionData(
+                capturedPhotos,
+                signatureData || undefined,
+                (progress) => setUploadProgress(progress)
+              );
+
+              if (uploadResult.errors.length > 0) {
+                console.warn('Some uploads failed:', uploadResult.errors);
+              }
 
               const job: CompletedJob = {
                 appointment: activeJob || selectedAppointment!,
-                photos: [...capturedPhotos],
+                photos: uploadResult.photoUrls.length > 0 ? uploadResult.photoUrls : [...capturedPhotos],
                 notes: inspectionNotes,
-                signature: !!signatureData,
+                signature: !!uploadResult.signatureUrl || !!signatureData,
                 completedAt: new Date(),
               };
 
@@ -616,6 +627,8 @@ export default function App() {
                 vehicle: job.appointment.title || 'Vehicle Inspection',
                 status: 'completed',
                 photos: capturedPhotos.length,
+                photoUrls: uploadResult.photoUrls,
+                signatureUrl: uploadResult.signatureUrl,
               };
               setInspectionHistory(prev => [historyEntry, ...prev]);
               storageService.addInspectionHistory(historyEntry);
@@ -630,9 +643,11 @@ export default function App() {
 
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             } catch (error) {
-              Alert.alert('Upload Failed', 'Could not upload photos. Please try again.');
+              console.error('Upload error:', error);
+              Alert.alert('Upload Failed', 'Could not upload photos. Please check your connection and try again.');
             } finally {
               setIsUploading(false);
+              setUploadProgress(null);
             }
           }
         },
@@ -689,10 +704,11 @@ export default function App() {
     setActiveTab('inspection');
   };
 
-  const handleSignatureConfirm = () => {
-    setSignatureData('captured');
+  const handleSignatureConfirm = (signatureBase64: string) => {
+    setSignatureData(signatureBase64);
     setShowSignatureModal(false);
     toggleInspectionStep('7');
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
   // ==================== HELPER FUNCTIONS ====================
@@ -854,7 +870,7 @@ export default function App() {
       />
 
       {/* Upload Overlay */}
-      <UploadingOverlay visible={isUploading} />
+      <UploadingOverlay visible={isUploading} progress={uploadProgress} />
     </View>
   );
 }

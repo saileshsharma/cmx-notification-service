@@ -52,10 +52,10 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   formatTime,
 }) => {
   const quickStatusOptions = [
-    { key: 'on_way' as QuickStatus, icon: 'car', label: 'On My Way', color: colors.primary },
-    { key: 'arrived' as QuickStatus, icon: 'location', label: 'Arrived', color: colors.success },
-    { key: 'inspecting' as QuickStatus, icon: 'search', label: 'Inspecting', color: colors.warning },
-    { key: 'completed' as QuickStatus, icon: 'checkmark-circle', label: 'Completed', color: colors.purple },
+    { key: 'on_way' as QuickStatus, icon: 'car-sport', label: 'On My Way', color: colors.primary, gradient: gradients.primary },
+    { key: 'arrived' as QuickStatus, icon: 'location', label: 'Arrived', color: colors.success, gradient: gradients.success },
+    { key: 'inspecting' as QuickStatus, icon: 'search', label: 'Inspecting', color: colors.warning, gradient: gradients.warning },
+    { key: 'completed' as QuickStatus, icon: 'checkmark-done-circle', label: 'Completed', color: colors.purple, gradient: gradients.purple },
   ];
 
   return (
@@ -86,7 +86,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
             imageStyle={styles.nextApptBackgroundImage}
           >
             <LinearGradient
-              colors={['rgba(30, 64, 175, 0.95)', 'rgba(59, 130, 246, 0.9)']}
+              colors={['rgba(0, 102, 255, 0.95)', 'rgba(123, 97, 255, 0.9)']}
               style={styles.nextApptGradient}
             >
               <View style={styles.nextApptContent}>

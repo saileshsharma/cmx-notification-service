@@ -49,7 +49,7 @@ export const WeatherCard: React.FC<WeatherCardProps> = ({ weather }) => {
         imageStyle={styles.image}
       >
         <LinearGradient
-          colors={['rgba(14, 165, 233, 0.85)', 'rgba(2, 132, 199, 0.9)']}
+          colors={['rgba(0, 212, 255, 0.85)', 'rgba(0, 102, 255, 0.92)']}
           style={styles.overlay}
         >
           <View style={styles.content}>

@@ -77,7 +77,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
       {/* Chat Header */}
       <View style={[styles.header, shadows.sm]}>
         <View style={styles.avatarContainer}>
-          <LinearGradient colors={gradients.primary} style={styles.avatar}>
+          <LinearGradient colors={gradients.ocean} style={styles.avatar}>
             <Ionicons name="headset" size={24} color={colors.white} />
           </LinearGradient>
           <View style={styles.onlineIndicator} />

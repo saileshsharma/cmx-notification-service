@@ -41,12 +41,12 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <LinearGradient colors={gradients.primaryDark} style={styles.header}>
+    <LinearGradient colors={gradients.darkPremium} style={styles.header}>
       <View style={styles.headerContent}>
         <View style={styles.profileSection}>
-          <View style={styles.avatar}>
+          <LinearGradient colors={gradients.primaryVibrant} style={styles.avatar}>
             <Text style={styles.avatarText}>{getAvatarInitials(surveyorName)}</Text>
-          </View>
+          </LinearGradient>
           <View style={styles.greetingContainer}>
             <Text style={styles.greeting}>Welcome back,</Text>
             <Text style={styles.userName}>{surveyorName || 'Surveyor'}</Text>

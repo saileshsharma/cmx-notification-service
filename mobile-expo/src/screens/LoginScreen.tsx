@@ -51,7 +51,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, isLoading }) 
         imageStyle={styles.backgroundImageStyle}
       >
         <LinearGradient
-          colors={['rgba(15, 23, 42, 0.85)', 'rgba(30, 41, 59, 0.95)', 'rgba(51, 65, 85, 0.98)']}
+          colors={['rgba(0, 71, 179, 0.92)', 'rgba(31, 41, 55, 0.95)', 'rgba(17, 24, 39, 0.98)']}
           style={styles.overlay}
         >
           <KeyboardAvoidingView
