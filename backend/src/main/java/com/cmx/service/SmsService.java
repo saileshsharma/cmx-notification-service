@@ -14,6 +14,8 @@ import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.bulkhead.annotation.Bulkhead;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
@@ -153,7 +155,10 @@ public class SmsService {
 
     /**
      * Send SMS with retry logic (3 attempts with exponential backoff)
+     * Protected by circuit breaker to prevent cascading failures
      */
+    @CircuitBreaker(name = "smsService", fallbackMethod = "smsFallback")
+    @Bulkhead(name = "notificationBulkhead")
     @Retryable(
             retryFor = {ApiException.class},
             maxAttempts = 3,
@@ -176,6 +181,14 @@ public class SmsService {
     public String recoverSmsSend(ApiException e, String to, String message) {
         log.error("All retry attempts failed for SMS to {}: [{}] {}", to, e.getCode(), e.getMessage());
         throw e;
+    }
+
+    /**
+     * Fallback method when circuit breaker is open
+     */
+    public String smsFallback(String to, String message, Throwable t) {
+        log.warn("Circuit breaker open for SMS service. Rejecting request to {}: {}", to, t.getMessage());
+        throw new RuntimeException("SMS service temporarily unavailable. Circuit breaker is open.", t);
     }
 
     /**

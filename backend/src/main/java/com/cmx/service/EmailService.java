@@ -9,6 +9,8 @@ import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.bulkhead.annotation.Bulkhead;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClientException;
@@ -137,7 +139,10 @@ public class EmailService {
 
     /**
      * Send email with retry logic (3 attempts with exponential backoff)
+     * Protected by circuit breaker to prevent cascading failures
      */
+    @CircuitBreaker(name = "emailService", fallbackMethod = "emailFallback")
+    @Bulkhead(name = "notificationBulkhead")
     @Retryable(
             retryFor = {RestClientException.class},
             maxAttempts = 3,
@@ -177,6 +182,14 @@ public class EmailService {
     public String recoverEmailSend(RestClientException e, String to, String subject, String htmlBody) {
         log.error("All retry attempts failed for email to {}: {}", to, e.getMessage());
         throw e;
+    }
+
+    /**
+     * Fallback method when circuit breaker is open
+     */
+    public String emailFallback(String to, String subject, String htmlBody, Throwable t) {
+        log.warn("Circuit breaker open for email service. Rejecting request to {}: {}", to, t.getMessage());
+        throw new RuntimeException("Email service temporarily unavailable. Circuit breaker is open.", t);
     }
 
     /**
