@@ -9,19 +9,25 @@ import {
   ActivityIndicator,
   ScrollView,
   RefreshControl,
+  TextInput,
+  KeyboardAvoidingView,
 } from 'react-native';
-import { Surveyor, NotificationItem, Appointment, SurveyorStatus, AppointmentResponseStatus } from './src/types';
+import { NotificationItem, Appointment, SurveyorStatus, AppointmentResponseStatus, LoginResponse } from './src/types';
 import { apiService } from './src/services/api';
 import { storageService } from './src/services/storage';
 import { notificationService, debugLogger } from './src/services/notifications';
 import { locationService } from './src/services/location';
-import { SurveyorPicker } from './src/components/SurveyorPicker';
 import { NotificationList } from './src/components/NotificationList';
 
 type TabType = 'appointments' | 'notifications' | 'debug';
 
 export default function App() {
-  const [surveyors, setSurveyors] = useState<Surveyor[]>([]);
+  // Login state
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+
+  // Surveyor state
   const [selectedSurveyorId, setSelectedSurveyorId] = useState<number | null>(null);
   const [surveyorName, setSurveyorName] = useState<string | null>(null);
   const [isRegistered, setIsRegistered] = useState(false);
@@ -66,9 +72,6 @@ export default function App() {
     // Load saved state
     await loadSavedState();
 
-    // Load surveyors from API
-    await loadSurveyors();
-
     // Setup push notifications
     await setupPushNotifications();
 
@@ -82,6 +85,7 @@ export default function App() {
     });
     notificationService.startListening();
 
+    setIsLoading(false);
     debugLogger.log('App initialization complete');
   };
 
@@ -105,20 +109,50 @@ export default function App() {
     }
   };
 
-  const loadSurveyors = async () => {
-    debugLogger.log('Loading surveyors from API...');
+  const handleLogin = async () => {
+    if (!username.trim() || !password.trim()) {
+      Alert.alert('Error', 'Please enter both username and password');
+      return;
+    }
+
+    setIsLoggingIn(true);
+    debugLogger.log(`Attempting login for: ${username}`);
+
     try {
-      const data = await apiService.getSurveyors();
-      debugLogger.log(`Loaded ${data.length} surveyors`);
-      setSurveyors(data);
+      const response = await apiService.login({
+        username: username.trim(),
+        password: password.trim(),
+        pushToken: expoPushToken || undefined,
+        platform: Platform.OS === 'ios' ? 'IOS' : 'ANDROID',
+      });
+
+      if (response.success && response.surveyor) {
+        debugLogger.log('Login successful');
+
+        // Save to storage
+        await storageService.setSurveyorId(response.surveyor.id);
+        await storageService.setSurveyorName(response.surveyor.displayName);
+        await storageService.setDeviceRegistered(true);
+        if (expoPushToken) {
+          await storageService.setPushToken(expoPushToken);
+        }
+
+        // Update state
+        setSelectedSurveyorId(response.surveyor.id);
+        setSurveyorName(response.surveyor.displayName);
+        setIsRegistered(true);
+        setCurrentStatus(response.surveyor.currentStatus as SurveyorStatus || 'AVAILABLE');
+
+        Alert.alert('Success', `Welcome, ${response.surveyor.displayName}!`);
+      } else {
+        debugLogger.log(`Login failed: ${response.message}`);
+        Alert.alert('Login Failed', response.message || 'Invalid username or password');
+      }
     } catch (error) {
-      debugLogger.error('Error loading surveyors', error);
-      Alert.alert(
-        'Error',
-        'Could not connect to server. Make sure the backend is running and you are on the same network.'
-      );
+      debugLogger.error('Login error', error);
+      Alert.alert('Error', 'Could not connect to server. Please check your connection.');
     } finally {
-      setIsLoading(false);
+      setIsLoggingIn(false);
     }
   };
 
@@ -182,73 +216,14 @@ export default function App() {
     await notificationService.setupAndroidChannel();
   };
 
-  const handleSurveyorSelect = (id: number | null) => {
-    setSelectedSurveyorId(id);
-    debugLogger.log(`Surveyor selected: ${id}`);
-    if (!isRegistered) {
-      const surveyor = surveyors.find((s) => s.id === id);
-      if (surveyor) {
-        setSurveyorName(surveyor.display_name);
-      }
-    }
-  };
-
-  const registerDevice = async () => {
-    debugLogger.log('Register device button pressed');
-    debugLogger.log(`Selected surveyor: ${selectedSurveyorId}`);
-    debugLogger.log(`Current token: ${expoPushToken ? expoPushToken.substring(0, 30) + '...' : 'NONE'}`);
-
-    if (!selectedSurveyorId) {
-      Alert.alert('Error', 'Please select a surveyor first');
-      return;
-    }
-
-    if (!expoPushToken) {
-      debugLogger.log('ERROR: Token is empty or null');
-      Alert.alert('Error', 'Push token not available. Please check debug logs below.');
-      return;
-    }
-
-    setIsLoading(true);
-    debugLogger.log('Calling API to register device...');
-    try {
-      const response = await apiService.registerDevice({
-        surveyorId: selectedSurveyorId,
-        token: expoPushToken,
-        platform: Platform.OS === 'ios' ? 'IOS' : 'ANDROID',
-      });
-
-      debugLogger.log(`API response: ${JSON.stringify(response)}`);
-
-      if (response.ok || response.success) {
-        await storageService.setSurveyorId(selectedSurveyorId);
-        await storageService.setSurveyorName(surveyorName || '');
-        await storageService.setDeviceRegistered(true);
-        await storageService.setPushToken(expoPushToken);
-
-        setIsRegistered(true);
-        debugLogger.log('Device registered successfully');
-        Alert.alert('Success', 'Device registered successfully! You will now receive appointment notifications.');
-      } else {
-        debugLogger.log(`Registration failed: ${response.message}`);
-        Alert.alert('Error', response.message || 'Failed to register device');
-      }
-    } catch (error) {
-      debugLogger.error('Error registering device', error);
-      Alert.alert('Error', 'Could not register device. Please check your connection.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const unregisterDevice = async () => {
+  const logout = async () => {
     Alert.alert(
-      'Unregister Device',
-      'Are you sure you want to unregister? You will no longer receive notifications.',
+      'Logout',
+      'Are you sure you want to logout? You will no longer receive notifications.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Unregister',
+          text: 'Logout',
           style: 'destructive',
           onPress: async () => {
             locationService.stopTracking();
@@ -257,9 +232,11 @@ export default function App() {
             setSelectedSurveyorId(null);
             setSurveyorName(null);
             setAppointments([]);
+            setUsername('');
+            setPassword('');
             await storageService.setDeviceRegistered(false);
-            debugLogger.log('Device unregistered');
-            Alert.alert('Success', 'Device unregistered');
+            debugLogger.log('Logged out');
+            Alert.alert('Success', 'Logged out successfully');
           },
         },
       ]
@@ -324,8 +301,6 @@ export default function App() {
         return '#FF9800';
     }
   };
-
-  const selectedSurveyor = surveyors.find((s) => s.id === selectedSurveyorId);
 
   const renderAppointmentCard = (appointment: Appointment) => (
     <View key={appointment.id} style={styles.appointmentCard}>
@@ -433,35 +408,58 @@ export default function App() {
       </View>
 
       {!isRegistered ? (
-        // Registration View
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Select Surveyor</Text>
+        // Login View
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.loginContainer}
+        >
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Surveyor Login</Text>
 
-          {isLoading && surveyors.length === 0 ? (
-            <ActivityIndicator size="large" color="#1976D2" />
-          ) : (
-            <>
-              <SurveyorPicker
-                surveyors={surveyors}
-                selectedId={selectedSurveyorId}
-                onSelect={handleSurveyorSelect}
-                disabled={isRegistered}
-              />
+            {isLoading ? (
+              <ActivityIndicator size="large" color="#1976D2" />
+            ) : (
+              <>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Username"
+                  value={username}
+                  onChangeText={setUsername}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!isLoggingIn}
+                />
 
-              <TouchableOpacity
-                style={[styles.registerButton, !selectedSurveyorId && styles.registerButtonDisabled]}
-                onPress={registerDevice}
-                disabled={!selectedSurveyorId || isLoading}
-              >
-                {isLoading ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.registerButtonText}>Register Device</Text>
-                )}
-              </TouchableOpacity>
-            </>
-          )}
-        </View>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Password"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!isLoggingIn}
+                />
+
+                <TouchableOpacity
+                  style={[styles.registerButton, (!username || !password) && styles.registerButtonDisabled]}
+                  onPress={handleLogin}
+                  disabled={!username || !password || isLoggingIn}
+                >
+                  {isLoggingIn ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.registerButtonText}>Login</Text>
+                  )}
+                </TouchableOpacity>
+
+                <Text style={styles.loginHint}>
+                  Use your surveyor username and password to login
+                </Text>
+              </>
+            )}
+          </View>
+        </KeyboardAvoidingView>
       ) : (
         // Main App View
         <>
@@ -512,9 +510,9 @@ export default function App() {
             )}
           </ScrollView>
 
-          {/* Unregister Button */}
-          <TouchableOpacity style={styles.unregisterButton} onPress={unregisterDevice}>
-            <Text style={styles.unregisterButtonText}>Unregister Device</Text>
+          {/* Logout Button */}
+          <TouchableOpacity style={styles.unregisterButton} onPress={logout}>
+            <Text style={styles.unregisterButtonText}>Logout</Text>
           </TouchableOpacity>
         </>
       )}
@@ -574,6 +572,28 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  // Login styles
+  loginContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: 16,
+  },
+  input: {
+    backgroundColor: '#f5f5f5',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
+    marginBottom: 12,
+  },
+  loginHint: {
+    textAlign: 'center',
+    color: '#888',
+    fontSize: 12,
+    marginTop: 16,
   },
   // Status Toggle
   statusToggleContainer: {

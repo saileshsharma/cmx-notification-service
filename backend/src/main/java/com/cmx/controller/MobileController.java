@@ -14,6 +14,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -27,15 +28,78 @@ public class MobileController {
     private final NotificationAuditService auditService;
     private final AvailabilityService availabilityService;
     private final SurveyorService surveyorService;
+    private final com.cmx.repository.SurveyorRepository surveyorRepository;
 
     public MobileController(DeviceTokenService deviceTokenService,
                             NotificationAuditService auditService,
                             AvailabilityService availabilityService,
-                            SurveyorService surveyorService) {
+                            SurveyorService surveyorService,
+                            com.cmx.repository.SurveyorRepository surveyorRepository) {
         this.deviceTokenService = deviceTokenService;
         this.auditService = auditService;
         this.availabilityService = availabilityService;
         this.surveyorService = surveyorService;
+        this.surveyorRepository = surveyorRepository;
+    }
+
+    // ==================== Authentication ====================
+
+    @Operation(
+        summary = "Login surveyor",
+        description = "Authenticates a surveyor with username and password, and automatically registers the device"
+    )
+    @ApiResponse(responseCode = "200", description = "Login successful")
+    @ApiResponse(responseCode = "401", description = "Invalid credentials")
+    @PostMapping("/login")
+    public ResponseEntity<Map<String, Object>> login(@RequestBody Map<String, Object> request) {
+        String username = (String) request.get("username");
+        String password = (String) request.get("password");
+        String pushToken = (String) request.get("pushToken");
+        String platform = (String) request.get("platform"); // ANDROID or IOS
+
+        if (username == null || password == null) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", "Username and password are required"
+            ));
+        }
+
+        var surveyorOpt = surveyorRepository.findByUsername(username);
+        if (surveyorOpt.isEmpty()) {
+            return ResponseEntity.status(401).body(Map.of(
+                "success", false,
+                "message", "Invalid username or password"
+            ));
+        }
+
+        var surveyor = surveyorOpt.get();
+        if (!password.equals(surveyor.getPassword())) {
+            return ResponseEntity.status(401).body(Map.of(
+                "success", false,
+                "message", "Invalid username or password"
+            ));
+        }
+
+        // Auto-register device if push token is provided
+        if (pushToken != null && !pushToken.isEmpty()) {
+            deviceTokenService.registerToken(surveyor.getId(), pushToken, platform != null ? platform : "ANDROID");
+        }
+
+        // Build response with surveyor details
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("success", true);
+        response.put("message", "Login successful");
+        response.put("surveyor", Map.of(
+            "id", surveyor.getId(),
+            "code", surveyor.getCode(),
+            "displayName", surveyor.getDisplayName(),
+            "email", surveyor.getEmail() != null ? surveyor.getEmail() : "",
+            "phone", surveyor.getPhone() != null ? surveyor.getPhone() : "",
+            "surveyorType", surveyor.getSurveyorType(),
+            "currentStatus", surveyor.getCurrentStatus() != null ? surveyor.getCurrentStatus() : "AVAILABLE"
+        ));
+
+        return ResponseEntity.ok(response);
     }
 
     @Operation(

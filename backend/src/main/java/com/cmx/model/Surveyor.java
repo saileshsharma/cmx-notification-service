@@ -42,6 +42,9 @@ public class Surveyor {
     @Column("last_location_update")
     private java.time.OffsetDateTime lastLocationUpdate;
 
+    private String username;
+    private String password;
+
     public Surveyor() {}
 
     public Surveyor(Long id, String code, String displayName, Double homeLat, Double homeLng,
@@ -104,4 +107,10 @@ public class Surveyor {
 
     public java.time.OffsetDateTime getLastLocationUpdate() { return lastLocationUpdate; }
     public void setLastLocationUpdate(java.time.OffsetDateTime lastLocationUpdate) { this.lastLocationUpdate = lastLocationUpdate; }
+
+    public String getUsername() { return username; }
+    public void setUsername(String username) { this.username = username; }
+
+    public String getPassword() { return password; }
+    public void setPassword(String password) { this.password = password; }
 }

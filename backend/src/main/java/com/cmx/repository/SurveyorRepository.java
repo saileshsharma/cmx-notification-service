@@ -25,4 +25,7 @@ public interface SurveyorRepository extends CrudRepository<Surveyor, Long> {
     int countAll();
 
     Optional<Surveyor> findByCode(String code);
+
+    @Query("SELECT * FROM surveyor WHERE username = :username")
+    Optional<Surveyor> findByUsername(@Param("username") String username);
 }

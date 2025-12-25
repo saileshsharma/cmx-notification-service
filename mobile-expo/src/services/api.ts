@@ -7,7 +7,9 @@ import {
   AppointmentResponse,
   AppointmentResponseStatus,
   SurveyorStatus,
-  UpdateResponse
+  UpdateResponse,
+  LoginRequest,
+  LoginResponse
 } from '../types';
 
 class ApiService {
@@ -15,6 +17,21 @@ class ApiService {
 
   constructor() {
     this.baseUrl = API_BASE_URL;
+  }
+
+  // ==================== Authentication ====================
+
+  async login(request: LoginRequest): Promise<LoginResponse> {
+    const response = await fetch(`${this.baseUrl}/mobile/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    });
+
+    const data = await response.json();
+    return data;
   }
 
   async getSurveyors(): Promise<Surveyor[]> {

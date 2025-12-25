@@ -82,3 +82,25 @@ export interface UpdateResponse {
   success: boolean;
   message: string;
 }
+
+// Login types
+export interface LoginRequest {
+  username: string;
+  password: string;
+  pushToken?: string;
+  platform?: 'ANDROID' | 'IOS';
+}
+
+export interface LoginResponse {
+  success: boolean;
+  message: string;
+  surveyor?: {
+    id: number;
+    code: string;
+    displayName: string;
+    email: string;
+    phone: string;
+    surveyorType: string;
+    currentStatus: string;
+  };
+}
