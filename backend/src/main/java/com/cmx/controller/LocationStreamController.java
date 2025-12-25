@@ -64,7 +64,7 @@ public class LocationStreamController {
         description = "Returns the recent location history for a specific surveyor"
     )
     @GetMapping("/trails/{surveyorId}")
-    public ResponseEntity<List<Map<String, Object>>> getSurveyorTrail(@PathVariable Long surveyorId) {
+    public ResponseEntity<List<Map<String, Object>>> getSurveyorTrail(@PathVariable("surveyorId") Long surveyorId) {
         return ResponseEntity.ok(broadcastService.getLocationTrail(surveyorId));
     }
 
