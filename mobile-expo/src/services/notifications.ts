@@ -97,18 +97,25 @@ class NotificationService {
 
   async getExpoPushToken(): Promise<string | null> {
     debugLogger.log('Getting push token...');
+    debugLogger.log(`Device.isDevice: ${Device.isDevice}`);
+    debugLogger.log(`Device.brand: ${Device.brand}`);
+    debugLogger.log(`Device.manufacturer: ${Device.manufacturer}`);
+    debugLogger.log(`Device.osName: ${Device.osName}`);
 
     if (!Device.isDevice) {
-      debugLogger.log('Cannot get token: not a physical device');
+      debugLogger.log('Cannot get token: not a physical device (emulator/simulator)');
+      debugLogger.log('NOTE: Push notifications only work on physical devices!');
       return null;
     }
 
     // First try native FCM token
     debugLogger.log('Attempting to get native FCM token...');
+    debugLogger.log('This requires google-services.json to be properly configured');
     try {
       const tokenData = await Notifications.getDevicePushTokenAsync();
-      debugLogger.log(`Native token type: ${tokenData.type}`);
-      debugLogger.log(`Native token data: ${tokenData.data.substring(0, 50)}...`);
+      debugLogger.log(`SUCCESS: Native token type: ${tokenData.type}`);
+      debugLogger.log(`Native token (first 50 chars): ${tokenData.data.substring(0, 50)}...`);
+      debugLogger.log(`Native token length: ${tokenData.data.length}`);
 
       await storageService.setPushToken(tokenData.data);
       debugLogger.log('FCM token saved to storage');
@@ -116,29 +123,43 @@ class NotificationService {
       return tokenData.data;
     } catch (error) {
       debugLogger.error('Failed to get native FCM token', error);
+      debugLogger.log('This may mean google-services.json is missing or misconfigured');
     }
 
     // Fallback to Expo push token
     debugLogger.log('Falling back to Expo Push Token...');
     try {
+      debugLogger.log('Checking Constants.expoConfig...');
+      debugLogger.log(`expoConfig exists: ${!!Constants.expoConfig}`);
+      debugLogger.log(`expoConfig.extra exists: ${!!Constants.expoConfig?.extra}`);
+
       const projectId = Constants.expoConfig?.extra?.eas?.projectId;
       debugLogger.log(`Project ID: ${projectId || 'NOT FOUND'}`);
 
       if (!projectId) {
-        debugLogger.log('WARNING: No project ID found in app config');
+        debugLogger.log('WARNING: No project ID found in app.json/app.config.js');
+        debugLogger.log('Expo push tokens require a valid EAS project ID');
       }
 
+      debugLogger.log('Calling getExpoPushTokenAsync...');
       const expoTokenData = await Notifications.getExpoPushTokenAsync({
         projectId: projectId,
       });
 
-      debugLogger.log(`Expo token: ${expoTokenData.data.substring(0, 30)}...`);
+      debugLogger.log(`SUCCESS: Expo token: ${expoTokenData.data.substring(0, 30)}...`);
+      debugLogger.log(`Expo token length: ${expoTokenData.data.length}`);
       await storageService.setPushToken(expoTokenData.data);
       debugLogger.log('Expo token saved to storage');
 
       return expoTokenData.data;
     } catch (expoError) {
       debugLogger.error('Failed to get Expo push token', expoError);
+      debugLogger.log('CRITICAL: No push token could be obtained!');
+      debugLogger.log('Possible causes:');
+      debugLogger.log('1. Running on emulator (push only works on physical device)');
+      debugLogger.log('2. google-services.json missing or misconfigured');
+      debugLogger.log('3. No EAS project ID configured');
+      debugLogger.log('4. Network connectivity issues');
       return null;
     }
   }

@@ -32,6 +32,12 @@ public class SurveyorAvailability {
     @Column("updated_at")
     private OffsetDateTime updatedAt;
 
+    @Column("response_status")
+    private String responseStatus; // PENDING, ACCEPTED, REJECTED
+
+    @Column("responded_at")
+    private OffsetDateTime respondedAt;
+
     public SurveyorAvailability() {}
 
     public SurveyorAvailability(Long surveyorId, OffsetDateTime startTime, OffsetDateTime endTime,
@@ -86,4 +92,10 @@ public class SurveyorAvailability {
 
     public OffsetDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(OffsetDateTime updatedAt) { this.updatedAt = updatedAt; }
+
+    public String getResponseStatus() { return responseStatus; }
+    public void setResponseStatus(String responseStatus) { this.responseStatus = responseStatus; }
+
+    public OffsetDateTime getRespondedAt() { return respondedAt; }
+    public void setRespondedAt(OffsetDateTime respondedAt) { this.respondedAt = respondedAt; }
 }

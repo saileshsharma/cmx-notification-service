@@ -34,3 +34,51 @@ export interface DeviceRegistrationResponse {
   success?: boolean;
   message?: string;
 }
+
+// Appointment types
+export type AppointmentResponseStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED';
+
+export interface Appointment {
+  id: number;
+  surveyor_id: number;
+  start_time: string;
+  end_time: string;
+  state: string;
+  source: string;
+  title: string;
+  description: string;
+  updated_at: string;
+  response_status: AppointmentResponseStatus;
+  responded_at: string | null;
+}
+
+export interface AppointmentResponse {
+  success: boolean;
+  message: string;
+}
+
+// Location and status types
+export type SurveyorStatus = 'AVAILABLE' | 'BUSY' | 'OFFLINE';
+
+export interface LocationUpdate {
+  surveyorId: number;
+  lat: number;
+  lng: number;
+}
+
+export interface StatusUpdate {
+  surveyorId: number;
+  status: SurveyorStatus;
+}
+
+export interface LocationStatusUpdate {
+  surveyorId: number;
+  lat: number;
+  lng: number;
+  status: SurveyorStatus;
+}
+
+export interface UpdateResponse {
+  success: boolean;
+  message: string;
+}

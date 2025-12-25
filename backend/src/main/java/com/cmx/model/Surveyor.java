@@ -30,6 +30,18 @@ public class Surveyor {
 
     private String phone;
 
+    @Column("current_lat")
+    private Double currentLat;
+
+    @Column("current_lng")
+    private Double currentLng;
+
+    @Column("current_status")
+    private String currentStatus; // AVAILABLE, BUSY, OFFLINE
+
+    @Column("last_location_update")
+    private java.time.OffsetDateTime lastLocationUpdate;
+
     public Surveyor() {}
 
     public Surveyor(Long id, String code, String displayName, Double homeLat, Double homeLng,
@@ -80,4 +92,16 @@ public class Surveyor {
     public boolean hasPhone() {
         return phone != null && !phone.isBlank();
     }
+
+    public Double getCurrentLat() { return currentLat; }
+    public void setCurrentLat(Double currentLat) { this.currentLat = currentLat; }
+
+    public Double getCurrentLng() { return currentLng; }
+    public void setCurrentLng(Double currentLng) { this.currentLng = currentLng; }
+
+    public String getCurrentStatus() { return currentStatus; }
+    public void setCurrentStatus(String currentStatus) { this.currentStatus = currentStatus; }
+
+    public java.time.OffsetDateTime getLastLocationUpdate() { return lastLocationUpdate; }
+    public void setLastLocationUpdate(java.time.OffsetDateTime lastLocationUpdate) { this.lastLocationUpdate = lastLocationUpdate; }
 }

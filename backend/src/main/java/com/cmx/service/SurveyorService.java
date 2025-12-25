@@ -121,4 +121,62 @@ public class SurveyorService {
     private static boolean hasFilter(String value) {
         return value != null && !value.isEmpty() && !ALL_FILTER.equalsIgnoreCase(value);
     }
+
+    /**
+     * Update surveyor's current location
+     */
+    public boolean updateLocation(Long surveyorId, Double lat, Double lng) {
+        int updated = jdbcTemplate.update(
+                "UPDATE surveyor SET current_lat = ?, current_lng = ?, last_location_update = CURRENT_TIMESTAMP WHERE id = ?",
+                lat, lng, surveyorId
+        );
+        return updated == 1;
+    }
+
+    /**
+     * Update surveyor's current status (AVAILABLE, BUSY, OFFLINE)
+     */
+    public boolean updateStatus(Long surveyorId, String status) {
+        int updated = jdbcTemplate.update(
+                "UPDATE surveyor SET current_status = ? WHERE id = ?",
+                status, surveyorId
+        );
+        return updated == 1;
+    }
+
+    /**
+     * Update both location and status
+     */
+    public boolean updateLocationAndStatus(Long surveyorId, Double lat, Double lng, String status) {
+        int updated = jdbcTemplate.update(
+                "UPDATE surveyor SET current_lat = ?, current_lng = ?, current_status = ?, last_location_update = CURRENT_TIMESTAMP WHERE id = ?",
+                lat, lng, status, surveyorId
+        );
+        return updated == 1;
+    }
+
+    /**
+     * Get surveyor details including current location and status
+     */
+    public Map<String, Object> getSurveyorDetails(Long surveyorId) {
+        Surveyor s = findById(surveyorId);
+        OffsetDateTime now = OffsetDateTime.now();
+        String currentAvailabilityStatus = availabilityService.getCurrentState(surveyorId, now);
+
+        java.util.HashMap<String, Object> details = new java.util.HashMap<>();
+        details.put("id", s.getId());
+        details.put("code", s.getCode() != null ? s.getCode() : "");
+        details.put("display_name", s.getDisplayName() != null ? s.getDisplayName() : "");
+        details.put("home_lat", s.getHomeLat() != null ? s.getHomeLat() : 0.0);
+        details.put("home_lng", s.getHomeLng() != null ? s.getHomeLng() : 0.0);
+        details.put("status", s.getStatus() != null ? s.getStatus() : "");
+        details.put("surveyor_type", s.getSurveyorType() != null ? s.getSurveyorType() : "");
+        details.put("email", s.getEmail() != null ? s.getEmail() : "");
+        details.put("phone", s.getPhone() != null ? s.getPhone() : "");
+        details.put("current_status", s.getCurrentStatus() != null ? s.getCurrentStatus() : currentAvailabilityStatus);
+        details.put("current_lat", s.getCurrentLat());
+        details.put("current_lng", s.getCurrentLng());
+        details.put("last_location_update", s.getLastLocationUpdate() != null ? s.getLastLocationUpdate().toString() : null);
+        return details;
+    }
 }

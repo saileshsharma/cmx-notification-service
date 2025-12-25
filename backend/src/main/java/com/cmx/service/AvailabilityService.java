@@ -30,8 +30,9 @@ public class AvailabilityService {
         Timestamp startTs = rs.getTimestamp("start_time");
         Timestamp endTs = rs.getTimestamp("end_time");
         Timestamp updatedTs = rs.getTimestamp("updated_at");
+        Timestamp respondedTs = rs.getTimestamp("responded_at");
 
-        return new SurveyorAvailability(
+        SurveyorAvailability availability = new SurveyorAvailability(
                 rs.getLong("id"),
                 rs.getLong("surveyor_id"),
                 startTs != null ? startTs.toInstant().atOffset(ZoneOffset.UTC) : null,
@@ -42,6 +43,9 @@ public class AvailabilityService {
                 rs.getString("source"),
                 updatedTs != null ? updatedTs.toInstant().atOffset(ZoneOffset.UTC) : null
         );
+        availability.setResponseStatus(rs.getString("response_status"));
+        availability.setRespondedAt(respondedTs != null ? respondedTs.toInstant().atOffset(ZoneOffset.UTC) : null);
+        return availability;
     };
 
     public AvailabilityService(AvailabilityRepository availabilityRepository, JdbcTemplate jdbc) {
@@ -200,5 +204,60 @@ public class AvailabilityService {
                 .map(String::trim)
                 .map(Long::parseLong)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Get appointments for a specific surveyor (for mobile app)
+     */
+    public List<Map<String, Object>> getAppointmentsForSurveyor(Long surveyorId, boolean upcomingOnly) {
+        String sql;
+        if (upcomingOnly) {
+            sql = "SELECT * FROM surveyor_availability WHERE surveyor_id = ? AND end_time > CURRENT_TIMESTAMP ORDER BY start_time ASC LIMIT 100";
+        } else {
+            sql = "SELECT * FROM surveyor_availability WHERE surveyor_id = ? ORDER BY start_time DESC LIMIT 100";
+        }
+
+        List<SurveyorAvailability> results = jdbc.query(sql, AVAILABILITY_MAPPER, surveyorId);
+        return results.stream()
+                .map(this::toMapWithResponse)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Respond to an appointment (accept/reject)
+     */
+    @Caching(evict = {
+            @CacheEvict(value = "availabilityCache", allEntries = true),
+            @CacheEvict(value = "surveyorsCache", allEntries = true)
+    })
+    public boolean respondToAppointment(Long appointmentId, Long surveyorId, String response) {
+        // Verify the appointment belongs to this surveyor
+        Long actualSurveyorId = getSurveyorIdForAvailability(appointmentId);
+        if (actualSurveyorId == null || !actualSurveyorId.equals(surveyorId)) {
+            return false;
+        }
+
+        int updated = jdbc.update(
+                "UPDATE surveyor_availability SET response_status = ?, responded_at = CURRENT_TIMESTAMP WHERE id = ?",
+                response,
+                appointmentId
+        );
+        return updated == 1;
+    }
+
+    private Map<String, Object> toMapWithResponse(SurveyorAvailability a) {
+        java.util.HashMap<String, Object> map = new java.util.HashMap<>();
+        map.put("id", a.getId());
+        map.put("surveyor_id", a.getSurveyorId());
+        map.put("start_time", a.getStartTime().toString());
+        map.put("end_time", a.getEndTime().toString());
+        map.put("state", a.getState() != null ? a.getState() : "");
+        map.put("source", a.getSource() != null ? a.getSource() : "");
+        map.put("title", a.getTitle() != null ? a.getTitle() : "");
+        map.put("description", a.getDescription() != null ? a.getDescription() : "");
+        map.put("updated_at", a.getUpdatedAt() != null ? a.getUpdatedAt().toString() : "");
+        map.put("response_status", a.getResponseStatus() != null ? a.getResponseStatus() : "PENDING");
+        map.put("responded_at", a.getRespondedAt() != null ? a.getRespondedAt().toString() : null);
+        return map;
     }
 }
