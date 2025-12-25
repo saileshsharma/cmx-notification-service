@@ -37,11 +37,11 @@ public class SurveyorActivityController {
      */
     @GetMapping("/activity")
     public ResponseEntity<List<SurveyorActivityLog>> getActivityLog(
-            @RequestParam(required = false) Long surveyorId,
-            @RequestParam(required = false) String activityType,
-            @RequestParam(required = false, defaultValue = "24") Integer hoursBack,
-            @RequestParam(required = false, defaultValue = "100") int limit,
-            @RequestParam(required = false, defaultValue = "0") int offset) {
+            @RequestParam(value = "surveyorId", required = false) Long surveyorId,
+            @RequestParam(value = "activityType", required = false) String activityType,
+            @RequestParam(value = "hoursBack", required = false, defaultValue = "24") Integer hoursBack,
+            @RequestParam(value = "limit", required = false, defaultValue = "100") int limit,
+            @RequestParam(value = "offset", required = false, defaultValue = "0") int offset) {
 
         List<SurveyorActivityLog> logs = activityService.getActivityLog(
                 surveyorId, activityType, hoursBack, limit, offset);
@@ -53,8 +53,8 @@ public class SurveyorActivityController {
      */
     @GetMapping("/activity/recent")
     public ResponseEntity<List<SurveyorActivityLog>> getRecentActivity(
-            @RequestParam(required = false, defaultValue = "4") int hours,
-            @RequestParam(required = false, defaultValue = "50") int limit) {
+            @RequestParam(value = "hours", required = false, defaultValue = "4") int hours,
+            @RequestParam(value = "limit", required = false, defaultValue = "50") int limit) {
 
         List<SurveyorActivityLog> logs = activityService.getRecentActivity(hours, limit);
         return ResponseEntity.ok(logs);
