@@ -312,10 +312,38 @@ header {
 }
 
 /* Surveyor List Sidebar */
+/* Surveyor list sidebar with custom scrollbar */
 .surveyor-list-sidebar {
   flex: 1;
   overflow-y: auto;
   padding: 0 8px;
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbar styling */
+.surveyor-list-sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.surveyor-list-sidebar::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 3px;
+}
+
+.surveyor-list-sidebar::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #c5cae9 0%, #9fa8da 100%);
+  border-radius: 3px;
+  transition: background 0.2s ease;
+}
+
+.surveyor-list-sidebar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #9fa8da 0%, #7986cb 100%);
+}
+
+/* Firefox scrollbar */
+.surveyor-list-sidebar {
+  scrollbar-width: thin;
+  scrollbar-color: #c5cae9 transparent;
 }
 
 .sidebar-actions {
@@ -354,19 +382,42 @@ header {
   padding: 10px 12px;
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   margin-bottom: 4px;
+  border-left: 3px solid transparent;
+  position: relative;
 }
 
+/* Zebra striping - alternating row colors */
+.surveyor-card-wrapper:nth-child(odd) .surveyor-card {
+  background: rgba(249, 250, 251, 0.6);
+}
+
+.surveyor-card-wrapper:nth-child(even) .surveyor-card {
+  background: rgba(255, 255, 255, 0.8);
+}
+
+/* Enhanced hover effects with elevation */
 .surveyor-card:hover {
-  background: #f5f7fa;
+  background: linear-gradient(135deg, #f0f4ff 0%, #e8eef9 100%);
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(57, 73, 171, 0.12),
+              0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
+/* Enhanced selection with left border accent */
 .surveyor-card.selected {
-  background: #e8eaf6;
-  border: 1px solid #c5cae9;
+  background: linear-gradient(135deg, #e8eaf6 0%, #dce2f7 100%);
+  border-left: 3px solid #3949ab;
+  box-shadow: 0 2px 8px rgba(57, 73, 171, 0.15);
 }
 
+.surveyor-card.selected:hover {
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(57, 73, 171, 0.2);
+}
+
+/* Improved avatar styling with ring and shadow */
 .avatar {
   width: 40px;
   height: 40px;
@@ -380,6 +431,16 @@ header {
   flex-shrink: 0;
   overflow: hidden;
   position: relative;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12),
+              inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.surveyor-card:hover .avatar {
+  transform: scale(1.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18),
+              inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .avatar-img {
@@ -402,12 +463,24 @@ header {
   min-width: 0;
 }
 
+/* Improved surveyor name typography */
 .surveyor-name-sidebar {
-  font-weight: 500;
+  font-weight: 600;
   font-size: 14px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: #2d3748;
+  letter-spacing: -0.2px;
+  transition: color 0.2s ease;
+}
+
+.surveyor-card:hover .surveyor-name-sidebar {
+  color: #3949ab;
+}
+
+.surveyor-card.selected .surveyor-name-sidebar {
+  color: #283593;
 }
 
 .surveyor-meta {
@@ -417,16 +490,41 @@ header {
   margin-top: 4px;
 }
 
+/* Status indicator with pulsing animation for Available */
 .status-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
+  transition: all 0.2s ease;
+  position: relative;
 }
 
+/* Pulsing animation for Available status (green) */
+.status-dot.available,
+.status-dot[style*="background: #4caf50"],
+.status-dot[style*="background: rgb(76, 175, 80)"],
+.status-dot[style*="background:#4caf50"] {
+  animation: pulse-status 2s ease-in-out infinite;
+}
+
+@keyframes pulse-status {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.4);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(76, 175, 80, 0);
+    transform: scale(1.1);
+  }
+}
+
+/* Status text with improved typography */
 .status-text {
   font-size: 11px;
-  color: #666;
+  color: #555;
   text-transform: capitalize;
+  letter-spacing: 0.2px;
+  font-weight: 500;
 }
 
 .type-badge {
@@ -3558,6 +3656,7 @@ textarea.invalid:focus {
 }
 
 /* ============ SURVEYOR SECTIONS ============ */
+/* Sticky section headers with enhanced styling */
 .section-header {
   display: flex;
   align-items: center;
@@ -3565,12 +3664,22 @@ textarea.invalid:focus {
   padding: 10px 16px;
   background: linear-gradient(135deg, #f5f7fa 0%, #e8eaf6 100%);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   color: #3949ab;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   border-bottom: 1px solid #e0e0e0;
   margin-top: 8px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.2s ease;
+}
+
+.section-header:hover {
+  box-shadow: 0 3px 8px rgba(57, 73, 171, 0.1);
 }
 
 .section-header:first-child {
