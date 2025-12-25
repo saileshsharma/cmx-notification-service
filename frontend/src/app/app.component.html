@@ -593,6 +593,20 @@
       <div class="map-header">
         <h3>Surveyor Locations</h3>
         <div class="map-controls">
+          <!-- Live Stream Status Indicator -->
+          <div class="stream-status" [class.connected]="locationStreamConnected" [class.error]="locationStreamError">
+            <span class="status-dot"></span>
+            <span class="status-text">{{locationStreamConnected ? 'Live' : (locationStreamError ? 'Reconnecting...' : 'Connecting...')}}</span>
+          </div>
+          <!-- Trail Toggle -->
+          <button class="btn-trail" [class.active]="showTrails" (click)="toggleTrails()" title="Toggle movement trails">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 2L2 22"></path>
+              <circle cx="19" cy="5" r="3"></circle>
+              <circle cx="5" cy="19" r="3"></circle>
+            </svg>
+            Trails
+          </button>
           <button class="btn-refresh" (click)="refreshSurveyorLocations()" [disabled]="loadingLocations">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [class.spinning]="loadingLocations">
               <path d="M23 4v6h-6"></path>

@@ -1,5 +1,6 @@
 package com.cmx.controller;
 
+import com.cmx.service.LocationBroadcastService;
 import com.cmx.service.SurveyorService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -17,10 +18,11 @@ import java.util.Base64;
 import java.util.Map;
 
 /**
- * QStash Webhook Controller v1.0.1
+ * QStash Webhook Controller v1.0.2
  * Receives location and status updates from mobile devices via Upstash QStash.
+ * Now broadcasts updates to connected SSE clients for real-time tracking.
  *
- * Flow: Mobile App -> QStash -> This Webhook -> Database
+ * Flow: Mobile App -> QStash -> This Webhook -> Database -> SSE Broadcast
  */
 @RestController
 @RequestMapping("/api/webhook/qstash")
@@ -31,6 +33,7 @@ public class QStashWebhookController {
     private static final Logger logger = LoggerFactory.getLogger(QStashWebhookController.class);
 
     private final SurveyorService surveyorService;
+    private final LocationBroadcastService broadcastService;
 
     @Value("${qstash.current-signing-key:}")
     private String currentSigningKey;
@@ -38,8 +41,9 @@ public class QStashWebhookController {
     @Value("${qstash.next-signing-key:}")
     private String nextSigningKey;
 
-    public QStashWebhookController(SurveyorService surveyorService) {
+    public QStashWebhookController(SurveyorService surveyorService, LocationBroadcastService broadcastService) {
         this.surveyorService = surveyorService;
+        this.broadcastService = broadcastService;
     }
 
     @Operation(
@@ -71,16 +75,31 @@ public class QStashWebhookController {
                 Double lng = payload.get("lng") != null ? ((Number) payload.get("lng")).doubleValue() : null;
                 String status = (String) payload.get("status");
 
+                // Get surveyor name for broadcast
+                String displayName = null;
+                try {
+                    var details = surveyorService.getSurveyorDetails(surveyorId);
+                    displayName = (String) details.get("display_name");
+                } catch (Exception e) {
+                    logger.warn("Could not get surveyor name for broadcast: {}", e.getMessage());
+                }
+
                 boolean success;
                 if (lat != null && lng != null && status != null) {
                     success = surveyorService.updateLocationAndStatus(surveyorId, lat, lng, status);
                     logger.info("Updated location and status for surveyor {}: ({}, {}) - {}", surveyorId, lat, lng, status);
+                    // Broadcast to connected SSE clients
+                    broadcastService.broadcastLocationUpdate(surveyorId, lat, lng, status, displayName);
                 } else if (lat != null && lng != null) {
                     success = surveyorService.updateLocation(surveyorId, lat, lng);
                     logger.info("Updated location for surveyor {}: ({}, {})", surveyorId, lat, lng);
+                    // Broadcast to connected SSE clients
+                    broadcastService.broadcastLocationUpdate(surveyorId, lat, lng, status, displayName);
                 } else if (status != null) {
                     success = surveyorService.updateStatus(surveyorId, status);
                     logger.info("Updated status for surveyor {}: {}", surveyorId, status);
+                    // Broadcast status-only update
+                    broadcastService.broadcastStatusUpdate(surveyorId, status, displayName);
                 } else {
                     return ResponseEntity.badRequest().body(Map.of(
                         "success", false,
@@ -97,8 +116,20 @@ public class QStashWebhookController {
                 Long surveyorId = ((Number) payload.get("surveyorId")).longValue();
                 String status = (String) payload.get("status");
 
+                // Get surveyor name for broadcast
+                String displayName = null;
+                try {
+                    var details = surveyorService.getSurveyorDetails(surveyorId);
+                    displayName = (String) details.get("display_name");
+                } catch (Exception e) {
+                    logger.warn("Could not get surveyor name for broadcast: {}", e.getMessage());
+                }
+
                 boolean success = surveyorService.updateStatus(surveyorId, status);
                 logger.info("Updated status for surveyor {}: {}", surveyorId, status);
+
+                // Broadcast status update
+                broadcastService.broadcastStatusUpdate(surveyorId, status, displayName);
 
                 return ResponseEntity.ok(Map.of(
                     "success", success,

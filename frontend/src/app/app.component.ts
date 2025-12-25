@@ -295,6 +295,15 @@ export class AppComponent implements OnInit {
   private leafletMap: any = null;
   private mapMarkers: Map<number, any> = new Map();
 
+  // Real-time Location Tracking via SSE
+  private locationEventSource: EventSource | null = null;
+  locationStreamConnected = false;
+  locationStreamError = false;
+  private surveyorTrails: Map<number, { lat: number; lng: number; timestamp: number }[]> = new Map();
+  private trailPolylines: Map<number, any> = new Map();
+  showTrails = true;
+  private readonly MAX_TRAIL_POINTS = 20;
+
   // Confirmation/Alert Modal
   showConfirmModal = false;
   confirmModalType: 'confirm' | 'alert' | 'error' | 'warning' = 'confirm';
@@ -422,6 +431,10 @@ export class AppComponent implements OnInit {
     if (view === 'map') {
       this.refreshSurveyorLocations();
       setTimeout(() => this.initializeMap(), 100);
+      this.connectLocationStream();
+    } else {
+      // Disconnect SSE when leaving map view to save resources
+      this.disconnectLocationStream();
     }
   }
 
@@ -579,6 +592,291 @@ export class AppComponent implements OnInit {
     if (diffHours < 24) return `${diffHours}h ago`;
 
     return date.toLocaleDateString();
+  }
+
+  // ============ REAL-TIME LOCATION STREAMING (SSE) ============
+  connectLocationStream() {
+    if (this.locationEventSource) {
+      return; // Already connected
+    }
+
+    this.locationStreamError = false;
+    const streamUrl = `${this.apiBase}/locations/stream`;
+
+    try {
+      this.locationEventSource = new EventSource(streamUrl);
+
+      this.locationEventSource.addEventListener('connected', (event: any) => {
+        console.log('[LocationStream] Connected:', event.data);
+        this.locationStreamConnected = true;
+        this.locationStreamError = false;
+        this.loadInitialTrails();
+      });
+
+      this.locationEventSource.addEventListener('location', (event: any) => {
+        try {
+          const data = JSON.parse(event.data);
+          console.log('[LocationStream] Location update:', data);
+          this.handleLocationUpdate(data);
+        } catch (e) {
+          console.error('[LocationStream] Failed to parse location event:', e);
+        }
+      });
+
+      this.locationEventSource.addEventListener('status', (event: any) => {
+        try {
+          const data = JSON.parse(event.data);
+          console.log('[LocationStream] Status update:', data);
+          this.handleStatusUpdate(data);
+        } catch (e) {
+          console.error('[LocationStream] Failed to parse status event:', e);
+        }
+      });
+
+      this.locationEventSource.onerror = (error) => {
+        console.error('[LocationStream] Connection error:', error);
+        this.locationStreamConnected = false;
+        this.locationStreamError = true;
+        // Attempt to reconnect after 5 seconds
+        setTimeout(() => {
+          if (this.currentView === 'map') {
+            this.disconnectLocationStream();
+            this.connectLocationStream();
+          }
+        }, 5000);
+      };
+
+    } catch (e) {
+      console.error('[LocationStream] Failed to connect:', e);
+      this.locationStreamError = true;
+    }
+  }
+
+  disconnectLocationStream() {
+    if (this.locationEventSource) {
+      this.locationEventSource.close();
+      this.locationEventSource = null;
+      this.locationStreamConnected = false;
+    }
+  }
+
+  loadInitialTrails() {
+    this.http.get<{ [key: string]: { lat: number; lng: number; timestamp: number }[] }>(
+      `${this.apiBase}/locations/trails`
+    ).subscribe({
+      next: (trails) => {
+        Object.entries(trails).forEach(([surveyorIdStr, trail]) => {
+          const surveyorId = parseInt(surveyorIdStr, 10);
+          this.surveyorTrails.set(surveyorId, trail);
+          this.updateTrailPolyline(surveyorId);
+        });
+      },
+      error: (e) => console.error('[LocationStream] Failed to load initial trails:', e)
+    });
+  }
+
+  handleLocationUpdate(data: { surveyorId: number; lat: number; lng: number; status: string; displayName: string; timestamp: number; trail?: { lat: number; lng: number; timestamp: number }[] }) {
+    const { surveyorId, lat, lng, status, displayName, timestamp, trail } = data;
+
+    // Update surveyor in local data
+    const surveyor = this.surveyorMap.get(surveyorId);
+    if (surveyor) {
+      surveyor.current_lat = lat;
+      surveyor.current_lng = lng;
+      surveyor.current_status = status;
+      surveyor.last_location_update = new Date(timestamp).toISOString();
+    }
+
+    // Update trail data
+    if (trail) {
+      this.surveyorTrails.set(surveyorId, trail);
+    } else {
+      // Append to existing trail
+      let existingTrail = this.surveyorTrails.get(surveyorId) || [];
+      existingTrail.push({ lat, lng, timestamp });
+      // Keep only last N points
+      if (existingTrail.length > this.MAX_TRAIL_POINTS) {
+        existingTrail = existingTrail.slice(-this.MAX_TRAIL_POINTS);
+      }
+      this.surveyorTrails.set(surveyorId, existingTrail);
+    }
+
+    // Animate marker to new position
+    this.animateMarkerTo(surveyorId, lat, lng, status, displayName);
+
+    // Update trail polyline
+    if (this.showTrails) {
+      this.updateTrailPolyline(surveyorId);
+    }
+
+    this.lastLocationRefresh = new Date();
+    this.calculateStats();
+  }
+
+  handleStatusUpdate(data: { surveyorId: number; status: string; displayName: string; timestamp: number }) {
+    const { surveyorId, status, displayName } = data;
+
+    // Update surveyor status
+    const surveyor = this.surveyorMap.get(surveyorId);
+    if (surveyor) {
+      surveyor.current_status = status;
+    }
+
+    // Update marker color
+    const marker = this.mapMarkers.get(surveyorId);
+    if (marker && this.leafletMap) {
+      const L = (window as any).L;
+      const color = this.getStatusMarkerColor(status);
+      const icon = L.divIcon({
+        className: 'custom-marker',
+        html: `<div style="background-color: ${color}; width: 24px; height: 24px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; color: white;">${this.getInitials(displayName || surveyor?.display_name || '')}</div>`,
+        iconSize: [24, 24],
+        iconAnchor: [12, 12]
+      });
+      marker.setIcon(icon);
+    }
+
+    this.calculateStats();
+  }
+
+  animateMarkerTo(surveyorId: number, newLat: number, newLng: number, status: string, displayName: string) {
+    const L = (window as any).L;
+    if (!L || !this.leafletMap) return;
+
+    const marker = this.mapMarkers.get(surveyorId);
+    if (!marker) {
+      // Create new marker if doesn't exist
+      const color = this.getStatusMarkerColor(status);
+      const icon = L.divIcon({
+        className: 'custom-marker animated-marker',
+        html: `<div style="background-color: ${color}; width: 24px; height: 24px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; color: white; transition: all 0.5s ease-out;">${this.getInitials(displayName)}</div>`,
+        iconSize: [24, 24],
+        iconAnchor: [12, 12]
+      });
+
+      const newMarker = L.marker([newLat, newLng], { icon })
+        .addTo(this.leafletMap)
+        .bindPopup(`
+          <div style="text-align: center;">
+            <strong>${displayName}</strong><br>
+            <span style="color: ${color}; font-weight: bold;">${status}</span><br>
+            <small>Last update: Just now</small>
+          </div>
+        `);
+
+      newMarker.on('click', () => {
+        this.selectedMapSurveyorId = surveyorId;
+      });
+
+      this.mapMarkers.set(surveyorId, newMarker);
+      return;
+    }
+
+    // Animate existing marker to new position
+    const currentLatLng = marker.getLatLng();
+    const startLat = currentLatLng.lat;
+    const startLng = currentLatLng.lng;
+    const duration = 1000; // 1 second animation
+    const startTime = Date.now();
+
+    const animate = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+
+      // Ease-out function for smooth deceleration
+      const easeOut = 1 - Math.pow(1 - progress, 3);
+
+      const currentLat = startLat + (newLat - startLat) * easeOut;
+      const currentLng = startLng + (newLng - startLng) * easeOut;
+
+      marker.setLatLng([currentLat, currentLng]);
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        // Update popup when animation completes
+        const color = this.getStatusMarkerColor(status);
+        marker.setPopupContent(`
+          <div style="text-align: center;">
+            <strong>${displayName}</strong><br>
+            <span style="color: ${color}; font-weight: bold;">${status}</span><br>
+            <small>Last update: Just now</small>
+          </div>
+        `);
+      }
+    };
+
+    requestAnimationFrame(animate);
+
+    // Update marker icon color
+    const color = this.getStatusMarkerColor(status);
+    const icon = L.divIcon({
+      className: 'custom-marker animated-marker',
+      html: `<div style="background-color: ${color}; width: 24px; height: 24px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; color: white;">${this.getInitials(displayName)}</div>`,
+      iconSize: [24, 24],
+      iconAnchor: [12, 12]
+    });
+    marker.setIcon(icon);
+  }
+
+  updateTrailPolyline(surveyorId: number) {
+    const L = (window as any).L;
+    if (!L || !this.leafletMap) return;
+
+    // Remove existing polyline
+    const existingPolyline = this.trailPolylines.get(surveyorId);
+    if (existingPolyline) {
+      this.leafletMap.removeLayer(existingPolyline);
+    }
+
+    const trail = this.surveyorTrails.get(surveyorId);
+    if (!trail || trail.length < 2) return;
+
+    // Get surveyor color
+    const surveyor = this.surveyorMap.get(surveyorId);
+    const color = surveyor ? this.getStatusMarkerColor(surveyor.current_status || 'AVAILABLE') : '#3388ff';
+
+    // Create polyline with trail points
+    const latLngs = trail.map(p => [p.lat, p.lng]);
+    const polyline = L.polyline(latLngs, {
+      color: color,
+      weight: 3,
+      opacity: 0.6,
+      dashArray: '5, 10',
+      className: 'surveyor-trail'
+    }).addTo(this.leafletMap);
+
+    // Add subtle animation dots along the trail
+    this.trailPolylines.set(surveyorId, polyline);
+  }
+
+  toggleTrails() {
+    this.showTrails = !this.showTrails;
+
+    if (this.showTrails) {
+      // Show all trails
+      this.surveyorTrails.forEach((_, surveyorId) => {
+        this.updateTrailPolyline(surveyorId);
+      });
+    } else {
+      // Hide all trails
+      this.trailPolylines.forEach(polyline => {
+        if (this.leafletMap) {
+          this.leafletMap.removeLayer(polyline);
+        }
+      });
+      this.trailPolylines.clear();
+    }
+  }
+
+  clearTrails() {
+    this.surveyorTrails.clear();
+    this.trailPolylines.forEach(polyline => {
+      if (this.leafletMap) {
+        this.leafletMap.removeLayer(polyline);
+      }
+    });
+    this.trailPolylines.clear();
   }
 
   // ============ UPCOMING ALERTS ============

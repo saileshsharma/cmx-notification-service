@@ -53,26 +53,33 @@ class LocationService {
       await this.sendLocationUpdate();
     }
 
-    // Start watching location changes
+    // Start watching location changes with higher frequency for real-time tracking
     this.watchSubscription = await Location.watchPositionAsync(
       {
-        accuracy: Location.Accuracy.Balanced,
-        timeInterval: 30000, // Update every 30 seconds
-        distanceInterval: 50, // Or when moved 50 meters
+        accuracy: Location.Accuracy.High, // High accuracy for better tracking
+        timeInterval: 10000, // Update every 10 seconds
+        distanceInterval: 20, // Or when moved 20 meters
       },
       (location) => {
-        this.lastLocation = {
+        const newLocation = {
           lat: location.coords.latitude,
           lng: location.coords.longitude,
         };
-        console.log('[LocationService] Location updated:', this.lastLocation);
+
+        // Only update if position has changed significantly (> 5 meters)
+        if (!this.lastLocation || this.hasMovedSignificantly(this.lastLocation, newLocation)) {
+          this.lastLocation = newLocation;
+          console.log('[LocationService] Location updated:', this.lastLocation);
+          // Send immediate update when moving
+          this.sendLocationUpdate();
+        }
       }
     );
 
-    // Send location updates to server every 2 minutes
+    // Send location updates to server every 15 seconds for real-time tracking
     this.updateInterval = setInterval(() => {
       this.sendLocationUpdate();
-    }, 120000);
+    }, 15000);
 
     console.log('[LocationService] Tracking started');
     return true;
@@ -147,6 +154,37 @@ class LocationService {
 
   isTracking(): boolean {
     return this.watchSubscription !== null;
+  }
+
+  /**
+   * Check if position has changed significantly (> threshold meters)
+   */
+  private hasMovedSignificantly(
+    oldLoc: { lat: number; lng: number },
+    newLoc: { lat: number; lng: number },
+    thresholdMeters: number = 5
+  ): boolean {
+    const distance = this.calculateDistance(oldLoc.lat, oldLoc.lng, newLoc.lat, newLoc.lng);
+    return distance > thresholdMeters;
+  }
+
+  /**
+   * Calculate distance between two points using Haversine formula
+   */
+  private calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+    const R = 6371000; // Earth's radius in meters
+    const dLat = this.toRad(lat2 - lat1);
+    const dLng = this.toRad(lng2 - lng1);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(this.toRad(lat1)) * Math.cos(this.toRad(lat2)) *
+      Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }
+
+  private toRad(deg: number): number {
+    return deg * (Math.PI / 180);
   }
 }
 
