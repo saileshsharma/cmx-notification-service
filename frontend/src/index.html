@@ -35,13 +35,13 @@
     <div class="app-loading"></div>
   </app-root>
 
-  <!-- Firebase SDK - loaded async to not block rendering -->
-  <script async src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-  <script async src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
-  <script>
-    // Wait for Firebase to load, then initialize
-    function initFirebase() {
-      if (typeof firebase !== 'undefined' && firebase.apps) {
+  <!-- Firebase SDK - defer maintains load order while not blocking rendering -->
+  <script defer src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
+  <script defer>
+    // Initialize Firebase after scripts load
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof firebase !== 'undefined') {
         const firebaseConfig = {
           apiKey: "AIzaSyDkghyuq7bN7WH8brj42hi4pcszZsy7uac",
           authDomain: "cmxc-3035c.firebaseapp.com",
@@ -54,15 +54,8 @@
           firebase.initializeApp(firebaseConfig);
         }
         window.firebaseApp = firebase;
-      } else {
-        setTimeout(initFirebase, 100);
       }
-    }
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initFirebase);
-    } else {
-      initFirebase();
-    }
+    });
   </script>
 </body>
 </html>
