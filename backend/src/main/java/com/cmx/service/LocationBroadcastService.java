@@ -77,17 +77,20 @@ public class LocationBroadcastService {
                 "trail", getLocationTrail(surveyorId)
         );
 
-        // Broadcast to all connected clients
+        // Broadcast to all connected clients - collect dead emitters for removal
+        java.util.List<SseEmitter> deadEmitters = new java.util.ArrayList<>();
         for (SseEmitter emitter : emitters) {
             try {
                 emitter.send(SseEmitter.event()
                         .name("location")
                         .data(data));
-            } catch (IOException e) {
-                emitter.complete();
-                emitters.remove(emitter);
+            } catch (Exception e) {
+                // Don't call complete() here - just mark for removal
+                deadEmitters.add(emitter);
+                logger.debug("Removing dead SSE client on location broadcast");
             }
         }
+        emitters.removeAll(deadEmitters);
 
         logger.debug("Broadcasted location for surveyor {}: ({}, {}). Clients: {}", surveyorId, lat, lng, emitters.size());
     }
@@ -103,16 +106,18 @@ public class LocationBroadcastService {
                 "timestamp", System.currentTimeMillis()
         );
 
+        java.util.List<SseEmitter> deadEmitters = new java.util.ArrayList<>();
         for (SseEmitter emitter : emitters) {
             try {
                 emitter.send(SseEmitter.event()
                         .name("status")
                         .data(data));
-            } catch (IOException e) {
-                emitter.complete();
-                emitters.remove(emitter);
+            } catch (Exception e) {
+                deadEmitters.add(emitter);
+                logger.debug("Removing dead SSE client on status broadcast");
             }
         }
+        emitters.removeAll(deadEmitters);
     }
 
     /**
