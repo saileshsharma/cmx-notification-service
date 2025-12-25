@@ -57,6 +57,23 @@ Angular-based web dashboard for dispatchers and administrators to manage surveyo
 | Build | Angular CLI |
 | HTTP | Angular HttpClient |
 | Real-time | EventSource (SSE) |
+| Push Notifications | Firebase Cloud Messaging |
+
+## Performance
+
+Lighthouse scores (production build):
+- Performance: 91+
+- Best Practices: 96
+- SEO: 92
+
+### Optimizations Applied
+
+- Deferred font loading with `display=swap`
+- Critical CSS inlining
+- Deferred Firebase SDK loading
+- Preconnect hints for external domains
+- Production minification and tree-shaking
+- GZIP compression support
 
 ## Project Structure
 

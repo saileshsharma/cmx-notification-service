@@ -69,12 +69,17 @@ Spring Boot REST API for managing surveyor appointments, real-time location trac
 |-----------|------------|
 | Framework | Spring Boot 3.3 |
 | Language | Java 17 |
-| Database | PostgreSQL |
+| Database | PostgreSQL / H2 (dev) |
 | Migrations | Liquibase |
 | Real-time | Server-Sent Events (SSE) |
 | Push Notifications | Firebase Admin SDK |
+| SMS Notifications | Twilio |
+| Email Notifications | Mailgun |
 | Message Queue | Upstash QStash |
 | API Docs | SpringDoc OpenAPI |
+| Caching | Caffeine |
+| Retry | Spring Retry |
+| Security | Spring Security |
 | Build | Maven |
 
 ## Project Structure
@@ -153,11 +158,33 @@ firebase.credentials.path=/path/to/firebase-service-account.json
 ### Environment Variables
 
 ```bash
+# Database
 export DATABASE_URL=jdbc:postgresql://localhost:5432/surveyor_calendar
 export DATABASE_USERNAME=postgres
 export DATABASE_PASSWORD=your_password
+
+# QStash (for mobile location updates)
 export QSTASH_CURRENT_SIGNING_KEY=your_key
+export QSTASH_NEXT_SIGNING_KEY=your_next_key
+
+# Firebase Push Notifications
 export FIREBASE_CREDENTIALS_PATH=/path/to/firebase-creds.json
+# Or use JSON directly for cloud deployments:
+export FIREBASE_CREDENTIALS_JSON='{"type":"service_account",...}'
+
+# Twilio SMS
+export TWILIO_ACCOUNT_SID=your_account_sid
+export TWILIO_AUTH_TOKEN=your_auth_token
+export TWILIO_PHONE_NUMBER=+1234567890
+
+# Mailgun Email
+export MAILGUN_API_KEY=your_api_key
+export MAILGUN_DOMAIN=your_domain.mailgun.org
+
+# Security (set to true in production)
+export SECURITY_ENABLED=false
+export SECURITY_ADMIN_USERNAME=admin
+export SECURITY_ADMIN_PASSWORD=secure_password
 ```
 
 ## Running
@@ -465,6 +492,52 @@ Migrations are managed with Liquibase in `src/main/resources/db/changelog/`.
 # Rollback last change
 ./mvnw liquibase:rollback -Dliquibase.rollbackCount=1
 ```
+
+## Caching
+
+The application uses Caffeine for high-performance caching:
+
+```java
+// Cache configuration (CacheConfig.java)
+- Maximum 500 entries
+- 5-minute TTL (Time To Live)
+- Statistics recording enabled
+
+// Available caches:
+- availabilityCache: Surveyor availability data
+- surveyorsCache: Surveyor list data
+- surveyorDetailsCache: Individual surveyor details
+```
+
+## Retry Logic
+
+Spring Retry provides resilient notification delivery:
+
+```java
+// Retry configuration for external services
+- Max attempts: 3
+- Backoff: Exponential (1s, 2s, 4s)
+- Applies to: Email (Mailgun), SMS (Twilio)
+```
+
+## Security
+
+Spring Security provides authentication and authorization:
+
+```properties
+# Development mode (default) - all endpoints accessible
+security.enabled=false
+
+# Production mode - requires authentication
+security.enabled=true
+security.admin.username=admin
+security.admin.password=secure_password
+```
+
+When security is enabled:
+- Public endpoints: `/actuator/health`, `/swagger-ui/**`, `/api/mobile/**`
+- Protected endpoints: All other `/api/**` routes require Basic Auth
+- Users: admin (ADMIN, USER roles), dispatcher (USER role)
 
 ## Troubleshooting
 
