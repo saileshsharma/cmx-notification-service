@@ -2111,6 +2111,31 @@ textarea.invalid:focus {
   border-left: 4px solid #17a2b8;
 }
 
+.toast.surveyor {
+  border-left: 4px solid #9c27b0;
+  background: linear-gradient(135deg, #f3e5f5 0%, #fff 100%);
+  animation: surveyorPulse 0.5s ease-out;
+}
+
+.toast.surveyor .toast-icon {
+  background: #e1bee7;
+  color: #7b1fa2;
+}
+
+@keyframes surveyorPulse {
+  0% {
+    transform: translateX(100%) scale(0.9);
+    opacity: 0;
+  }
+  50% {
+    transform: translateX(-5px) scale(1.02);
+  }
+  100% {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+}
+
 .toast-content {
   flex: 1;
 }
@@ -4023,123 +4048,6 @@ textarea.invalid:focus {
   white-space: nowrap;
 }
 
-
-/* ============ DEV TEST NOTIFICATIONS ============ */
-.dev-btn {
-  color: #ff9800 !important;
-}
-
-.dev-btn:hover {
-  background: rgba(255, 152, 0, 0.1) !important;
-}
-
-.test-notification-modal {
-  max-width: 500px;
-}
-
-.test-notification-modal .modal-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #e0e0e0;
-  margin-bottom: 16px;
-}
-
-.test-notification-modal .modal-header h3 {
-  margin: 0;
-  flex: 1;
-}
-
-.dev-badge {
-  background: linear-gradient(135deg, #ff9800, #f57c00);
-  color: white;
-  font-size: 10px;
-  font-weight: 700;
-  padding: 3px 8px;
-  border-radius: 4px;
-  letter-spacing: 0.5px;
-}
-
-.dev-warning {
-  background: #fff3e0;
-  border: 1px solid #ffcc80;
-  border-radius: 8px;
-  padding: 12px;
-  margin-bottom: 16px;
-  font-size: 13px;
-  color: #e65100;
-}
-
-.test-results {
-  background: #f5f5f5;
-  border-radius: 8px;
-  padding: 16px;
-  margin-top: 16px;
-}
-
-.test-results h4 {
-  margin: 0 0 12px 0;
-  font-size: 14px;
-  color: #555;
-}
-
-.results-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-}
-
-.result-item {
-  background: white;
-  border-radius: 8px;
-  padding: 12px;
-  text-align: center;
-  border: 1px solid #e0e0e0;
-}
-
-.result-item.success .result-value {
-  color: #4caf50;
-}
-
-.result-value {
-  display: block;
-  font-size: 24px;
-  font-weight: 700;
-  color: #333;
-  line-height: 1;
-}
-
-.result-label {
-  display: block;
-  font-size: 11px;
-  color: #888;
-  margin-top: 4px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.result-note {
-  margin-top: 12px;
-  padding: 10px;
-  background: #fff3e0;
-  border-radius: 6px;
-  font-size: 12px;
-  color: #e65100;
-}
-
-.dev-send-btn {
-  background: linear-gradient(135deg, #ff9800, #f57c00) !important;
-}
-
-.dev-send-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #f57c00, #ef6c00) !important;
-}
-
-.dev-send-btn:disabled {
-  background: #ccc !important;
-  cursor: not-allowed;
-}
 
 /* ============================================
    RESPONSIVE STYLES

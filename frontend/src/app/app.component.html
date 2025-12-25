@@ -6,6 +6,7 @@
       <span *ngIf="toast.type === 'error'">&#10007;</span>
       <span *ngIf="toast.type === 'warning'">&#9888;</span>
       <span *ngIf="toast.type === 'info'">&#8505;</span>
+      <span *ngIf="toast.type === 'surveyor'" class="material-icons">person_pin</span>
     </div>
     <div class="toast-content">
       <div class="toast-title" *ngIf="toast.title">{{toast.title}}</div>
@@ -163,14 +164,6 @@
         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
         <polyline points="7 10 12 15 17 10"></polyline>
         <line x1="12" y1="15" x2="12" y2="3"></line>
-      </svg>
-    </button>
-    <!-- Test Notifications (Dev) -->
-    <button class="btn-icon dev-btn" (click)="openTestNotificationModal()" title="Test Notifications (Dev)">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-        <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-        <line x1="12" y1="2" x2="12" y2="5"></line>
       </svg>
     </button>
     <!-- Refresh -->
@@ -1412,59 +1405,3 @@
   </div>
 </div>
 
-<!-- Test Notification Modal (Dev) -->
-<div class="modal-overlay" *ngIf="showTestNotificationModal" (click)="closeTestNotificationModal()">
-  <div class="modal test-notification-modal" (click)="$event.stopPropagation()">
-    <div class="modal-header dev-header">
-      <h3>Test Push Notifications</h3>
-      <span class="dev-badge">DEV</span>
-      <button class="close-btn" (click)="closeTestNotificationModal()">&#10005;</button>
-    </div>
-    <div class="modal-body">
-      <p class="dev-warning">This will send push notifications, emails, and SMS to ALL surveyors in the system.</p>
-
-      <label>
-        <strong>Title</strong>
-        <input type="text" [(ngModel)]="testNotificationTitle" placeholder="Notification title..." maxlength="100">
-      </label>
-
-      <label>
-        <strong>Message</strong>
-        <textarea [(ngModel)]="testNotificationMessage" placeholder="Notification message..." maxlength="500" rows="3"></textarea>
-      </label>
-
-      <!-- Results Section -->
-      <div class="test-results" *ngIf="testNotificationResults">
-        <h4>Results</h4>
-        <div class="results-grid">
-          <div class="result-item">
-            <span class="result-value">{{testNotificationResults.surveyorCount}}</span>
-            <span class="result-label">Surveyors</span>
-          </div>
-          <div class="result-item success">
-            <span class="result-value">{{testNotificationResults.pushNotificationsSent}}</span>
-            <span class="result-label">Push Sent</span>
-          </div>
-          <div class="result-item">
-            <span class="result-value">{{testNotificationResults.emailsSent}}</span>
-            <span class="result-label">Emails Sent</span>
-          </div>
-          <div class="result-item">
-            <span class="result-value">{{testNotificationResults.smsSent}}</span>
-            <span class="result-label">SMS Sent</span>
-          </div>
-        </div>
-        <div class="result-note" *ngIf="!testNotificationResults.firebaseEnabled">
-          Firebase is not enabled. Push notifications require FIREBASE_CREDENTIALS_PATH to be configured.
-        </div>
-      </div>
-    </div>
-    <div class="modal-actions">
-      <button class="btn-cancel" (click)="closeTestNotificationModal()">Close</button>
-      <button class="btn-create dev-send-btn" (click)="sendTestNotificationToAll()" [disabled]="testNotificationSending">
-        <span *ngIf="!testNotificationSending">Send to All Surveyors</span>
-        <span *ngIf="testNotificationSending">Sending...</span>
-      </button>
-    </div>
-  </div>
-</div>

@@ -15,7 +15,7 @@ import { CalendarOptions, DateSelectArg, EventClickArg, EventDropArg } from '@fu
 
 type Surveyor = { id: number; code: string; display_name: string; surveyor_type: string; current_status: string; home_lat?: number; home_lng?: number; current_lat?: number; current_lng?: number; last_location_update?: string; email?: string; phone?: string; };
 
-type Toast = { id: number; type: 'success' | 'error' | 'warning' | 'info'; message: string; title?: string; };
+type Toast = { id: number; type: 'success' | 'error' | 'warning' | 'info' | 'surveyor'; message: string; title?: string; };
 
 type WorkloadDay = { date: string; dayName: string; count: number; };
 
@@ -268,13 +268,6 @@ export class AppComponent implements OnInit, OnDestroy {
   showDashboard = false;
   dashboardWidgets: DashboardWidget[] = [];
 
-  // Dev Test Notifications
-  showTestNotificationModal = false;
-  testNotificationTitle = 'Test Notification';
-  testNotificationMessage = 'This is a test push notification from the Dispatcher Calendar';
-  testNotificationSending = false;
-  testNotificationResults: any = null;
-
   // Web Push Notifications
   webPushEnabled = false;
   webPushToken: string | null = null;
@@ -391,10 +384,12 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   // ============ TOAST NOTIFICATIONS ============
-  showToast(type: 'success' | 'error' | 'warning' | 'info', message: string, title?: string) {
+  showToast(type: 'success' | 'error' | 'warning' | 'info' | 'surveyor', message: string, title?: string) {
     const toast: Toast = { id: ++this.toastId, type, message, title };
     this.toasts.push(toast);
-    setTimeout(() => this.removeToast(toast.id), 4000);
+    // Surveyor notifications stay longer (6s) for visibility
+    const duration = type === 'surveyor' ? 6000 : 4000;
+    setTimeout(() => this.removeToast(toast.id), duration);
   }
 
   removeToast(id: number) {
@@ -2294,40 +2289,6 @@ export class AppComponent implements OnInit, OnDestroy {
     ];
   }
 
-  // ============ DEV TEST NOTIFICATIONS ============
-  openTestNotificationModal() {
-    this.showTestNotificationModal = true;
-    this.testNotificationResults = null;
-  }
-
-  closeTestNotificationModal() {
-    this.showTestNotificationModal = false;
-  }
-
-  sendTestNotificationToAll() {
-    this.testNotificationSending = true;
-    this.testNotificationResults = null;
-
-    const payload = {
-      title: this.testNotificationTitle,
-      message: this.testNotificationMessage
-    };
-
-    this.http.post<any>(`${this.apiBase}/dev/test-notification-all`, payload).subscribe({
-      next: (result) => {
-        this.testNotificationSending = false;
-        this.testNotificationResults = result;
-        this.showToast('success', `Sent to ${result.surveyorCount} surveyors`);
-        this.addActivityLog('Test Notification', `Sent to all ${result.surveyorCount} surveyors`);
-      },
-      error: (e) => {
-        this.testNotificationSending = false;
-        this.showToast('error', 'Failed to send test notifications: ' + (e.error?.message || e.message));
-        console.error('Test notification error:', e);
-      }
-    });
-  }
-
   // ============ APPOINTMENT COLORING ============
   openColorPicker(surveyorId: number) {
     this.colorPickerSurveyorId = surveyorId;
@@ -3508,8 +3469,8 @@ export class AppComponent implements OnInit, OnDestroy {
         this.loadingActivities = loading;
       }),
       this.surveyorActivityService.liveEvent$.subscribe(event => {
-        // Show toast for real-time events
-        this.showToast('info', event.message, 'Surveyor Update');
+        // Show prominent toast for real-time surveyor activity events
+        this.showToast('surveyor', event.message, 'Surveyor Activity');
         // Also refresh surveyor stats as status may have changed
         this.loadAllSurveyors();
       })

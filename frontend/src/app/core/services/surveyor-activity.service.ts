@@ -1,7 +1,7 @@
 import { Injectable, OnDestroy } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { BehaviorSubject, Observable, Subject } from 'rxjs';
-import { tap } from 'rxjs/operators';
+import { tap, catchError } from 'rxjs/operators';
 import { API_BASE } from './api-config';
 
 export interface SurveyorActivity {
@@ -194,6 +194,10 @@ export class SurveyorActivityService implements OnDestroy {
       tap(activities => {
         this.activitiesSubject.next(activities);
         this.loadingSubject.next(false);
+      }),
+      catchError(error => {
+        this.loadingSubject.next(false);
+        throw error;
       })
     );
   }
@@ -212,6 +216,10 @@ export class SurveyorActivityService implements OnDestroy {
       tap(activities => {
         this.activitiesSubject.next(activities);
         this.loadingSubject.next(false);
+      }),
+      catchError(error => {
+        this.loadingSubject.next(false);
+        throw error;
       })
     );
   }
