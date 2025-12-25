@@ -80,13 +80,12 @@ export class SurveyorActivityService implements OnDestroy {
       this.eventSource = new EventSource(`${this.apiBase}/dispatcher/stream`);
 
       this.eventSource.onopen = () => {
-        console.log('SSE connected to dispatcher stream');
         this.connectedSubject.next(true);
         this.reconnectAttempts = 0;
       };
 
-      this.eventSource.addEventListener('connected', (event: MessageEvent) => {
-        console.log('SSE connection confirmed:', event.data);
+      this.eventSource.addEventListener('connected', (_event: MessageEvent) => {
+        // Connection confirmed
       });
 
       this.eventSource.addEventListener('surveyor-activity', (event: MessageEvent) => {
@@ -161,7 +160,6 @@ export class SurveyorActivityService implements OnDestroy {
 
     this.reconnectTimeout = setTimeout(() => {
       this.reconnectAttempts++;
-      console.log(`SSE reconnect attempt ${this.reconnectAttempts}`);
       this.connect();
     }, this.RECONNECT_DELAY * Math.min(this.reconnectAttempts + 1, 5));
   }

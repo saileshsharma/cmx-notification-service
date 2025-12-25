@@ -616,8 +616,7 @@ export class AppComponent implements OnInit, OnDestroy {
     try {
       this.locationEventSource = new EventSource(streamUrl);
 
-      this.locationEventSource.addEventListener('connected', (event: any) => {
-        console.log('[LocationStream] Connected:', event.data);
+      this.locationEventSource.addEventListener('connected', (_event: any) => {
         this.locationStreamConnected = true;
         this.locationStreamError = false;
         this.loadInitialTrails();
@@ -626,7 +625,6 @@ export class AppComponent implements OnInit, OnDestroy {
       this.locationEventSource.addEventListener('location', (event: any) => {
         try {
           const data = JSON.parse(event.data);
-          console.log('[LocationStream] Location update:', data);
           this.handleLocationUpdate(data);
         } catch (e) {
           console.error('[LocationStream] Failed to parse location event:', e);
@@ -636,7 +634,6 @@ export class AppComponent implements OnInit, OnDestroy {
       this.locationEventSource.addEventListener('status', (event: any) => {
         try {
           const data = JSON.parse(event.data);
-          console.log('[LocationStream] Status update:', data);
           this.handleStatusUpdate(data);
         } catch (e) {
           console.error('[LocationStream] Failed to parse status event:', e);
@@ -3195,28 +3192,23 @@ export class AppComponent implements OnInit, OnDestroy {
   async initWebPushNotifications() {
     // Check if browser supports notifications
     if (!('Notification' in window)) {
-      console.log('This browser does not support notifications');
       return;
     }
 
     // Check if service worker is supported
     if (!('serviceWorker' in navigator)) {
-      console.log('This browser does not support service workers');
       return;
     }
 
     try {
       // Register service worker
-      const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-      console.log('Service Worker registered:', registration);
+      await navigator.serviceWorker.register('/firebase-messaging-sw.js');
 
       // Get current permission status
       this.webPushPermission = Notification.permission;
 
       if (this.webPushPermission === 'granted') {
         await this.setupWebPushMessaging();
-      } else if (this.webPushPermission === 'default') {
-        console.log('Notification permission not yet requested. User can enable via the bell icon.');
       }
     } catch (error) {
       console.error('Error initializing web push:', error);
@@ -3225,21 +3217,14 @@ export class AppComponent implements OnInit, OnDestroy {
 
   async requestNotificationPermission() {
     try {
-      console.log('requestNotificationPermission: Requesting permission...');
       const permission = await Notification.requestPermission();
-      console.log('requestNotificationPermission: Permission result:', permission);
       this.webPushPermission = permission;
 
       if (permission === 'granted') {
-        console.log('requestNotificationPermission: Permission granted, setting up FCM...');
         await this.setupWebPushMessaging();
-        console.log('requestNotificationPermission: FCM setup complete. webPushEnabled:', this.webPushEnabled, 'token:', this.webPushToken ? 'present' : 'null');
         this.showToast('success', 'Push notifications enabled!');
       } else if (permission === 'denied') {
-        console.log('requestNotificationPermission: Permission denied');
         this.showToast('warning', 'Notification permission denied. You can enable it in browser settings.');
-      } else {
-        console.log('requestNotificationPermission: Permission dismissed/default');
       }
     } catch (error) {
       console.error('Error requesting notification permission:', error);
@@ -3294,7 +3279,6 @@ export class AppComponent implements OnInit, OnDestroy {
       }
 
       if (token) {
-        console.log('FCM Token obtained:', token);
         this.webPushToken = token;
         // Note: webPushEnabled should only be true when registered with a surveyor
         // Check if we have a stored surveyorId - if so, we're already registered
@@ -3309,7 +3293,6 @@ export class AppComponent implements OnInit, OnDestroy {
 
         // Handle foreground messages
         messaging.onMessage((payload: any) => {
-          console.log('Foreground message received:', payload);
           this.handleForegroundMessage(payload);
         });
 
@@ -3390,25 +3373,18 @@ export class AppComponent implements OnInit, OnDestroy {
       return;
     }
 
-    console.log('confirmPushRegistration: Starting with surveyorId:', this.pushRegistrationSurveyorId);
-
     // Request notification permission first
     await this.requestNotificationPermission();
 
-    console.log('confirmPushRegistration: After permission request - webPushEnabled:', this.webPushEnabled, 'webPushToken:', this.webPushToken ? 'present' : 'null');
-
     // If permission granted, register the token with the selected surveyor
     if (this.webPushEnabled && this.webPushToken) {
-      console.log('confirmPushRegistration: Registering token for surveyor:', this.pushRegistrationSurveyorId);
       this.registerTokenForSurveyor(this.pushRegistrationSurveyorId);
       this.registeredPushSurveyorId = this.pushRegistrationSurveyorId;
       localStorage.setItem('fcmSurveyorId', String(this.pushRegistrationSurveyorId));
     } else {
-      console.warn('confirmPushRegistration: Token not available after permission request');
       // Try to get token from localStorage as fallback
       const storedToken = localStorage.getItem('fcmToken');
       if (storedToken) {
-        console.log('confirmPushRegistration: Using stored token');
         this.registerTokenForSurveyor(this.pushRegistrationSurveyorId);
         this.registeredPushSurveyorId = this.pushRegistrationSurveyorId;
         localStorage.setItem('fcmSurveyorId', String(this.pushRegistrationSurveyorId));
@@ -3428,7 +3404,6 @@ export class AppComponent implements OnInit, OnDestroy {
 
   registerTokenForSurveyor(surveyorId: number) {
     const token = this.webPushToken || localStorage.getItem('fcmToken');
-    console.log('registerTokenForSurveyor: surveyorId:', surveyorId, 'token:', token ? token.substring(0, 20) + '...' : 'null');
 
     if (!token) {
       this.showToast('error', 'No push token available. Enable notifications first.');
@@ -3440,16 +3415,14 @@ export class AppComponent implements OnInit, OnDestroy {
       token: token,
       platform: 'WEB'
     };
-    console.log('registerTokenForSurveyor: Sending to', `${this.apiBase}/mobile/device-token`, payload);
 
     this.http.post(`${this.apiBase}/mobile/device-token`, payload).subscribe({
-      next: (response) => {
-        console.log('registerTokenForSurveyor: Success!', response);
+      next: () => {
         this.showToast('success', `Push notifications registered for surveyor`);
         this.webPushEnabled = true;
       },
       error: (e) => {
-        console.error('registerTokenForSurveyor: Failed:', e);
+        console.error('Failed to register push token:', e);
         this.showToast('error', 'Failed to register push token');
       }
     });

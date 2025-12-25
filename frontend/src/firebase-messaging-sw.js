@@ -22,8 +22,6 @@ const messaging = firebase.messaging();
 
 // Handle background messages
 messaging.onBackgroundMessage((payload) => {
-  console.log('[firebase-messaging-sw.js] Received background message:', payload);
-
   const notificationTitle = payload.notification?.title || 'CMX Calendar';
   const notificationOptions = {
     body: payload.notification?.body || 'You have a new notification',
@@ -43,8 +41,6 @@ messaging.onBackgroundMessage((payload) => {
 
 // Handle notification click
 self.addEventListener('notificationclick', (event) => {
-  console.log('[firebase-messaging-sw.js] Notification clicked:', event);
-
   event.notification.close();
 
   if (event.action === 'dismiss') {
