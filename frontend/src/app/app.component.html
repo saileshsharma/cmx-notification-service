@@ -99,6 +99,13 @@
         </svg>
         <span>Heatmap</span>
       </button>
+      <button [class.active]="currentView === 'map'" (click)="setView('map')" title="Surveyor Location Map">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+          <circle cx="12" cy="10" r="3"></circle>
+        </svg>
+        <span>Map</span>
+      </button>
     </div>
   </div>
 
@@ -576,6 +583,79 @@
                [style.background-color]="getHeatmapColor(day.count)"
                [title]="day.count + ' appointments'">
             {{day.count || ''}}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Map View - Surveyor Locations -->
+    <div *ngIf="currentView === 'map'" class="map-view-container">
+      <div class="map-header">
+        <h3>Surveyor Locations</h3>
+        <div class="map-controls">
+          <button class="btn-refresh" (click)="refreshSurveyorLocations()" [disabled]="loadingLocations">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [class.spinning]="loadingLocations">
+              <path d="M23 4v6h-6"></path>
+              <path d="M1 20v-6h6"></path>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+            </svg>
+            {{loadingLocations ? 'Refreshing...' : 'Refresh'}}
+          </button>
+          <span class="last-update" *ngIf="lastLocationRefresh">
+            Last updated: {{formatLocationTime(lastLocationRefresh)}}
+          </span>
+        </div>
+      </div>
+      <div class="map-legend">
+        <div class="legend-item">
+          <span class="legend-marker available"></span>
+          <span>Available</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-marker busy"></span>
+          <span>Busy</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-marker offline"></span>
+          <span>Offline</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-marker no-location"></span>
+          <span>No Location</span>
+        </div>
+      </div>
+      <div class="map-content">
+        <div id="surveyor-map" class="surveyor-map"></div>
+        <div class="surveyor-list-panel">
+          <h4>Surveyors ({{getSurveyorsWithLocation().length}}/{{allSurveyors.length}} with location)</h4>
+          <div class="surveyor-location-list">
+            <div *ngFor="let s of allSurveyors"
+                 class="surveyor-location-card"
+                 [class.has-location]="s.current_lat && s.current_lng"
+                 [class.selected]="selectedMapSurveyorId === s.id"
+                 (click)="selectSurveyorOnMap(s)">
+              <div class="surveyor-info">
+                <div class="avatar small" [style.background-color]="getSurveyorColor(s.id)">
+                  <img *ngIf="!hasAvatarError(s.id)"
+                       [src]="getAvatarUrl(s.display_name, 32)"
+                       [alt]="s.display_name"
+                       (error)="onAvatarError(s.id)"
+                       class="avatar-img">
+                  <span *ngIf="hasAvatarError(s.id)" class="avatar-initials">{{getInitials(s.display_name)}}</span>
+                </div>
+                <div class="surveyor-details">
+                  <span class="surveyor-name">{{s.display_name}}</span>
+                  <span class="surveyor-status" [class]="s.current_status?.toLowerCase()">{{s.current_status || 'UNKNOWN'}}</span>
+                </div>
+              </div>
+              <div class="location-info" *ngIf="s.current_lat && s.current_lng">
+                <span class="coordinates">{{s.current_lat?.toFixed(4)}}, {{s.current_lng?.toFixed(4)}}</span>
+                <span class="last-update" *ngIf="s.last_location_update">{{formatLocationTime(s.last_location_update)}}</span>
+              </div>
+              <div class="no-location-info" *ngIf="!s.current_lat || !s.current_lng">
+                <span>No location data</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>

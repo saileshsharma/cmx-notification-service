@@ -288,6 +288,13 @@ export class AppComponent implements OnInit {
   notesModalSurveyorName = '';
   notesModalContent = '';
 
+  // Map View - Surveyor Locations
+  loadingLocations = false;
+  lastLocationRefresh: Date | null = null;
+  selectedMapSurveyorId: number | null = null;
+  private leafletMap: any = null;
+  private mapMarkers: Map<number, any> = new Map();
+
   // Confirmation/Alert Modal
   showConfirmModal = false;
   confirmModalType: 'confirm' | 'alert' | 'error' | 'warning' = 'confirm';
@@ -412,6 +419,166 @@ export class AppComponent implements OnInit {
       this.refreshEvents();
       this.loadAllSurveyors();
     }
+    if (view === 'map') {
+      this.refreshSurveyorLocations();
+      setTimeout(() => this.initializeMap(), 100);
+    }
+  }
+
+  // ============ MAP VIEW - SURVEYOR LOCATIONS ============
+  refreshSurveyorLocations() {
+    this.loadingLocations = true;
+    this.http.get<Surveyor[]>(`${this.apiBase}/surveyors`).subscribe({
+      next: (surveyors) => {
+        this.allSurveyors = surveyors;
+        this.surveyorMap.clear();
+        surveyors.forEach(s => this.surveyorMap.set(s.id, s));
+        this.lastLocationRefresh = new Date();
+        this.loadingLocations = false;
+        this.updateMapMarkers();
+      },
+      error: (e) => {
+        console.error('Failed to load surveyors:', e);
+        this.loadingLocations = false;
+      }
+    });
+  }
+
+  initializeMap() {
+    const mapContainer = document.getElementById('surveyor-map');
+    if (!mapContainer) return;
+
+    // If map already exists, just update markers
+    if (this.leafletMap) {
+      this.updateMapMarkers();
+      return;
+    }
+
+    // Dynamically load Leaflet
+    if (!(window as any).L) {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+      document.head.appendChild(link);
+
+      const script = document.createElement('script');
+      script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+      script.onload = () => this.createMap();
+      document.head.appendChild(script);
+    } else {
+      this.createMap();
+    }
+  }
+
+  private createMap() {
+    const L = (window as any).L;
+    if (!L) return;
+
+    const mapContainer = document.getElementById('surveyor-map');
+    if (!mapContainer) return;
+
+    // Default center (can be updated based on surveyors with location)
+    let center: [number, number] = [40.7128, -74.0060]; // NYC default
+    let zoom = 10;
+
+    const surveyorsWithLoc = this.getSurveyorsWithLocation();
+    if (surveyorsWithLoc.length > 0) {
+      const avgLat = surveyorsWithLoc.reduce((sum, s) => sum + (s.current_lat || 0), 0) / surveyorsWithLoc.length;
+      const avgLng = surveyorsWithLoc.reduce((sum, s) => sum + (s.current_lng || 0), 0) / surveyorsWithLoc.length;
+      center = [avgLat, avgLng];
+    }
+
+    this.leafletMap = L.map('surveyor-map').setView(center, zoom);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(this.leafletMap);
+
+    this.updateMapMarkers();
+  }
+
+  private updateMapMarkers() {
+    const L = (window as any).L;
+    if (!L || !this.leafletMap) return;
+
+    // Clear existing markers
+    this.mapMarkers.forEach(marker => this.leafletMap.removeLayer(marker));
+    this.mapMarkers.clear();
+
+    // Add markers for surveyors with location
+    const surveyorsWithLoc = this.getSurveyorsWithLocation();
+    surveyorsWithLoc.forEach(s => {
+      const color = this.getStatusMarkerColor(s.current_status);
+      const icon = L.divIcon({
+        className: 'custom-marker',
+        html: `<div style="background-color: ${color}; width: 24px; height: 24px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; color: white;">${this.getInitials(s.display_name)}</div>`,
+        iconSize: [24, 24],
+        iconAnchor: [12, 12]
+      });
+
+      const marker = L.marker([s.current_lat, s.current_lng], { icon })
+        .addTo(this.leafletMap)
+        .bindPopup(`
+          <div style="text-align: center;">
+            <strong>${s.display_name}</strong><br>
+            <span style="color: ${color}; font-weight: bold;">${s.current_status}</span><br>
+            <small>Last update: ${this.formatLocationTime(s.last_location_update)}</small>
+          </div>
+        `);
+
+      marker.on('click', () => {
+        this.selectedMapSurveyorId = s.id;
+      });
+
+      this.mapMarkers.set(s.id, marker);
+    });
+
+    // Fit bounds if we have markers
+    if (surveyorsWithLoc.length > 0) {
+      const group = L.featureGroup(Array.from(this.mapMarkers.values()));
+      this.leafletMap.fitBounds(group.getBounds().pad(0.1));
+    }
+  }
+
+  getSurveyorsWithLocation(): Surveyor[] {
+    return this.allSurveyors.filter(s => s.current_lat && s.current_lng);
+  }
+
+  selectSurveyorOnMap(surveyor: Surveyor) {
+    this.selectedMapSurveyorId = surveyor.id;
+
+    if (surveyor.current_lat && surveyor.current_lng && this.leafletMap) {
+      this.leafletMap.setView([surveyor.current_lat, surveyor.current_lng], 14);
+      const marker = this.mapMarkers.get(surveyor.id);
+      if (marker) {
+        marker.openPopup();
+      }
+    }
+  }
+
+  getStatusMarkerColor(status: string): string {
+    switch (status) {
+      case 'AVAILABLE': return '#28a745';
+      case 'BUSY': return '#dc3545';
+      case 'OFFLINE': return '#6c757d';
+      default: return '#999';
+    }
+  }
+
+  formatLocationTime(timestamp: string | Date | null): string {
+    if (!timestamp) return 'Unknown';
+    const date = timestamp instanceof Date ? timestamp : new Date(timestamp);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+
+    return date.toLocaleDateString();
   }
 
   // ============ UPCOMING ALERTS ============

@@ -7,6 +7,9 @@ export interface Surveyor {
   status?: string;
   home_lat?: number;
   home_lng?: number;
+  current_lat?: number;
+  current_lng?: number;
+  last_location_update?: string;
   email?: string;
   phone?: string;
 }
