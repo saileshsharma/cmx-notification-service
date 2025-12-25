@@ -21,5 +21,6 @@
     <include file="db/changelog/changes/014-surveyor-login-credentials.xml"/>
     <include file="db/changelog/changes/015-remove-username-use-email.xml"/>
     <include file="db/changelog/changes/016-surveyor-activity-log.xml"/>
+    <include file="db/changelog/changes/017-fix-activity-log-table.xml"/>
 
 </databaseChangeLog>

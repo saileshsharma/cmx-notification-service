@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Fix surveyor_activity_log table - drop if exists and recreate correctly -->
+
+    <!-- First drop the foreign key if it exists (uses old bad reference) -->
+    <changeSet id="017-1" author="system">
+        <preConditions onFail="MARK_RAN">
+            <foreignKeyConstraintExists foreignKeyName="fk_activity_surveyor"/>
+        </preConditions>
+        <dropForeignKeyConstraint baseTableName="surveyor_activity_log" constraintName="fk_activity_surveyor"/>
+    </changeSet>
+
+    <!-- Drop indexes if they exist -->
+    <changeSet id="017-2" author="system">
+        <preConditions onFail="MARK_RAN">
+            <indexExists tableName="surveyor_activity_log" indexName="idx_activity_surveyor_id"/>
+        </preConditions>
+        <dropIndex tableName="surveyor_activity_log" indexName="idx_activity_surveyor_id"/>
+    </changeSet>
+
+    <changeSet id="017-3" author="system">
+        <preConditions onFail="MARK_RAN">
+            <indexExists tableName="surveyor_activity_log" indexName="idx_activity_type"/>
+        </preConditions>
+        <dropIndex tableName="surveyor_activity_log" indexName="idx_activity_type"/>
+    </changeSet>
+
+    <changeSet id="017-4" author="system">
+        <preConditions onFail="MARK_RAN">
+            <indexExists tableName="surveyor_activity_log" indexName="idx_activity_created_at"/>
+        </preConditions>
+        <dropIndex tableName="surveyor_activity_log" indexName="idx_activity_created_at"/>
+    </changeSet>
+
+    <changeSet id="017-5" author="system">
+        <preConditions onFail="MARK_RAN">
+            <indexExists tableName="surveyor_activity_log" indexName="idx_activity_appointment_id"/>
+        </preConditions>
+        <dropIndex tableName="surveyor_activity_log" indexName="idx_activity_appointment_id"/>
+    </changeSet>
+
+    <!-- Drop the table if it exists -->
+    <changeSet id="017-6" author="system">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="surveyor_activity_log"/>
+        </preConditions>
+        <dropTable tableName="surveyor_activity_log"/>
+    </changeSet>
+
+    <!-- Recreate the table correctly -->
+    <changeSet id="017-7" author="system">
+        <createTable tableName="surveyor_activity_log">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="surveyor_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="activity_type" type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="previous_value" type="VARCHAR(64)"/>
+            <column name="new_value" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="appointment_id" type="BIGINT"/>
+            <column name="latitude" type="DECIMAL(9,6)"/>
+            <column name="longitude" type="DECIMAL(9,6)"/>
+            <column name="notes" type="TEXT"/>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <!-- Add foreign key to surveyor table -->
+    <changeSet id="017-8" author="system">
+        <addForeignKeyConstraint
+            baseTableName="surveyor_activity_log"
+            baseColumnNames="surveyor_id"
+            referencedTableName="surveyor"
+            referencedColumnNames="id"
+            constraintName="fk_activity_surveyor"/>
+    </changeSet>
+
+    <!-- Create indexes -->
+    <changeSet id="017-9" author="system">
+        <createIndex tableName="surveyor_activity_log" indexName="idx_activity_surveyor_id">
+            <column name="surveyor_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="017-10" author="system">
+        <createIndex tableName="surveyor_activity_log" indexName="idx_activity_type">
+            <column name="activity_type"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="017-11" author="system">
+        <createIndex tableName="surveyor_activity_log" indexName="idx_activity_created_at">
+            <column name="created_at"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="017-12" author="system">
+        <createIndex tableName="surveyor_activity_log" indexName="idx_activity_appointment_id">
+            <column name="appointment_id"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>
