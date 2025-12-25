@@ -4,3 +4,4 @@ export * from './surveyor.service';
 export * from './appointment.service';
 export * from './notification.service';
 export * from './storage.service';
+export * from './surveyor-activity.service';

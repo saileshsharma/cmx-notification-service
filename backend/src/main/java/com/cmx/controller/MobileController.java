@@ -7,6 +7,7 @@ import com.cmx.service.DeviceTokenService;
 import com.cmx.service.NotificationAuditService;
 import com.cmx.service.NotificationService;
 import com.cmx.service.SurveyorService;
+import com.cmx.service.SurveyorActivityService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -30,6 +31,7 @@ public class MobileController {
     private final AvailabilityService availabilityService;
     private final SurveyorService surveyorService;
     private final NotificationService notificationService;
+    private final SurveyorActivityService activityService;
     private final com.cmx.repository.SurveyorRepository surveyorRepository;
 
     public MobileController(DeviceTokenService deviceTokenService,
@@ -37,12 +39,14 @@ public class MobileController {
                             AvailabilityService availabilityService,
                             SurveyorService surveyorService,
                             NotificationService notificationService,
+                            SurveyorActivityService activityService,
                             com.cmx.repository.SurveyorRepository surveyorRepository) {
         this.deviceTokenService = deviceTokenService;
         this.auditService = auditService;
         this.availabilityService = availabilityService;
         this.surveyorService = surveyorService;
         this.notificationService = notificationService;
+        this.activityService = activityService;
         this.surveyorRepository = surveyorRepository;
     }
 
@@ -88,6 +92,11 @@ public class MobileController {
         if (pushToken != null && !pushToken.isEmpty()) {
             deviceTokenService.registerToken(surveyor.getId(), pushToken, platform != null ? platform : "ANDROID");
         }
+
+        // Log login activity
+        Double lat = request.get("lat") != null ? ((Number) request.get("lat")).doubleValue() : null;
+        Double lng = request.get("lng") != null ? ((Number) request.get("lng")).doubleValue() : null;
+        activityService.logLogin(surveyor.getId(), lat, lng);
 
         // Build response with surveyor details
         Map<String, Object> response = new LinkedHashMap<>();
@@ -219,19 +228,61 @@ public class MobileController {
 
     @Operation(
         summary = "Update surveyor status",
-        description = "Updates the current availability status of a surveyor (AVAILABLE, BUSY, OFFLINE)"
+        description = "Updates the current availability status of a surveyor (AVAILABLE, BUSY, OFFLINE) and notifies dispatcher"
     )
     @ApiResponse(responseCode = "200", description = "Status updated successfully")
     @PostMapping("/status")
     public ResponseEntity<Map<String, Object>> updateStatus(@RequestBody Map<String, Object> request) {
         Long surveyorId = ((Number) request.get("surveyorId")).longValue();
-        String status = (String) request.get("status"); // AVAILABLE, BUSY, OFFLINE
+        String newStatus = (String) request.get("status"); // AVAILABLE, BUSY, OFFLINE
+        Double lat = request.get("lat") != null ? ((Number) request.get("lat")).doubleValue() : null;
+        Double lng = request.get("lng") != null ? ((Number) request.get("lng")).doubleValue() : null;
 
-        boolean success = surveyorService.updateStatus(surveyorId, status);
+        // Get previous status
+        var surveyor = surveyorRepository.findById(surveyorId).orElse(null);
+        String previousStatus = surveyor != null ? surveyor.getCurrentStatus() : null;
+
+        boolean success = surveyorService.updateStatus(surveyorId, newStatus);
+
+        if (success) {
+            // Log activity and notify dispatcher
+            activityService.logStatusChange(surveyorId, previousStatus, newStatus, lat, lng);
+        }
 
         return ResponseEntity.ok(Map.of(
             "success", success,
-            "message", success ? "Status updated to " + status : "Failed to update status"
+            "message", success ? "Status updated to " + newStatus : "Failed to update status"
+        ));
+    }
+
+    @Operation(
+        summary = "Update job status (quick update)",
+        description = "Updates the job progress status (ON_WAY, ARRIVED, INSPECTING, COMPLETED) and notifies dispatcher"
+    )
+    @ApiResponse(responseCode = "200", description = "Job status updated successfully")
+    @PostMapping("/job-update")
+    public ResponseEntity<Map<String, Object>> updateJobStatus(@RequestBody Map<String, Object> request) {
+        Long surveyorId = ((Number) request.get("surveyorId")).longValue();
+        String newState = (String) request.get("status"); // ON_WAY, ARRIVED, INSPECTING, COMPLETED
+        Long appointmentId = request.get("appointmentId") != null ? ((Number) request.get("appointmentId")).longValue() : null;
+        Double lat = request.get("lat") != null ? ((Number) request.get("lat")).doubleValue() : null;
+        Double lng = request.get("lng") != null ? ((Number) request.get("lng")).doubleValue() : null;
+        String notes = (String) request.get("notes");
+
+        // Get previous job state
+        String previousState = activityService.getLastJobState(surveyorId);
+
+        // Log activity and notify dispatcher
+        activityService.logJobUpdate(surveyorId, previousState, newState, appointmentId, lat, lng, notes);
+
+        // Also update location if provided
+        if (lat != null && lng != null) {
+            surveyorService.updateLocation(surveyorId, lat, lng);
+        }
+
+        return ResponseEntity.ok(Map.of(
+            "success", true,
+            "message", "Job status updated to " + newState
         ));
     }
 

@@ -7,6 +7,7 @@ const KEYS = {
   PUSH_TOKEN: 'push_token',
   DEVICE_REGISTERED: 'device_registered',
   NOTIFICATIONS: 'notifications',
+  INSPECTION_HISTORY: 'inspection_history',
 };
 
 const MAX_NOTIFICATIONS = 50;
@@ -72,6 +73,28 @@ class StorageService {
     await AsyncStorage.removeItem(KEYS.NOTIFICATIONS);
   }
 
+  // Inspection History
+  async getInspectionHistory(): Promise<any[]> {
+    const json = await AsyncStorage.getItem(KEYS.INSPECTION_HISTORY);
+    if (!json) return [];
+    try {
+      return JSON.parse(json);
+    } catch {
+      return [];
+    }
+  }
+
+  async addInspectionHistory(entry: any): Promise<any[]> {
+    const history = await this.getInspectionHistory();
+    const updated = [entry, ...history].slice(0, 100);
+    await AsyncStorage.setItem(KEYS.INSPECTION_HISTORY, JSON.stringify(updated));
+    return updated;
+  }
+
+  async clearInspectionHistory(): Promise<void> {
+    await AsyncStorage.removeItem(KEYS.INSPECTION_HISTORY);
+  }
+
   // Clear all data
   async clearAll(): Promise<void> {
     await AsyncStorage.multiRemove([
@@ -80,6 +103,7 @@ class StorageService {
       KEYS.PUSH_TOKEN,
       KEYS.DEVICE_REGISTERED,
       KEYS.NOTIFICATIONS,
+      KEYS.INSPECTION_HISTORY,
     ]);
   }
 }

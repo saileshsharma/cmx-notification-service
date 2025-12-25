@@ -234,8 +234,8 @@ export default function App() {
     setTodayStats({
       completed,
       pending,
-      totalDistance: Math.round(Math.random() * 50 + 10),
-      avgTime: Math.round(Math.random() * 20 + 25),
+      totalDistance: completed > 0 ? completed * 15 : 0, // Estimate 15km per inspection
+      avgTime: completed > 0 ? 35 : 0, // Average 35 min per inspection
     });
   }, [appointments]);
 
@@ -315,15 +315,21 @@ export default function App() {
   };
 
   const loadInspectionHistory = async () => {
-    setInspectionHistory([
-      { id: 1, date: new Date(Date.now() - 86400000), vehicle: 'Toyota Camry 2022', status: 'completed', photos: 12 },
-      { id: 2, date: new Date(Date.now() - 172800000), vehicle: 'Honda Civic 2021', status: 'completed', photos: 8 },
-      { id: 3, date: new Date(Date.now() - 259200000), vehicle: 'BMW X5 2023', status: 'completed', photos: 15 },
-    ]);
+    // Load from local storage - real history is populated when inspections are completed
+    try {
+      const savedHistory = await storageService.getInspectionHistory();
+      if (savedHistory && savedHistory.length > 0) {
+        setInspectionHistory(savedHistory);
+      }
+    } catch (error) {
+      console.error('Error loading inspection history:', error);
+    }
   };
 
   const fetchWeather = async () => {
-    setWeather({ temp: 28, condition: 'Sunny', icon: 'sunny' });
+    // Weather API integration would go here
+    // For now, weather card will not be shown (null value)
+    setWeather(null);
   };
 
   const startLocationTracking = async () => {
@@ -379,14 +385,41 @@ export default function App() {
   };
 
   const handleStatusChange = async (newStatus: SurveyorStatus) => {
+    if (!selectedSurveyorId) return;
+
     setCurrentStatus(newStatus);
-    await locationService.updateStatus(newStatus);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    try {
+      // Get current location for the status update
+      const location = await locationService.getCurrentLocation();
+
+      // Call the real API to update status (dispatches notification to dispatcher)
+      await apiService.updateStatus(selectedSurveyorId, newStatus);
+
+      // Also update location if available
+      if (location) {
+        await apiService.updateLocation(selectedSurveyorId, location.lat, location.lng);
+      }
+    } catch (error) {
+      console.error('Error updating status:', error);
+      // Status is already set locally, so user sees immediate feedback
+    }
   };
 
   const handleQuickStatus = async (status: QuickStatus) => {
+    if (!selectedSurveyorId) return;
+
     setQuickStatus(status);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+    // Map QuickStatus to API job status
+    const statusMap: { [key in QuickStatus]: 'ON_WAY' | 'ARRIVED' | 'INSPECTING' | 'COMPLETED' } = {
+      on_way: 'ON_WAY',
+      arrived: 'ARRIVED',
+      inspecting: 'INSPECTING',
+      completed: 'COMPLETED',
+    };
 
     const statusMessages: { [key in QuickStatus]: string } = {
       on_way: "I'm on my way to the inspection site",
@@ -395,6 +428,7 @@ export default function App() {
       completed: "Inspection completed successfully",
     };
 
+    // Add chat message for local display
     const newMsg: ChatMessage = {
       id: Date.now().toString(),
       text: statusMessages[status],
@@ -402,6 +436,24 @@ export default function App() {
       timestamp: new Date(),
     };
     setChatMessages(prev => [...prev, newMsg]);
+
+    // Call the real API to notify dispatcher
+    try {
+      const location = await locationService.getCurrentLocation();
+      const appointmentId = activeJob?.id || selectedAppointment?.id;
+
+      await apiService.updateJobStatus(
+        selectedSurveyorId,
+        statusMap[status],
+        appointmentId,
+        location?.lat,
+        location?.lng,
+        undefined // notes
+      );
+    } catch (error) {
+      console.error('Error updating job status:', error);
+      // Quick status is already set locally, so user sees immediate feedback
+    }
   };
 
   const handleAppointmentResponse = async (appointmentId: number, response: AppointmentResponseStatus) => {
@@ -425,8 +477,10 @@ export default function App() {
     const location = await locationService.getCurrentLocation();
     if (location) setCurrentLocation(location);
 
-    const destLat = 12.9716 + Math.random() * 0.05;
-    const destLng = 77.5946 + Math.random() * 0.05;
+    // Use appointment location if available, otherwise use a default region coordinate
+    // TODO: Backend should provide appointment coordinates
+    const destLat = (appointment as any).latitude || 12.9716;
+    const destLng = (appointment as any).longitude || 77.5946;
     setDestinationLocation({ lat: destLat, lng: destLng });
 
     setActiveJob(appointment);
@@ -555,16 +609,16 @@ export default function App() {
               setJobState('completed');
               setShowCompletionModal(true);
 
-              setInspectionHistory(prev => [
-                {
-                  id: Date.now(),
-                  date: new Date(),
-                  vehicle: job.appointment.title || 'Vehicle Inspection',
-                  status: 'completed',
-                  photos: capturedPhotos.length,
-                },
-                ...prev,
-              ]);
+              // Add to history and persist to storage
+              const historyEntry = {
+                id: Date.now(),
+                date: new Date().toISOString(),
+                vehicle: job.appointment.title || 'Vehicle Inspection',
+                status: 'completed',
+                photos: capturedPhotos.length,
+              };
+              setInspectionHistory(prev => [historyEntry, ...prev]);
+              storageService.addInspectionHistory(historyEntry);
 
               // Reset state
               setInspectionSteps(prev => prev.map(s => ({ ...s, completed: false })));

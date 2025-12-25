@@ -154,6 +154,38 @@ class ApiService {
     }
     return response.json();
   }
+
+  // ==================== Job Update API ====================
+
+  async updateJobStatus(
+    surveyorId: number,
+    status: 'ON_WAY' | 'ARRIVED' | 'INSPECTING' | 'COMPLETED',
+    appointmentId?: number,
+    lat?: number,
+    lng?: number,
+    notes?: string
+  ): Promise<UpdateResponse> {
+    const response = await fetch(`${this.baseUrl}/mobile/job-update`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        surveyorId,
+        status,
+        appointmentId,
+        lat,
+        lng,
+        notes,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to update job status: ${response.status}`);
+    }
+
+    return response.json();
+  }
 }
 
 export const apiService = new ApiService();

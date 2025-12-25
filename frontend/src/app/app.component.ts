@@ -1,9 +1,11 @@
 // CMX Surveyor Calendar v1.0.3 - QStash Integration
-import { Component, OnInit, HostListener } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { Subscription } from 'rxjs';
 import { API_BASE } from './core/services/api-config';
+import { SurveyorActivityService, SurveyorActivity } from './core/services/surveyor-activity.service';
 
 import { FullCalendarModule } from '@fullcalendar/angular';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -33,7 +35,7 @@ type DashboardWidget = { id: string; title: string; type: 'stat' | 'chart' | 'li
   imports: [CommonModule, FormsModule, FullCalendarModule],
   templateUrl: './app.component.html'
 })
-export class AppComponent implements OnInit {
+export class AppComponent implements OnInit, OnDestroy {
   apiBase = API_BASE;
 
   surveyors: Surveyor[] = [];
@@ -159,6 +161,13 @@ export class AppComponent implements OnInit {
   activityLog: ActivityLogEntry[] = [];
   showActivityLog = false;
   private activityLogId = 0;
+
+  // Surveyor Activity (Real-time from Backend)
+  surveyorActivities: SurveyorActivity[] = [];
+  sseConnected = false;
+  activityFilter: 'ALL' | 'STATUS_CHANGE' | 'JOB_UPDATE' | 'LOGIN' = 'ALL';
+  loadingActivities = false;
+  private activitySubscriptions: Subscription[] = [];
 
   // Export
   showExportModal = false;
@@ -339,7 +348,7 @@ export class AppComponent implements OnInit {
     eventColor: '#3788d8'
   };
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private surveyorActivityService: SurveyorActivityService) {}
 
   ngOnInit(): void {
     this.loadAllSurveyors();
@@ -353,6 +362,12 @@ export class AppComponent implements OnInit {
     this.loadSavedNotes();
     this.loadSavedColors();
     this.initWebPushNotifications();
+    this.initSurveyorActivity();
+  }
+
+  ngOnDestroy(): void {
+    this.surveyorActivityService.disconnect();
+    this.activitySubscriptions.forEach(sub => sub.unsubscribe());
   }
 
   // Load all surveyors for stats calculation
@@ -3477,5 +3492,82 @@ export class AppComponent implements OnInit {
         this.showToast('error', 'Failed to register push token');
       }
     });
+  }
+
+  // ============ SURVEYOR ACTIVITY (REAL-TIME) ============
+  initSurveyorActivity(): void {
+    // Subscribe to activities from service
+    this.activitySubscriptions.push(
+      this.surveyorActivityService.activities$.subscribe(activities => {
+        this.surveyorActivities = activities;
+      }),
+      this.surveyorActivityService.connected$.subscribe(connected => {
+        this.sseConnected = connected;
+      }),
+      this.surveyorActivityService.loading$.subscribe(loading => {
+        this.loadingActivities = loading;
+      }),
+      this.surveyorActivityService.liveEvent$.subscribe(event => {
+        // Show toast for real-time events
+        this.showToast('info', event.message, 'Surveyor Update');
+        // Also refresh surveyor stats as status may have changed
+        this.loadAllSurveyors();
+      })
+    );
+
+    // Connect to SSE stream
+    this.surveyorActivityService.connect();
+
+    // Load initial activities
+    this.loadSurveyorActivity();
+  }
+
+  loadSurveyorActivity(): void {
+    this.surveyorActivityService.loadRecentActivities(24, 100).subscribe({
+      error: (e) => {
+        console.error('Failed to load surveyor activity:', e);
+        this.showToast('error', 'Failed to load activity log');
+      }
+    });
+  }
+
+  onActivityFilterChange(): void {
+    this.loadSurveyorActivity();
+  }
+
+  getActivityClass(activityType: string): string {
+    switch (activityType) {
+      case 'STATUS_CHANGE': return 'status-change';
+      case 'JOB_UPDATE': return 'job-update';
+      case 'LOGIN': return 'login';
+      case 'LOGOUT': return 'logout';
+      default: return '';
+    }
+  }
+
+  getSurveyorActivityIcon(activityType: string, value: string): string {
+    const info = this.surveyorActivityService.getActivityTypeInfo(activityType, value);
+    return info.icon;
+  }
+
+  getSurveyorActivityColor(activityType: string, value: string): string {
+    const info = this.surveyorActivityService.getActivityTypeInfo(activityType, value);
+    return info.color;
+  }
+
+  getSurveyorActivityLabel(activityType: string, value: string): string {
+    const info = this.surveyorActivityService.getActivityTypeInfo(activityType, value);
+    return info.label;
+  }
+
+  formatActivityTimestamp(timestamp: string): string {
+    return this.surveyorActivityService.formatTimestamp(timestamp);
+  }
+
+  getFilteredActivities(): SurveyorActivity[] {
+    if (this.activityFilter === 'ALL') {
+      return this.surveyorActivities;
+    }
+    return this.surveyorActivities.filter(a => a.activityType === this.activityFilter);
   }
 }
