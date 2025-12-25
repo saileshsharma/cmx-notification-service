@@ -93,10 +93,16 @@ public class MobileController {
             deviceTokenService.registerToken(surveyor.getId(), pushToken, platform != null ? platform : "ANDROID");
         }
 
-        // Log login activity
+        // Log login activity (async, don't block login on failure)
         Double lat = request.get("lat") != null ? ((Number) request.get("lat")).doubleValue() : null;
         Double lng = request.get("lng") != null ? ((Number) request.get("lng")).doubleValue() : null;
-        activityService.logLogin(surveyor.getId(), lat, lng);
+        try {
+            activityService.logLogin(surveyor.getId(), lat, lng);
+        } catch (Exception e) {
+            // Don't fail login if activity logging fails
+            org.slf4j.LoggerFactory.getLogger(MobileController.class)
+                .warn("Failed to log login activity for surveyor {}: {}", surveyor.getId(), e.getMessage());
+        }
 
         // Build response with surveyor details
         Map<String, Object> response = new LinkedHashMap<>();
@@ -245,8 +251,13 @@ public class MobileController {
         boolean success = surveyorService.updateStatus(surveyorId, newStatus);
 
         if (success) {
-            // Log activity and notify dispatcher
-            activityService.logStatusChange(surveyorId, previousStatus, newStatus, lat, lng);
+            // Log activity and notify dispatcher (don't fail on logging errors)
+            try {
+                activityService.logStatusChange(surveyorId, previousStatus, newStatus, lat, lng);
+            } catch (Exception e) {
+                org.slf4j.LoggerFactory.getLogger(MobileController.class)
+                    .warn("Failed to log status change for surveyor {}: {}", surveyorId, e.getMessage());
+            }
         }
 
         return ResponseEntity.ok(Map.of(
@@ -270,10 +281,21 @@ public class MobileController {
         String notes = (String) request.get("notes");
 
         // Get previous job state
-        String previousState = activityService.getLastJobState(surveyorId);
+        String previousState = null;
+        try {
+            previousState = activityService.getLastJobState(surveyorId);
+        } catch (Exception e) {
+            org.slf4j.LoggerFactory.getLogger(MobileController.class)
+                .warn("Failed to get last job state for surveyor {}: {}", surveyorId, e.getMessage());
+        }
 
-        // Log activity and notify dispatcher
-        activityService.logJobUpdate(surveyorId, previousState, newState, appointmentId, lat, lng, notes);
+        // Log activity and notify dispatcher (don't fail on logging errors)
+        try {
+            activityService.logJobUpdate(surveyorId, previousState, newState, appointmentId, lat, lng, notes);
+        } catch (Exception e) {
+            org.slf4j.LoggerFactory.getLogger(MobileController.class)
+                .warn("Failed to log job update for surveyor {}: {}", surveyorId, e.getMessage());
+        }
 
         // Also update location if provided
         if (lat != null && lng != null) {
