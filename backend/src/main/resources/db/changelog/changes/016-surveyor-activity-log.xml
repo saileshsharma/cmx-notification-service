@@ -7,6 +7,11 @@
 
     <!-- Surveyor Activity Log - tracks status changes and job updates -->
     <changeSet id="016-1" author="system">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="surveyor_activity_log"/>
+            </not>
+        </preConditions>
         <createTable tableName="surveyor_activity_log">
             <column name="id" type="BIGINT" autoIncrement="true">
                 <constraints primaryKey="true" nullable="false"/>
@@ -29,33 +34,63 @@
                 <constraints nullable="false"/>
             </column>
         </createTable>
+    </changeSet>
 
+    <changeSet id="016-2" author="system">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <foreignKeyConstraintExists foreignKeyName="fk_activity_surveyor"/>
+            </not>
+        </preConditions>
         <addForeignKeyConstraint
             baseTableName="surveyor_activity_log"
             baseColumnNames="surveyor_id"
             referencedTableName="surveyor"
             referencedColumnNames="id"
             constraintName="fk_activity_surveyor"/>
+    </changeSet>
 
-        <addForeignKeyConstraint
-            baseTableName="surveyor_activity_log"
-            baseColumnNames="appointment_id"
-            referencedTableName="appointment"
-            referencedColumnNames="id"
-            constraintName="fk_activity_appointment"/>
+    <!-- Note: appointment_id references job_assignment table, FK optional -->
 
+    <changeSet id="016-3" author="system">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_activity_surveyor_id"/>
+            </not>
+        </preConditions>
         <createIndex tableName="surveyor_activity_log" indexName="idx_activity_surveyor_id">
             <column name="surveyor_id"/>
         </createIndex>
+    </changeSet>
 
+    <changeSet id="016-4" author="system">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_activity_type"/>
+            </not>
+        </preConditions>
         <createIndex tableName="surveyor_activity_log" indexName="idx_activity_type">
             <column name="activity_type"/>
         </createIndex>
+    </changeSet>
 
+    <changeSet id="016-5" author="system">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_activity_created_at"/>
+            </not>
+        </preConditions>
         <createIndex tableName="surveyor_activity_log" indexName="idx_activity_created_at">
             <column name="created_at"/>
         </createIndex>
+    </changeSet>
 
+    <changeSet id="016-6" author="system">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_activity_appointment_id"/>
+            </not>
+        </preConditions>
         <createIndex tableName="surveyor_activity_log" indexName="idx_activity_appointment_id">
             <column name="appointment_id"/>
         </createIndex>
