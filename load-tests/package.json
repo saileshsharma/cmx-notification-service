@@ -1,0 +1,16 @@
+{
+  "name": "cmx-load-tests",
+  "version": "1.0.0",
+  "description": "Load and performance tests for CMX Surveyor Calendar API",
+  "scripts": {
+    "test:smoke": "k6 run --env TEST_TYPE=smoke tests/api-load.js",
+    "test:load": "k6 run --env TEST_TYPE=load tests/api-load.js",
+    "test:stress": "k6 run --env TEST_TYPE=stress tests/api-load.js",
+    "test:spike": "k6 run --env TEST_TYPE=spike tests/api-load.js",
+    "test:soak": "k6 run --env TEST_TYPE=soak tests/api-load.js",
+    "test:all": "npm run test:smoke && npm run test:load",
+    "test:prod": "k6 run --env API_BASE=https://cmx-notification-be-production.up.railway.app/api tests/api-load.js"
+  },
+  "devDependencies": {},
+  "keywords": ["k6", "load-testing", "performance"]
+}

@@ -44,6 +44,53 @@ jobs:
           path: frontend/dist/
           retention-days: 7
 
+  lighthouse:
+    name: Lighthouse Performance Audit
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+
+      - name: Install serve
+        run: npm install -g serve
+
+      - name: Start static server
+        run: serve -s dist/cmx-surveyor-calendar-ui -l 4200 &
+        working-directory: frontend
+
+      - name: Wait for server
+        run: npx wait-on http://localhost:4200 --timeout 30000
+
+      - name: Run Lighthouse CI
+        uses: treosh/lighthouse-ci-action@v11
+        with:
+          urls: |
+            http://localhost:4200
+          configPath: frontend/lighthouserc.json
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+
+      - name: Upload Lighthouse Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lighthouse-report
+          path: .lighthouseci/
+          retention-days: 14
+
   # Uncomment and configure for your hosting provider
   # deploy:
   #   name: Deploy to Production
