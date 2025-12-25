@@ -19,5 +19,6 @@
     <include file="db/changelog/changes/012-notification-audit-enhancement.xml"/>
     <include file="db/changelog/changes/013-mobile-features.xml"/>
     <include file="db/changelog/changes/014-surveyor-login-credentials.xml"/>
+    <include file="db/changelog/changes/015-remove-username-use-email.xml"/>
 
 </databaseChangeLog>

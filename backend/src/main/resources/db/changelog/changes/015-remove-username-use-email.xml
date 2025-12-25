@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Remove username column and use email for login instead -->
+    <changeSet id="015-drop-username-column" author="system">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="surveyor" columnName="username"/>
+        </preConditions>
+        <dropColumn tableName="surveyor" columnName="username"/>
+    </changeSet>
+
+    <changeSet id="015-add-email-unique-constraint" author="system">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists tableName="surveyor" indexName="uk_surveyor_email"/>
+            </not>
+            <not>
+                <uniqueConstraintExists tableName="surveyor" constraintName="uk_surveyor_email"/>
+            </not>
+        </preConditions>
+        <addUniqueConstraint tableName="surveyor" columnNames="email" constraintName="uk_surveyor_email"/>
+    </changeSet>
+
+    <changeSet id="015-drop-username-unique-constraint" author="system">
+        <preConditions onFail="MARK_RAN">
+            <uniqueConstraintExists tableName="surveyor" constraintName="uk_surveyor_username"/>
+        </preConditions>
+        <dropUniqueConstraint tableName="surveyor" constraintName="uk_surveyor_username"/>
+    </changeSet>
+
+</databaseChangeLog>
