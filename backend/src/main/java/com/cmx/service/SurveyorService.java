@@ -23,7 +23,8 @@ public class SurveyorService {
     private final AvailabilityService availabilityService;
     private final JdbcTemplate jdbcTemplate;
 
-    private static final RowMapper<Surveyor> SURVEYOR_MAPPER = (rs, rowNum) -> new Surveyor(
+    private static final RowMapper<Surveyor> SURVEYOR_MAPPER = (rs, rowNum) -> {
+        Surveyor s = new Surveyor(
             rs.getLong("id"),
             rs.getString("code"),
             rs.getString("display_name"),
@@ -33,7 +34,17 @@ public class SurveyorService {
             rs.getString("surveyor_type"),
             rs.getString("email"),
             rs.getString("phone")
-    );
+        );
+        // Add current location tracking fields
+        s.setCurrentLat(rs.getObject("current_lat") != null ? rs.getDouble("current_lat") : null);
+        s.setCurrentLng(rs.getObject("current_lng") != null ? rs.getDouble("current_lng") : null);
+        s.setCurrentStatus(rs.getString("current_status"));
+        java.sql.Timestamp lastUpdate = rs.getTimestamp("last_location_update");
+        if (lastUpdate != null) {
+            s.setLastLocationUpdate(java.time.OffsetDateTime.ofInstant(lastUpdate.toInstant(), java.time.ZoneId.systemDefault()));
+        }
+        return s;
+    };
 
     public SurveyorService(SurveyorRepository surveyorRepository,
                            DeviceTokenRepository deviceTokenRepository,
