@@ -565,7 +565,7 @@ export class AppComponent implements OnInit {
     }
   }
 
-  formatLocationTime(timestamp: string | Date | null): string {
+  formatLocationTime(timestamp: string | Date | null | undefined): string {
     if (!timestamp) return 'Unknown';
     const date = timestamp instanceof Date ? timestamp : new Date(timestamp);
     const now = new Date();
