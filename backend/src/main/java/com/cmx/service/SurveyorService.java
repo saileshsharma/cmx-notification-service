@@ -66,18 +66,22 @@ public class SurveyorService {
         return surveyors.stream()
                 .map(s -> {
                     String status = availabilityService.getCurrentState(s.getId(), now);
-                    return Map.<String, Object>of(
-                            "id", s.getId(),
-                            "code", s.getCode() != null ? s.getCode() : "",
-                            "display_name", s.getDisplayName() != null ? s.getDisplayName() : "",
-                            "home_lat", s.getHomeLat() != null ? s.getHomeLat() : 0.0,
-                            "home_lng", s.getHomeLng() != null ? s.getHomeLng() : 0.0,
-                            "status", s.getStatus() != null ? s.getStatus() : "",
-                            "surveyor_type", s.getSurveyorType() != null ? s.getSurveyorType() : "",
-                            "email", s.getEmail() != null ? s.getEmail() : "",
-                            "phone", s.getPhone() != null ? s.getPhone() : "",
-                            "current_status", status != null ? status : "AVAILABLE"
-                    );
+                    java.util.HashMap<String, Object> map = new java.util.HashMap<>();
+                    map.put("id", s.getId());
+                    map.put("code", s.getCode() != null ? s.getCode() : "");
+                    map.put("display_name", s.getDisplayName() != null ? s.getDisplayName() : "");
+                    map.put("home_lat", s.getHomeLat() != null ? s.getHomeLat() : 0.0);
+                    map.put("home_lng", s.getHomeLng() != null ? s.getHomeLng() : 0.0);
+                    map.put("status", s.getStatus() != null ? s.getStatus() : "");
+                    map.put("surveyor_type", s.getSurveyorType() != null ? s.getSurveyorType() : "");
+                    map.put("email", s.getEmail() != null ? s.getEmail() : "");
+                    map.put("phone", s.getPhone() != null ? s.getPhone() : "");
+                    map.put("current_status", status != null ? status : "AVAILABLE");
+                    // Location tracking fields for real-time map view
+                    map.put("current_lat", s.getCurrentLat());
+                    map.put("current_lng", s.getCurrentLng());
+                    map.put("last_location_update", s.getLastLocationUpdate() != null ? s.getLastLocationUpdate().toString() : null);
+                    return (Map<String, Object>) map;
                 })
                 .filter(s -> !hasFilter(currentStatus) || currentStatus.equalsIgnoreCase((String) s.get("current_status")))
                 .toList();
