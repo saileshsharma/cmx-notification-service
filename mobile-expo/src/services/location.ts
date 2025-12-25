@@ -1,5 +1,5 @@
 import * as Location from 'expo-location';
-import { apiService } from './api';
+import { qstashService } from './qstash';
 import { SurveyorStatus } from '../types';
 
 class LocationService {
@@ -102,16 +102,18 @@ class LocationService {
     }
 
     try {
-      const response = await apiService.updateLocationAndStatus(
+      // Publish to QStash instead of direct API call
+      // QStash will deliver the message to the backend webhook
+      const response = await qstashService.publishLocationAndStatus(
         this.surveyorId,
         this.lastLocation.lat,
         this.lastLocation.lng,
         this.currentStatus
       );
-      console.log('[LocationService] Location update sent:', response);
+      console.log('[LocationService] Location update published to QStash:', response);
       return response.success;
     } catch (error) {
-      console.error('[LocationService] Failed to send location update:', error);
+      console.error('[LocationService] Failed to publish location update:', error);
       return false;
     }
   }
@@ -125,11 +127,12 @@ class LocationService {
     }
 
     try {
-      const response = await apiService.updateStatus(this.surveyorId, status);
-      console.log('[LocationService] Status updated:', response);
+      // Publish status update to QStash
+      const response = await qstashService.publishStatus(this.surveyorId, status);
+      console.log('[LocationService] Status published to QStash:', response);
       return response.success;
     } catch (error) {
-      console.error('[LocationService] Failed to update status:', error);
+      console.error('[LocationService] Failed to publish status:', error);
       return false;
     }
   }
