@@ -190,6 +190,28 @@
       <version>1.19.3</version>
       <scope>test</scope>
     </dependency>
+
+    <!-- Problem Spring Web - RFC 7807 error responses -->
+    <dependency>
+      <groupId>org.zalando</groupId>
+      <artifactId>problem-spring-web</artifactId>
+      <version>0.29.1</version>
+    </dependency>
+    <dependency>
+      <groupId>org.zalando</groupId>
+      <artifactId>jackson-datatype-problem</artifactId>
+      <version>0.27.1</version>
+    </dependency>
+
+    <!-- Micrometer Tracing - Distributed tracing -->
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-tracing</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-tracing-bridge-brave</artifactId>
+    </dependency>
   </dependencies>
 
   <build>
