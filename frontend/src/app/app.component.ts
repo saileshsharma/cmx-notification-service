@@ -1044,7 +1044,7 @@ export class AppComponent implements OnInit {
       },
       error: (e) => {
         console.error(e);
-        this.showAlert('Error', 'Failed to create appointment', 'error');
+        this.showToast('error', 'Failed to create appointment', 'Error');
       }
     });
   }
@@ -1087,7 +1087,7 @@ export class AppComponent implements OnInit {
 
   confirmUpdate() {
     if (this.editIsPast) {
-      this.showAlert('Cannot Modify', 'Cannot modify past appointments.', 'warning');
+      this.showToast('warning', 'Cannot modify past appointments', 'Warning');
       return;
     }
 
@@ -1104,17 +1104,18 @@ export class AppComponent implements OnInit {
         this.showEditModal = false;
         this.clearAppointmentCache(true); // Clear FE cache to sync with BE
         this.refreshEvents();
+        this.showToast('success', 'Appointment updated successfully', 'Updated');
       },
       error: (e) => {
         console.error(e);
-        this.showAlert('Error', 'Failed to update appointment', 'error');
+        this.showToast('error', 'Failed to update appointment', 'Error');
       }
     });
   }
 
   confirmDelete() {
     if (this.editIsPast) {
-      this.showAlert('Cannot Delete', 'Cannot delete past appointments.', 'warning');
+      this.showToast('warning', 'Cannot delete past appointments', 'Warning');
       return;
     }
 
@@ -1127,10 +1128,11 @@ export class AppComponent implements OnInit {
             this.showEditModal = false;
             this.clearAppointmentCache(true); // Clear FE cache to sync with BE
             this.refreshEvents();
+            this.showToast('success', 'Appointment deleted successfully', 'Deleted');
           },
           error: (e) => {
             console.error(e);
-            this.showAlert('Error', 'Failed to delete appointment', 'error');
+            this.showToast('error', 'Failed to delete appointment', 'Error');
           }
         });
       },
@@ -1151,14 +1153,14 @@ export class AppComponent implements OnInit {
     // Check if this is a past event
     if (event.extendedProps['isPast']) {
       dropInfo.revert();
-      this.showAlert('Cannot Reschedule', 'Cannot reschedule past appointments.', 'warning');
+      this.showToast('warning', 'Cannot reschedule past appointments', 'Warning');
       return;
     }
 
     // Check if trying to move/copy to past
     if (this.isPastDate(event.start!)) {
       dropInfo.revert();
-      this.showAlert('Cannot ' + (isCopyMode ? 'Copy' : 'Reschedule'), 'Cannot ' + (isCopyMode ? 'copy' : 'reschedule') + ' appointment to a past date/time.', 'warning');
+      this.showToast('warning', 'Cannot ' + (isCopyMode ? 'copy' : 'reschedule') + ' appointment to a past date/time', 'Warning');
       return;
     }
 
@@ -1211,7 +1213,7 @@ export class AppComponent implements OnInit {
     // Check if this is a past event
     if (event.extendedProps['isPast']) {
       resizeInfo.revert();
-      this.showAlert('Cannot Resize', 'Cannot resize past appointments.', 'warning');
+      this.showToast('warning', 'Cannot resize past appointments', 'Warning');
       return;
     }
 
@@ -1255,6 +1257,7 @@ export class AppComponent implements OnInit {
         this.rescheduleRevertFn = null;
         this.clearAppointmentCache(true); // Clear FE cache to sync with BE
         this.refreshEvents();
+        this.showToast('success', 'Appointment rescheduled successfully', 'Rescheduled');
       },
       error: (e) => {
         console.error(e);
@@ -1264,7 +1267,7 @@ export class AppComponent implements OnInit {
         this.showRescheduleModal = false;
         this.reschedulePayload = null;
         this.rescheduleRevertFn = null;
-        this.showAlert('Error', 'Failed to reschedule appointment', 'error');
+        this.showToast('error', 'Failed to reschedule appointment', 'Error');
       }
     });
   }

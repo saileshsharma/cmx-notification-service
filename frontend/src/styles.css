@@ -807,6 +807,10 @@ header {
 }
 
 /* Confirmation/Alert Modal Styles */
+.confirm-modal-overlay {
+  z-index: 1500;
+}
+
 .confirm-modal {
   min-width: 380px;
   max-width: 450px;

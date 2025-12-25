@@ -15,7 +15,7 @@
 </div>
 
 <!-- Confirmation/Alert Modal -->
-<div class="modal-overlay" *ngIf="showConfirmModal" (click)="closeConfirmModal()">
+<div class="modal-overlay confirm-modal-overlay" *ngIf="showConfirmModal" (click)="closeConfirmModal()">
   <div class="modal confirm-modal" [class]="confirmModalType" (click)="$event.stopPropagation()">
     <div class="confirm-modal-header">
       <div class="confirm-modal-icon">
