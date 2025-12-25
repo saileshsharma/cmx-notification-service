@@ -54,16 +54,35 @@ export const SignatureModal: React.FC<SignatureModalProps> = ({
       border: none;
       background-color: ${colors.gray[50]};
       border-radius: ${borderRadius.lg}px;
+      width: 100%;
+      height: 100%;
     }
     .m-signature-pad--body {
       border: 2px dashed ${colors.gray[300]};
       border-radius: ${borderRadius.lg}px;
+      width: 100%;
+      height: 100%;
+    }
+    .m-signature-pad--body canvas {
+      width: 100% !important;
+      height: 100% !important;
+      touch-action: none;
     }
     .m-signature-pad--footer {
       display: none;
     }
     body, html {
       background-color: ${colors.white};
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      touch-action: none;
+      -webkit-overflow-scrolling: auto;
+    }
+    canvas {
+      touch-action: none;
     }
   `;
 
@@ -105,6 +124,10 @@ export const SignatureModal: React.FC<SignatureModalProps> = ({
               minWidth={1.5}
               maxWidth={3}
               style={styles.signatureCanvas}
+              scrollEnabled={false}
+              androidHardwareAccelerationDisabled={false}
+              autoClear={false}
+              descriptionText=""
             />
             <View style={styles.signaturePlaceholder}>
               <Text style={styles.placeholderText}>Sign here</Text>
