@@ -5,35 +5,64 @@
   <title>CMX Surveyor Calendar</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- Google Fonts - Inter + Material Icons -->
+  <meta name="description" content="CMX Surveyor Calendar - Manage surveyor appointments and availability">
+  <meta name="theme-color" content="#1e1b4b">
+
+  <!-- Preconnect to external domains for faster loading -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+  <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+  <link rel="dns-prefetch" href="https://www.gstatic.com">
+
+  <!-- Google Fonts - use display=swap for better performance -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  <noscript><link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"></noscript>
+
+  <!-- Critical CSS for initial paint -->
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; background: #f0f4f8; }
+    app-root { display: block; min-height: 100vh; }
+    .app-loading { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    .app-loading::after { content: ''; width: 40px; height: 40px; border: 3px solid #e2e8f0; border-top-color: #4338ca; border-radius: 50%; animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
 </head>
 <body>
-  <app-root></app-root>
+  <app-root>
+    <div class="app-loading"></div>
+  </app-root>
+
+  <!-- Firebase SDK - loaded async to not block rendering -->
+  <script async src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script async src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
   <script>
-    // Firebase configuration
-    const firebaseConfig = {
-      apiKey: "AIzaSyDkghyuq7bN7WH8brj42hi4pcszZsy7uac",
-      authDomain: "cmxc-3035c.firebaseapp.com",
-      projectId: "cmxc-3035c",
-      storageBucket: "cmxc-3035c.firebasestorage.app",
-      messagingSenderId: "561852723694",
-      appId: "1:561852723694:web:401565acdf5684ba9adeff"
-    };
-
-    // Initialize Firebase
-    if (!firebase.apps.length) {
-      firebase.initializeApp(firebaseConfig);
+    // Wait for Firebase to load, then initialize
+    function initFirebase() {
+      if (typeof firebase !== 'undefined' && firebase.apps) {
+        const firebaseConfig = {
+          apiKey: "AIzaSyDkghyuq7bN7WH8brj42hi4pcszZsy7uac",
+          authDomain: "cmxc-3035c.firebaseapp.com",
+          projectId: "cmxc-3035c",
+          storageBucket: "cmxc-3035c.firebasestorage.app",
+          messagingSenderId: "561852723694",
+          appId: "1:561852723694:web:401565acdf5684ba9adeff"
+        };
+        if (!firebase.apps.length) {
+          firebase.initializeApp(firebaseConfig);
+        }
+        window.firebaseApp = firebase;
+      } else {
+        setTimeout(initFirebase, 100);
+      }
     }
-
-    // Make firebase available globally for Angular
-    window.firebaseApp = firebase;
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initFirebase);
+    } else {
+      initFirebase();
+    }
   </script>
 </body>
 </html>

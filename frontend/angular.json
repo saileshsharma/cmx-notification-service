@@ -21,13 +21,53 @@
             "assets": ["src/favicon.ico", "src/assets", "src/firebase-messaging-sw.js"],
             "styles": ["src/styles.css"],
             "scripts": []
-          }
+          },
+          "configurations": {
+            "production": {
+              "optimization": {
+                "scripts": true,
+                "styles": {
+                  "minify": true,
+                  "inlineCritical": true
+                },
+                "fonts": {
+                  "inline": true
+                }
+              },
+              "outputHashing": "all",
+              "sourceMap": false,
+              "namedChunks": false,
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "500kb",
+                  "maximumError": "1mb"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "4kb",
+                  "maximumError": "8kb"
+                }
+              ]
+            },
+            "development": {
+              "optimization": false,
+              "sourceMap": true
+            }
+          },
+          "defaultConfiguration": "production"
         },
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
-          "options": {
-            "buildTarget": "cmx-surveyor-calendar-ui:build"
-          }
+          "configurations": {
+            "production": {
+              "buildTarget": "cmx-surveyor-calendar-ui:build:production"
+            },
+            "development": {
+              "buildTarget": "cmx-surveyor-calendar-ui:build:development"
+            }
+          },
+          "defaultConfiguration": "development"
         }
       }
     }
