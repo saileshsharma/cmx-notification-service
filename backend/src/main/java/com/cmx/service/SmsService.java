@@ -1,6 +1,7 @@
 package com.cmx.service;
 
 import com.twilio.Twilio;
+import com.twilio.exception.ApiException;
 import com.twilio.rest.api.v2010.account.Message;
 import com.twilio.type.PhoneNumber;
 import org.slf4j.Logger;
@@ -8,6 +9,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Recover;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
@@ -127,41 +131,51 @@ public class SmsService {
     private void sendSmsWithAudit(Long surveyorId, String to, String message, String eventType) {
         if (!smsEnabled) {
             log.info("SMS service disabled. Would send SMS to: {}", to);
-            log.info("Message: {}", message);
             auditService.logSmsNotification(surveyorId, eventType, message, to, "DISABLED", "SMS service disabled", null);
             return;
         }
 
         if (!twilioInitialized) {
             log.warn("Twilio not initialized. Cannot send SMS to: {}", to);
-            log.info("Message: {}", message);
             auditService.logSmsNotification(surveyorId, eventType, message, to, "NOT_CONFIGURED", "Twilio not initialized", null);
             return;
         }
 
         try {
-            log.info("Sending SMS to: {} via Twilio", to);
-            log.info("Message: {}", message);
-
-            // Send SMS via Twilio
-            Message twilioMessage = Message.creator(
-                new PhoneNumber(to),           // To number
-                new PhoneNumber(twilioPhoneNumber), // From number (your Twilio number)
-                message                         // Message body
-            ).create();
-
-            log.info("SMS sent successfully! SID: {}", twilioMessage.getSid());
-            log.info("Status: {}", twilioMessage.getStatus());
-            auditService.logSmsNotification(surveyorId, eventType, message, to, "SENT", null, twilioMessage.getSid());
-
-        } catch (com.twilio.exception.ApiException e) {
-            log.error("Twilio API error sending SMS to {}: [{}] {}", to, e.getCode(), e.getMessage());
-            log.error("More info: {}", e.getMoreInfo());
-            auditService.logSmsNotification(surveyorId, eventType, message, to, "FAILED", e.getMessage(), null);
+            String sid = sendSmsWithRetry(to, message);
+            log.info("SMS sent successfully! SID: {}", sid);
+            auditService.logSmsNotification(surveyorId, eventType, message, to, "SENT", null, sid);
         } catch (Exception e) {
-            log.error("Failed to send SMS to {}: {}", to, e.getMessage(), e);
+            log.error("Failed to send SMS to {} after retries: {}", to, e.getMessage());
             auditService.logSmsNotification(surveyorId, eventType, message, to, "FAILED", e.getMessage(), null);
         }
+    }
+
+    /**
+     * Send SMS with retry logic (3 attempts with exponential backoff)
+     */
+    @Retryable(
+            retryFor = {ApiException.class},
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 1000, multiplier = 2)
+    )
+    public String sendSmsWithRetry(String to, String message) {
+        log.info("Sending SMS to: {} via Twilio", to);
+
+        Message twilioMessage = Message.creator(
+                new PhoneNumber(to),
+                new PhoneNumber(twilioPhoneNumber),
+                message
+        ).create();
+
+        log.info("SMS Status: {}", twilioMessage.getStatus());
+        return twilioMessage.getSid();
+    }
+
+    @Recover
+    public String recoverSmsSend(ApiException e, String to, String message) {
+        log.error("All retry attempts failed for SMS to {}: [{}] {}", to, e.getCode(), e.getMessage());
+        throw e;
     }
 
     /**

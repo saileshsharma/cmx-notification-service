@@ -4,10 +4,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Recover;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.thymeleaf.TemplateEngine;
@@ -122,40 +126,57 @@ public class EmailService {
         }
 
         try {
-            log.info("Sending email via Mailgun to: {}", to);
-            log.info("Subject: {}", subject);
-
-            String url = mailgunApiUrl + "/" + mailgunDomain + "/messages";
-
-            // Prepare form data
-            MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-            formData.add("from", fromEmail);
-            formData.add("to", to);
-            formData.add("subject", subject);
-            formData.add("html", htmlBody);
-
-            // Prepare headers with Basic Auth
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-            String auth = "api:" + mailgunApiKey;
-            String encodedAuth = Base64.getEncoder().encodeToString(auth.getBytes(StandardCharsets.UTF_8));
-            headers.set("Authorization", "Basic " + encodedAuth);
-
-            HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(formData, headers);
-
-            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, request, String.class);
-
-            if (response.getStatusCode().is2xxSuccessful()) {
-                log.info("Email sent successfully to: {} - Response: {}", to, response.getBody());
-                auditService.logEmailNotification(surveyorId, eventType, subject, to, "SENT", null, response.getBody());
-            } else {
-                log.error("Failed to send email to {}: {} - {}", to, response.getStatusCode(), response.getBody());
-                auditService.logEmailNotification(surveyorId, eventType, subject, to, "FAILED", response.getBody(), null);
-            }
+            String response = sendEmailWithRetry(to, subject, htmlBody);
+            log.info("Email sent successfully to: {} - Response: {}", to, response);
+            auditService.logEmailNotification(surveyorId, eventType, subject, to, "SENT", null, response);
         } catch (Exception e) {
-            log.error("Error sending email to {}: {}", to, e.getMessage());
+            log.error("Error sending email to {} after retries: {}", to, e.getMessage());
             auditService.logEmailNotification(surveyorId, eventType, subject, to, "FAILED", e.getMessage(), null);
         }
+    }
+
+    /**
+     * Send email with retry logic (3 attempts with exponential backoff)
+     */
+    @Retryable(
+            retryFor = {RestClientException.class},
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 1000, multiplier = 2)
+    )
+    public String sendEmailWithRetry(String to, String subject, String htmlBody) {
+        log.info("Sending email via Mailgun to: {}", to);
+
+        String url = mailgunApiUrl + "/" + mailgunDomain + "/messages";
+
+        // Prepare form data
+        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+        formData.add("from", fromEmail);
+        formData.add("to", to);
+        formData.add("subject", subject);
+        formData.add("html", htmlBody);
+
+        // Prepare headers with Basic Auth
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+        String auth = "api:" + mailgunApiKey;
+        String encodedAuth = Base64.getEncoder().encodeToString(auth.getBytes(StandardCharsets.UTF_8));
+        headers.set("Authorization", "Basic " + encodedAuth);
+
+        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(formData, headers);
+
+        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, request, String.class);
+
+        if (!response.getStatusCode().is2xxSuccessful()) {
+            throw new RestClientException("Failed to send email: " + response.getStatusCode() + " - " + response.getBody());
+        }
+
+        return response.getBody();
+    }
+
+    @Recover
+    public String recoverEmailSend(RestClientException e, String to, String subject, String htmlBody) {
+        log.error("All retry attempts failed for email to {}: {}", to, e.getMessage());
+        throw e;
     }
 
     /**
