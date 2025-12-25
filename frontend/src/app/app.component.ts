@@ -1,4 +1,4 @@
-// CMX Surveyor Calendar v1.0.2
+// CMX Surveyor Calendar v1.0.3 - QStash Integration
 import { Component, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
