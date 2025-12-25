@@ -1,0 +1,18 @@
+{
+  "testType": "smoke",
+  "timestamp": "2025-12-25T14:10:57.870Z",
+  "metrics": {
+    "http_reqs": 1736,
+    "http_req_duration_p95": 6.534749999999998,
+    "http_req_duration_p99": 0,
+    "http_req_failed": 0.07142857142857142,
+    "errors": 0.25,
+    "vus_max": 5
+  },
+  "customMetrics": {
+    "surveyor_list_p95": 9.01755,
+    "availability_p95": 5.49955,
+    "create_appointment_p95": 9.76315,
+    "activity_log_p95": 5.603549999999997
+  }
+}

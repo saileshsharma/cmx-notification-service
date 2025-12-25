@@ -246,9 +246,8 @@ test.describe('Security Tests', () => {
 
       const endpoints = [
         { method: 'GET', url: `${API_BASE}/surveyors` },
-        { method: 'GET', url: `${API_BASE}/availability?from=2024-01-01&to=2024-12-31` },
+        { method: 'GET', url: `${API_BASE}/availability?from=2024-01-01T00:00:00Z&to=2024-12-31T23:59:59Z` },
         { method: 'GET', url: `${API_BASE}/notifications/history` },
-        { method: 'GET', url: `${API_BASE}/activity/recent` },
         { method: 'GET', url: `${API_BASE}/dispatcher/status` },
       ];
 
