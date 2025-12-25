@@ -1,6 +1,143 @@
 # CMX Surveyor Calendar
 
-A full-stack application for managing surveyor schedules, appointments, and availability. Built with Angular 17 (frontend) and Spring Boot 3 (backend).
+A full-stack application for managing surveyor schedules, appointments, and availability. Built with Angular 17 (frontend), Spring Boot 3 (backend), and React Native/Expo (mobile).
+
+---
+
+## System Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                              CMX SURVEYOR CALENDAR                               │
+│                              System Architecture                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+                                    ┌──────────────┐
+                                    │   RAILWAY    │
+                                    │   (Cloud)    │
+                                    └──────────────┘
+                                           │
+           ┌───────────────────────────────┼───────────────────────────────┐
+           │                               │                               │
+           ▼                               ▼                               ▼
+┌─────────────────────┐      ┌─────────────────────┐      ┌─────────────────────┐
+│   FRONTEND (FE)     │      │   BACKEND (BE)      │      │   MOBILE APP        │
+│   Angular 17        │      │   Spring Boot 3     │      │   React Native/Expo │
+│                     │      │                     │      │                     │
+│ ┌─────────────────┐ │      │ ┌─────────────────┐ │      │ ┌─────────────────┐ │
+│ │ Calendar View   │ │      │ │ REST API        │ │      │ │ Surveyor Login  │ │
+│ │ Timeline View   │ │      │ │ Controllers     │ │      │ │ Appointments    │ │
+│ │ Heatmap View    │ │      │ │                 │ │      │ │ Accept/Reject   │ │
+│ │ Map View        │ │◄────►│ │ /api/surveyors  │ │      │ │ Location Track  │ │
+│ │ (Leaflet/OSM)   │ │ HTTP │ │ /api/availability│ │      │ │ Status Update   │ │
+│ └─────────────────┘ │      │ │ /api/mobile/*   │ │      │ └─────────────────┘ │
+│                     │      │ └─────────────────┘ │      │          │          │
+│ Production URL:     │      │                     │      │          │          │
+│ cmx-notification-   │      │ ┌─────────────────┐ │      │          ▼          │
+│ fe-production.      │      │ │ Services        │ │      │ ┌─────────────────┐ │
+│ up.railway.app      │      │ │                 │ │      │ │ QStash Service  │ │
+└─────────────────────┘      │ │ SurveyorService │ │      │ │ (Message Queue) │ │
+                             │ │ AvailabilityServ│ │      │ └────────┬────────┘ │
+                             │ │ NotificationServ│ │      │          │          │
+                             │ └─────────────────┘ │      └──────────┼──────────┘
+                             │                     │                 │
+                             │ ┌─────────────────┐ │                 │
+                             │ │ QStash Webhook  │◄┼─────────────────┘
+                             │ │ /api/webhook/   │ │      Upstash QStash
+                             │ │ qstash/location │ │      (Serverless MQ)
+                             │ └─────────────────┘ │
+                             │                     │
+                             │ ┌─────────────────┐ │
+                             │ │ Database (H2)   │ │
+                             │ │                 │ │
+                             │ │ • surveyors     │ │
+                             │ │ • availability  │ │
+                             │ │ • device_tokens │ │
+                             │ │ • notifications │ │
+                             │ └─────────────────┘ │
+                             │                     │
+                             │ ┌─────────────────┐ │
+                             │ │ Notifications   │ │
+                             │ │                 │ │
+                             │ │ • Firebase FCM  │─┼──► Push Notifications
+                             │ │ • Mailgun Email │─┼──► Email Alerts
+                             │ │ • Twilio SMS    │─┼──► SMS Messages
+                             │ └─────────────────┘ │
+                             │                     │
+                             │ Production URL:     │
+                             │ cmx-notification-   │
+                             │ be-production.      │
+                             │ up.railway.app      │
+                             └─────────────────────┘
+
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                              DATA FLOW DIAGRAM                                   │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+1. APPOINTMENT MANAGEMENT FLOW:
+   ┌────────┐    HTTP     ┌─────────┐    SQL     ┌──────────┐
+   │   FE   │────────────►│   BE    │───────────►│    DB    │
+   │Calendar│◄────────────│   API   │◄───────────│   (H2)   │
+   └────────┘   JSON      └─────────┘            └──────────┘
+
+2. LOCATION TRACKING FLOW (via QStash):
+   ┌────────┐   HTTPS    ┌─────────┐   Webhook   ┌─────────┐   SQL    ┌────┐
+   │ Mobile │───────────►│ QStash  │────────────►│   BE    │─────────►│ DB │
+   │  App   │            │ (Queue) │             │ Webhook │          │    │
+   └────────┘            └─────────┘             └─────────┘          └────┘
+        │                                              │
+        │ Location + Status                            │ Update surveyor
+        │ • lat, lng                                   │ • current_lat
+        │ • AVAILABLE/BUSY/OFFLINE                     │ • current_lng
+        │ • timestamp                                  │ • current_status
+        │                                              │ • last_location_update
+        ▼                                              ▼
+
+3. NOTIFICATION FLOW:
+   ┌─────────┐           ┌─────────┐           ┌─────────────────────┐
+   │   BE    │──────────►│ Firebase│──────────►│ Mobile Push (FCM)   │
+   │ Service │           │   FCM   │           └─────────────────────┘
+   └─────────┘           └─────────┘
+        │
+        ├───────────────►┌─────────┐           ┌─────────────────────┐
+        │                │ Mailgun │──────────►│ Email Notification  │
+        │                └─────────┘           └─────────────────────┘
+        │
+        └───────────────►┌─────────┐           ┌─────────────────────┐
+                         │ Twilio  │──────────►│ SMS Notification    │
+                         └─────────┘           └─────────────────────┘
+
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                              TECHNOLOGY STACK                                    │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────┬──────────────────┬──────────────────┬──────────────────┐
+│     FRONTEND     │     BACKEND      │      MOBILE      │   INFRASTRUCTURE │
+├──────────────────┼──────────────────┼──────────────────┼──────────────────┤
+│ • Angular 17     │ • Spring Boot 3  │ • React Native   │ • Railway (PaaS) │
+│ • TypeScript     │ • Java 17        │ • Expo SDK 52    │ • Upstash QStash │
+│ • FullCalendar   │ • H2 Database    │ • TypeScript     │ • Firebase FCM   │
+│ • Leaflet Maps   │ • Liquibase      │ • Expo Location  │ • Mailgun        │
+│ • RxJS           │ • Swagger/OpenAPI│ • Expo Notify    │ • Twilio         │
+│ • SCSS           │ • Thymeleaf      │                  │ • EAS Build      │
+└──────────────────┴──────────────────┴──────────────────┴──────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                              DEPLOYMENT URLS                                     │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+│ Component │ Production URL                                        │
+├───────────┼───────────────────────────────────────────────────────┤
+│ Frontend  │ https://cmx-notification-fe-production.up.railway.app │
+│ Backend   │ https://cmx-notification-be-production.up.railway.app │
+│ API Docs  │ https://cmx-notification-be-production.up.railway.app/swagger-ui.html │
+│ Mobile    │ Built via EAS Build (Expo)                            │
+└───────────┴───────────────────────────────────────────────────────┘
+```
+
+---
 
 ## Quick Start
 
@@ -305,6 +442,119 @@ The frontend connects to the backend at `http://localhost:8080/api`. To change:
 // In any service
 private readonly apiBase = (window as any).__API_BASE__ || 'http://localhost:8080/api';
 ```
+
+---
+
+# Mobile App (React Native/Expo)
+
+## Tech Stack
+
+- **React Native** - Cross-platform mobile framework
+- **Expo SDK 52** - Development and build tooling
+- **TypeScript** - Type safety
+- **Expo Location** - GPS location tracking
+- **Expo Notifications** - Push notifications
+
+## Project Structure
+
+```
+mobile-expo/
+├── src/
+│   ├── config/
+│   │   └── api.ts              # API & QStash configuration
+│   ├── services/
+│   │   ├── api.ts              # REST API service
+│   │   ├── qstash.ts           # QStash message queue service
+│   │   ├── location.ts         # Location tracking service
+│   │   ├── notifications.ts    # Push notification handling
+│   │   └── storage.ts          # AsyncStorage wrapper
+│   ├── types/
+│   │   └── index.ts            # TypeScript interfaces
+│   └── App.tsx                 # Main app component
+├── app.json                    # Expo configuration
+├── eas.json                    # EAS Build configuration
+└── package.json
+```
+
+## Features
+
+### Surveyor Login
+- Select surveyor from dropdown list
+- Register device for push notifications
+- Persist login state
+
+### Appointment Management
+- View upcoming appointments
+- Accept or reject appointments
+- Pull-to-refresh
+
+### Location Tracking
+- Real-time GPS tracking
+- Background location updates
+- Automatic sync every 2 minutes
+
+### Status Updates
+- AVAILABLE / BUSY / OFFLINE
+- One-tap status change
+- Synced via QStash message queue
+
+## Running the App
+
+```bash
+cd mobile-expo
+
+# Install dependencies
+npm install
+
+# Start Expo development server
+npx expo start
+
+# Run on Android emulator
+npx expo start --android
+
+# Run on iOS simulator (macOS only)
+npx expo start --ios
+```
+
+## Building for Production
+
+```bash
+# Install EAS CLI
+npm install -g eas-cli
+
+# Login to Expo
+eas login
+
+# Build Android APK (preview)
+eas build --profile preview --platform android
+
+# Build Android AAB (production)
+eas build --profile production --platform android
+
+# Build iOS (requires Apple Developer account)
+eas build --profile production --platform ios
+```
+
+## QStash Integration
+
+The mobile app publishes location and status updates to Upstash QStash, which then delivers them to the backend webhook. This decouples the mobile app from the backend.
+
+**Flow:**
+```
+Mobile App → QStash API → Backend Webhook → Database
+```
+
+**Configuration** (`src/config/api.ts`):
+```typescript
+export const QSTASH_TOKEN = 'your-qstash-token';
+export const QSTASH_DESTINATION_URL = 'https://your-backend/api/webhook/qstash/location';
+```
+
+**Message Types:**
+- `location` - GPS coordinates only
+- `status` - Availability status only
+- `location_status` - Both location and status
+- `appointment_response` - Accept/reject appointments
 
 ---
 
