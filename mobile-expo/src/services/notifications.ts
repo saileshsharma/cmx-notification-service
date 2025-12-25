@@ -194,8 +194,18 @@ class NotificationService {
         debugLogger.log(`Notification received: ${notification.request.content.title}`);
         const data = notification.request.content.data;
 
-        const type: NotificationType =
-          (data.type as NotificationType) || 'CREATED';
+        // Map backend notification types to mobile types
+        let type: NotificationType = 'CREATED';
+        const backendType = data.type as string;
+        if (backendType === 'APPOINTMENT_CREATED') {
+          type = 'CREATED';
+        } else if (backendType === 'APPOINTMENT_UPDATED') {
+          type = 'RESCHEDULED';
+        } else if (backendType === 'APPOINTMENT_DELETED') {
+          type = 'DELETED';
+        } else if (backendType === 'APPOINTMENT_RESPONSE') {
+          type = 'RESPONSE';
+        }
 
         const newNotification: NotificationItem = {
           id: notification.request.identifier,
@@ -246,6 +256,8 @@ class NotificationService {
         return '#FF9800';
       case 'DELETED':
         return '#F44336';
+      case 'RESPONSE':
+        return '#2196F3';
       default:
         return '#1976D2';
     }

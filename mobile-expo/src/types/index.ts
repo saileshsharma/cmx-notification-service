@@ -12,7 +12,7 @@ export interface Surveyor {
   home_lng?: number;
 }
 
-export type NotificationType = 'CREATED' | 'RESCHEDULED' | 'DELETED';
+export type NotificationType = 'CREATED' | 'RESCHEDULED' | 'DELETED' | 'RESPONSE';
 
 export interface NotificationItem {
   id: string;
@@ -85,7 +85,7 @@ export interface UpdateResponse {
 
 // Login types
 export interface LoginRequest {
-  username: string;
+  email: string;
   password: string;
   pushToken?: string;
   platform?: 'ANDROID' | 'IOS';

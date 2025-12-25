@@ -5,6 +5,7 @@ import com.cmx.dto.NotificationDto.NotificationAuditEntry;
 import com.cmx.service.AvailabilityService;
 import com.cmx.service.DeviceTokenService;
 import com.cmx.service.NotificationAuditService;
+import com.cmx.service.NotificationService;
 import com.cmx.service.SurveyorService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -28,17 +29,20 @@ public class MobileController {
     private final NotificationAuditService auditService;
     private final AvailabilityService availabilityService;
     private final SurveyorService surveyorService;
+    private final NotificationService notificationService;
     private final com.cmx.repository.SurveyorRepository surveyorRepository;
 
     public MobileController(DeviceTokenService deviceTokenService,
                             NotificationAuditService auditService,
                             AvailabilityService availabilityService,
                             SurveyorService surveyorService,
+                            NotificationService notificationService,
                             com.cmx.repository.SurveyorRepository surveyorRepository) {
         this.deviceTokenService = deviceTokenService;
         this.auditService = auditService;
         this.availabilityService = availabilityService;
         this.surveyorService = surveyorService;
+        this.notificationService = notificationService;
         this.surveyorRepository = surveyorRepository;
     }
 
@@ -46,29 +50,29 @@ public class MobileController {
 
     @Operation(
         summary = "Login surveyor",
-        description = "Authenticates a surveyor with username and password, and automatically registers the device"
+        description = "Authenticates a surveyor with email and password, and automatically registers the device"
     )
     @ApiResponse(responseCode = "200", description = "Login successful")
     @ApiResponse(responseCode = "401", description = "Invalid credentials")
     @PostMapping("/login")
     public ResponseEntity<Map<String, Object>> login(@RequestBody Map<String, Object> request) {
-        String username = (String) request.get("username");
+        String email = (String) request.get("email");
         String password = (String) request.get("password");
         String pushToken = (String) request.get("pushToken");
         String platform = (String) request.get("platform"); // ANDROID or IOS
 
-        if (username == null || password == null) {
+        if (email == null || password == null) {
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", "Username and password are required"
+                "message", "Email and password are required"
             ));
         }
 
-        var surveyorOpt = surveyorRepository.findByUsername(username);
+        var surveyorOpt = surveyorRepository.findByEmail(email);
         if (surveyorOpt.isEmpty()) {
             return ResponseEntity.status(401).body(Map.of(
                 "success", false,
-                "message", "Invalid username or password"
+                "message", "Invalid email or password"
             ));
         }
 
@@ -76,7 +80,7 @@ public class MobileController {
         if (!password.equals(surveyor.getPassword())) {
             return ResponseEntity.status(401).body(Map.of(
                 "success", false,
-                "message", "Invalid username or password"
+                "message", "Invalid email or password"
             ));
         }
 
@@ -162,9 +166,24 @@ public class MobileController {
         Long surveyorId = ((Number) request.get("surveyorId")).longValue();
         String response = (String) request.get("response"); // ACCEPTED or REJECTED
 
+        // Get appointment details before responding (for notification)
+        var appointmentDetails = availabilityService.getAppointmentById(appointmentId);
+
         boolean success = availabilityService.respondToAppointment(appointmentId, surveyorId, response);
 
         if (success) {
+            // Send confirmation notification to the surveyor
+            if (appointmentDetails != null) {
+                notificationService.sendAppointmentResponseConfirmation(
+                    surveyorId,
+                    appointmentId,
+                    (String) appointmentDetails.get("title"),
+                    java.time.OffsetDateTime.parse((String) appointmentDetails.get("start_time")),
+                    java.time.OffsetDateTime.parse((String) appointmentDetails.get("end_time")),
+                    response
+                );
+            }
+
             return ResponseEntity.ok(Map.of(
                 "success", true,
                 "message", "Appointment " + response.toLowerCase()

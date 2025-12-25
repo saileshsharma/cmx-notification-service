@@ -231,6 +231,34 @@ public class NotificationService {
     }
 
     @Async
+    public void sendAppointmentResponseConfirmation(Long surveyorId, Long appointmentId, String appointmentTitle,
+                                                     OffsetDateTime startTime, OffsetDateTime endTime,
+                                                     String responseStatus) {
+        log.info("========== NOTIFICATION: APPOINTMENT RESPONSE CONFIRMATION ==========");
+        log.info("Surveyor ID: {}, Appointment ID: {}, Response: {}", surveyorId, appointmentId, responseStatus);
+
+        boolean accepted = "ACCEPTED".equalsIgnoreCase(responseStatus);
+        String pushTitle = accepted ? "Appointment Confirmed" : "Appointment Declined";
+        String pushBody = String.format("You have %s the appointment%s on %s at %s",
+                accepted ? "accepted" : "declined",
+                appointmentTitle != null ? " \"" + appointmentTitle + "\"" : "",
+                startTime.format(DATE_FORMAT),
+                startTime.format(TIME_FORMAT));
+
+        Map<String, String> data = Map.of(
+                "type", "APPOINTMENT_RESPONSE",
+                "appointmentId", String.valueOf(appointmentId),
+                "surveyorId", String.valueOf(surveyorId),
+                "response", responseStatus,
+                "title", appointmentTitle != null ? appointmentTitle : "",
+                "startTime", startTime.toString(),
+                "endTime", endTime.toString()
+        );
+
+        sendNotificationToSurveyor(surveyorId, pushTitle, pushBody, data);
+    }
+
+    @Async
     public void sendAppointmentDeleteNotification(Long surveyorId, Long appointmentId, String appointmentTitle,
                                                    String appointmentDescription, OffsetDateTime startTime,
                                                    OffsetDateTime endTime) {

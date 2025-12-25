@@ -224,6 +224,25 @@ public class AvailabilityService {
     }
 
     /**
+     * Get appointment by ID (for notifications)
+     */
+    public Map<String, Object> getAppointmentById(Long appointmentId) {
+        try {
+            List<SurveyorAvailability> results = jdbc.query(
+                    "SELECT * FROM surveyor_availability WHERE id = ?",
+                    AVAILABILITY_MAPPER,
+                    appointmentId
+            );
+            if (!results.isEmpty()) {
+                return toMapWithResponse(results.get(0));
+            }
+        } catch (Exception e) {
+            // ignore
+        }
+        return null;
+    }
+
+    /**
      * Respond to an appointment (accept/reject)
      */
     @Caching(evict = {

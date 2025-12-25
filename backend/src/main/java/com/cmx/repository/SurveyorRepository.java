@@ -26,6 +26,6 @@ public interface SurveyorRepository extends CrudRepository<Surveyor, Long> {
 
     Optional<Surveyor> findByCode(String code);
 
-    @Query("SELECT * FROM surveyor WHERE username = :username")
-    Optional<Surveyor> findByUsername(@Param("username") String username);
+    @Query("SELECT * FROM surveyor WHERE email = :email")
+    Optional<Surveyor> findByEmail(@Param("email") String email);
 }
