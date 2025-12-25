@@ -1,20 +1,52 @@
-name: EAS Build
+name: Mobile CI/CD
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
     paths:
       - 'mobile-expo/**'
-  workflow_dispatch: # Allow manual trigger
+  pull_request:
+    branches: [main]
+    paths:
+      - 'mobile-expo/**'
+  push:
+    tags:
+      - 'mobile-v*'
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Platform to build'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - android
+          - ios
+      profile:
+        description: 'Build profile'
+        required: true
+        default: 'preview'
+        type: choice
+        options:
+          - development
+          - preview
+          - production
+      submit:
+        description: 'Submit to stores'
+        required: false
+        default: false
+        type: boolean
+
+defaults:
+  run:
+    working-directory: mobile-expo
 
 jobs:
-  build:
-    name: Build Android APK
+  build-android:
+    name: Build Android
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: mobile-expo
+    if: ${{ github.event.inputs.platform == 'all' || github.event.inputs.platform == 'android' || github.event.inputs.platform == '' }}
 
     steps:
       - name: Checkout repository
@@ -23,11 +55,11 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: '20'
           cache: 'npm'
           cache-dependency-path: mobile-expo/package-lock.json
 
-      - name: Setup Expo
+      - name: Setup Expo CLI
         uses: expo/expo-github-action@v8
         with:
           eas-version: latest
@@ -36,5 +68,93 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build Android APK
-        run: eas build --profile preview --platform android --non-interactive
+      - name: Build Android
+        run: eas build --platform android --profile ${{ github.event.inputs.profile || 'preview' }} --non-interactive
+
+      - name: Submit to Google Play Store
+        if: ${{ github.event.inputs.submit == 'true' || startsWith(github.ref, 'refs/tags/mobile-v') }}
+        run: eas submit --platform android --latest --non-interactive
+        env:
+          EXPO_GOOGLE_PLAY_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_KEY }}
+
+  build-ios:
+    name: Build iOS
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.platform == 'all' || github.event.inputs.platform == 'ios' || github.event.inputs.platform == '' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: mobile-expo/package-lock.json
+
+      - name: Setup Expo CLI
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build iOS
+        run: eas build --platform ios --profile ${{ github.event.inputs.profile || 'preview' }} --non-interactive
+
+      - name: Submit to App Store Connect
+        if: ${{ github.event.inputs.submit == 'true' || startsWith(github.ref, 'refs/tags/mobile-v') }}
+        run: eas submit --platform ios --latest --non-interactive
+        env:
+          EXPO_APPLE_APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          EXPO_APPLE_APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APPLE_ISSUER_ID }}
+          EXPO_APPLE_APP_STORE_CONNECT_API_KEY: ${{ secrets.APPLE_API_KEY }}
+
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    needs: [build-android, build-ios]
+    if: startsWith(github.ref, 'refs/tags/mobile-v')
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Mobile App ${{ github.ref_name }}
+          body: |
+            ## Mobile App Release ${{ github.ref_name }}
+
+            ### Downloads
+            View builds at: https://expo.dev/accounts/saileshsharma/projects/surveyor-calendar/builds
+
+            ### Stores
+            - iOS: Submitted to TestFlight
+            - Android: Submitted to Google Play (internal track)
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  notify:
+    name: Build Summary
+    runs-on: ubuntu-latest
+    needs: [build-android, build-ios]
+    if: always()
+
+    steps:
+      - name: Summary
+        run: |
+          echo "## Mobile Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Platform | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Android | ${{ needs.build-android.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| iOS | ${{ needs.build-ios.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "View builds: https://expo.dev/accounts/saileshsharma/projects/surveyor-calendar/builds" >> $GITHUB_STEP_SUMMARY

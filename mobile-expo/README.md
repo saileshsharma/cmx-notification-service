@@ -141,11 +141,9 @@ mobile-expo/
 │   │   └── storage.ts      # AsyncStorage wrapper
 │   └── types/
 │       └── index.ts        # TypeScript types
-├── assets/                 # Icons and images
-└── .github/
-    └── workflows/
-        ├── build-mobile.yml    # CI build workflow
-        └── release-mobile.yml  # CD release workflow
+└── assets/                 # Icons and images
+
+# Note: CI/CD workflows are in the root .github/workflows/eas-build.yml
 ```
 
 ## Getting Started
@@ -216,18 +214,21 @@ npx eas submit --platform ios --latest
 
 ## CI/CD Setup
 
-### GitHub Actions Workflows
+### GitHub Actions Workflow
 
-#### 1. Build Workflow (`.github/workflows/build-mobile.yml`)
-- **Trigger**: Push to `main`, PRs, or manual dispatch
-- **Builds**: Android APK and iOS app in parallel
-- **Profiles**: development, preview, production
+Location: `../.github/workflows/eas-build.yml` (root of repository)
 
-#### 2. Release Workflow (`.github/workflows/release-mobile.yml`)
-- **Trigger**: Tags like `mobile-v1.0.0` or manual dispatch
-- **Builds**: Production apps
-- **Submits**: To App Store Connect and Google Play Store
-- **Creates**: GitHub Release
+**Triggers:**
+- Push to `main` (changes to `mobile-expo/**`)
+- Pull requests to `main`
+- Tags: `mobile-v*` (for releases)
+- Manual dispatch with options
+
+**Features:**
+- Builds Android APK and iOS app in parallel
+- Profiles: development, preview, production
+- Optional store submission (Google Play, App Store)
+- Auto-creates GitHub releases on tags
 
 ### Required GitHub Secrets
 
