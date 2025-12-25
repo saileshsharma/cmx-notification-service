@@ -43,10 +43,8 @@ public interface SurveyorActivityLogRepository extends CrudRepository<SurveyorAc
                                      @Param("since") OffsetDateTime since);
 
     @Query("""
-        SELECT sal.*, s.display_name as surveyor_name, s.code as surveyor_code, a.title as appointment_title
+        SELECT sal.*
         FROM surveyor_activity_log sal
-        LEFT JOIN surveyor s ON sal.surveyor_id = s.id
-        LEFT JOIN appointment a ON sal.appointment_id = a.id
         WHERE (:surveyorId IS NULL OR sal.surveyor_id = :surveyorId)
         AND (:activityType IS NULL OR sal.activity_type = :activityType)
         AND sal.created_at >= :since
