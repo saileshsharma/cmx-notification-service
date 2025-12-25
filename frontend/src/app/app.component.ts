@@ -11,7 +11,7 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { CalendarOptions, DateSelectArg, EventClickArg, EventDropArg } from '@fullcalendar/core';
 
-type Surveyor = { id: number; code: string; display_name: string; surveyor_type: string; current_status: string; home_lat?: number; home_lng?: number; email?: string; phone?: string; };
+type Surveyor = { id: number; code: string; display_name: string; surveyor_type: string; current_status: string; home_lat?: number; home_lng?: number; current_lat?: number; current_lng?: number; last_location_update?: string; email?: string; phone?: string; };
 
 type Toast = { id: number; type: 'success' | 'error' | 'warning' | 'info'; message: string; title?: string; };
 
