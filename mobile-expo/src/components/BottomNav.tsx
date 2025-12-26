@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, TouchableOpacity, Text, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { colors, spacing, fontSize, fontWeight } from '../constants/theme';
 import { TabType } from '../context/AppContext';
 
@@ -8,6 +9,7 @@ interface BottomNavProps {
   activeTab: TabType;
   onTabChange: (tab: TabType) => void;
   unreadMessages?: number;
+  onSOS?: () => void;
 }
 
 const tabs: { key: TabType; icon: string; label: string }[] = [
@@ -22,10 +24,45 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   activeTab,
   onTabChange,
   unreadMessages = 0,
+  onSOS,
 }) => {
   return (
     <View style={styles.bottomNav}>
-      {tabs.map(tab => (
+      {tabs.slice(0, 2).map(tab => (
+        <TouchableOpacity
+          key={tab.key}
+          style={styles.navItem}
+          onPress={() => onTabChange(tab.key)}
+        >
+          <View style={styles.iconContainer}>
+            <Ionicons
+              name={(activeTab === tab.key ? tab.icon : `${tab.icon}-outline`) as any}
+              size={24}
+              color={activeTab === tab.key ? colors.primary : colors.gray[500]}
+            />
+          </View>
+          <Text style={[styles.navLabel, activeTab === tab.key && styles.navLabelActive]}>
+            {tab.label}
+          </Text>
+        </TouchableOpacity>
+      ))}
+
+      {/* SOS Button in center */}
+      <TouchableOpacity
+        style={styles.sosButtonContainer}
+        onPress={onSOS}
+        activeOpacity={0.8}
+      >
+        <LinearGradient
+          colors={['#FF6B6B', '#EE5A5A', '#DC3545']}
+          style={styles.sosButton}
+        >
+          <Ionicons name="warning" size={24} color={colors.white} />
+          <Text style={styles.sosText}>SOS</Text>
+        </LinearGradient>
+      </TouchableOpacity>
+
+      {tabs.slice(2).map(tab => (
         <TouchableOpacity
           key={tab.key}
           style={styles.navItem}
@@ -67,6 +104,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 8,
+    alignItems: 'flex-end',
   },
   navItem: {
     flex: 1,
@@ -84,6 +122,30 @@ const styles = StyleSheet.create({
   navLabelActive: {
     color: colors.primary,
     fontWeight: fontWeight.semibold,
+  },
+  sosButtonContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: -30,
+    zIndex: 10,
+  },
+  sosButton: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#DC3545',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  sosText: {
+    color: colors.white,
+    fontSize: 10,
+    fontWeight: fontWeight.bold,
+    marginTop: 2,
   },
   chatBadge: {
     position: 'absolute',

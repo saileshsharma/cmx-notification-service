@@ -469,6 +469,33 @@ Access at: `http://localhost:8080/v3/api-docs`
 | POST | `/api/notifications/send` | Send push notification |
 | GET | `/api/notifications/stats` | Get notification stats |
 
+### Mobile APIs
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/mobile/login` | Surveyor login (auto-registers device token) |
+| POST | `/api/mobile/device-token` | Register push notification token |
+| DELETE | `/api/mobile/device-token` | Unregister push notification token |
+| GET | `/api/mobile/notifications` | Get notification history |
+| GET | `/api/mobile/appointments/{surveyorId}` | Get surveyor appointments |
+| POST | `/api/mobile/appointments/{id}/respond` | Accept/reject appointment |
+| POST | `/api/mobile/location` | Update surveyor location |
+| POST | `/api/mobile/status` | Update surveyor status (AVAILABLE/BUSY/OFFLINE) |
+| POST | `/api/mobile/job-update` | Update job progress (ON_WAY/ARRIVED/INSPECTING/COMPLETED) |
+| POST | `/api/mobile/location-status` | Update location and status together |
+| GET | `/api/mobile/surveyor/{id}` | Get surveyor details |
+| POST | `/api/mobile/change-password` | Change surveyor password |
+
+### Dispatcher Real-time APIs
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/dispatcher/stream` | SSE stream for surveyor activity events |
+| GET | `/api/dispatcher/status` | Get SSE connection status |
+| GET | `/api/activity` | Get activity log with filters |
+| GET | `/api/activity/recent` | Get recent activity (last N hours) |
+| GET | `/api/activity/appointment/{id}` | Get activity for specific appointment |
+
 ## Available Maven Commands
 
 | Command | Description |
@@ -492,6 +519,23 @@ Migrations are managed with Liquibase in `src/main/resources/db/changelog/`.
 # Rollback last change
 ./mvnw liquibase:rollback -Dliquibase.rollbackCount=1
 ```
+
+## Database Schema
+
+For comprehensive database documentation including ERD and DDL, see:
+- **[Database Schema Documentation](../docs/DATABASE_SCHEMA.md)** - Complete table definitions, relationships, and DDL
+
+### Tables Overview
+
+| Table | Purpose |
+|-------|---------|
+| `surveyor` | Surveyor profiles, credentials, and current location/status |
+| `surveyor_availability` | Appointments/calendar slots assigned to surveyors |
+| `device_token` | Mobile push notification tokens (FCM/APNs) |
+| `notification_log` | Audit log for all notifications (Push/Email/SMS) |
+| `dispatch_offer` | Job offers sent to multiple surveyors with expiration |
+| `job_assignment` | Confirmed job assignments after offer acceptance |
+| `surveyor_activity_log` | Real-time activity tracking for dispatcher dashboard |
 
 ## Caching
 

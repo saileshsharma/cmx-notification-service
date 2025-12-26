@@ -21,6 +21,7 @@ interface HeaderProps {
   badgeScale: Animated.Value;
   onNotificationPress: () => void;
   onLogoutPress: () => void;
+  onProfilePress: () => void;
   onStatusChange: (status: SurveyorStatus) => void;
 }
 
@@ -32,6 +33,7 @@ export const Header: React.FC<HeaderProps> = ({
   badgeScale,
   onNotificationPress,
   onLogoutPress,
+  onProfilePress,
   onStatusChange,
 }) => {
   const getAvatarInitials = (name: string | null) => {
@@ -43,7 +45,7 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <LinearGradient colors={gradients.darkPremium} style={styles.header}>
       <View style={styles.headerContent}>
-        <View style={styles.profileSection}>
+        <TouchableOpacity style={styles.profileSection} onPress={onProfilePress}>
           <LinearGradient colors={gradients.primaryVibrant} style={styles.avatar}>
             <Text style={styles.avatarText}>{getAvatarInitials(surveyorName)}</Text>
           </LinearGradient>
@@ -51,7 +53,7 @@ export const Header: React.FC<HeaderProps> = ({
             <Text style={styles.greeting}>Welcome back,</Text>
             <Text style={styles.userName}>{surveyorName || 'Surveyor'}</Text>
           </View>
-        </View>
+        </TouchableOpacity>
 
         <View style={styles.headerRight}>
           {!isOnline && (
@@ -148,18 +150,21 @@ const styles = StyleSheet.create({
   },
   bellContainer: {
     position: 'relative',
-    padding: spacing.sm,
+    padding: spacing.md,
+    marginRight: spacing.xs,
   },
   badge: {
     position: 'absolute',
-    top: 4,
-    right: 4,
+    top: 2,
+    right: 2,
     backgroundColor: colors.danger,
     borderRadius: 10,
     minWidth: 20,
     height: 20,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#1e3a5f',
   },
   badgeText: {
     color: colors.white,

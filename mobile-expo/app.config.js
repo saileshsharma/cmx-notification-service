@@ -16,7 +16,11 @@ module.exports = {
       supportsTablet: true,
       bundleIdentifier: "com.ch.cmx",
       infoPlist: {
-        ITSAppUsesNonExemptEncryption: false
+        ITSAppUsesNonExemptEncryption: false,
+        UIBackgroundModes: ["remote-notification", "fetch"]
+      },
+      entitlements: {
+        "aps-environment": "production"
       }
     },
     android: {

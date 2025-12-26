@@ -186,6 +186,32 @@ class ApiService {
 
     return response.json();
   }
+
+  // ==================== Profile APIs ====================
+
+  async changePassword(
+    surveyorId: number,
+    currentPassword: string,
+    newPassword: string
+  ): Promise<UpdateResponse> {
+    const response = await fetch(`${this.baseUrl}/mobile/change-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        surveyorId,
+        currentPassword,
+        newPassword,
+      }),
+    });
+
+    if (!response.ok) {
+      return { success: false, message: 'Failed to change password' };
+    }
+
+    return response.json();
+  }
 }
 
 export const apiService = new ApiService();

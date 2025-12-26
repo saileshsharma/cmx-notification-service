@@ -3468,15 +3468,22 @@ export class AppComponent implements OnInit, OnDestroy {
     // Connect to SSE stream
     this.surveyorActivityService.connect();
 
-    // Load initial activities
-    this.loadSurveyorActivity();
+    // Load initial activities (with retry logic for first load)
+    this.loadSurveyorActivity(true);
   }
 
-  loadSurveyorActivity(): void {
+  loadSurveyorActivity(isInitialLoad: boolean = false, retryCount: number = 0): void {
     this.surveyorActivityService.loadRecentActivities(24, 100).subscribe({
       error: (e) => {
         console.error('Failed to load surveyor activity:', e);
-        this.showToast('error', 'Failed to load activity log');
+        // Retry up to 3 times on initial load with exponential backoff
+        if (isInitialLoad && retryCount < 3) {
+          const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
+          setTimeout(() => this.loadSurveyorActivity(true, retryCount + 1), delay);
+        } else if (!isInitialLoad) {
+          // Only show error toast for user-initiated refreshes, not initial load
+          this.showToast('error', 'Failed to load activity log');
+        }
       }
     });
   }

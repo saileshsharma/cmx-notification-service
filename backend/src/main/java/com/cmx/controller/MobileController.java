@@ -346,4 +346,50 @@ public class MobileController {
             @Parameter(description = "Surveyor ID") @PathVariable("surveyorId") Long surveyorId) {
         return ResponseEntity.ok(surveyorService.getSurveyorDetails(surveyorId));
     }
+
+    // ==================== Profile Management ====================
+
+    @Operation(
+        summary = "Change password",
+        description = "Changes the password for a surveyor"
+    )
+    @ApiResponse(responseCode = "200", description = "Password changed successfully")
+    @ApiResponse(responseCode = "400", description = "Invalid current password or request")
+    @PostMapping("/change-password")
+    public ResponseEntity<Map<String, Object>> changePassword(@RequestBody Map<String, Object> request) {
+        Long surveyorId = ((Number) request.get("surveyorId")).longValue();
+        String currentPassword = (String) request.get("currentPassword");
+        String newPassword = (String) request.get("newPassword");
+
+        if (currentPassword == null || newPassword == null) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", "Current password and new password are required"
+            ));
+        }
+
+        var surveyorOpt = surveyorRepository.findById(surveyorId);
+        if (surveyorOpt.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", "Surveyor not found"
+            ));
+        }
+
+        var surveyor = surveyorOpt.get();
+        if (!currentPassword.equals(surveyor.getPassword())) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", "Current password is incorrect"
+            ));
+        }
+
+        surveyor.setPassword(newPassword);
+        surveyorRepository.save(surveyor);
+
+        return ResponseEntity.ok(Map.of(
+            "success", true,
+            "message", "Password changed successfully"
+        ));
+    }
 }

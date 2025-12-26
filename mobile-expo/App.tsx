@@ -34,6 +34,7 @@ import {
   InspectionScreen,
   HistoryScreen,
   ChatScreen,
+  ProfileScreen,
 } from './src/screens';
 
 // Components
@@ -53,7 +54,7 @@ import { colors } from './src/constants/theme';
 const { width } = Dimensions.get('window');
 
 // Types
-type TabType = 'dashboard' | 'appointments' | 'inspection' | 'history' | 'chat';
+type TabType = 'dashboard' | 'appointments' | 'inspection' | 'history' | 'chat' | 'profile';
 type QuickStatus = 'on_way' | 'arrived' | 'inspecting' | 'completed';
 type JobState = 'idle' | 'navigating' | 'arrived' | 'inspecting' | 'completed';
 
@@ -102,6 +103,9 @@ export default function App() {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [selectedSurveyorId, setSelectedSurveyorId] = useState<number | null>(null);
   const [surveyorName, setSurveyorName] = useState<string | null>(null);
+  const [surveyorEmail, setSurveyorEmail] = useState<string | null>(null);
+  const [surveyorPhone, setSurveyorPhone] = useState<string | null>(null);
+  const [surveyorCode, setSurveyorCode] = useState<string | null>(null);
   const [isRegistered, setIsRegistered] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [expoPushToken, setExpoPushToken] = useState<string>('');
@@ -294,6 +298,9 @@ export default function App() {
 
         setSelectedSurveyorId(response.surveyor.id);
         setSurveyorName(response.surveyor.displayName);
+        setSurveyorEmail(response.surveyor.email || email);
+        setSurveyorPhone(response.surveyor.phone || null);
+        setSurveyorCode(response.surveyor.code || null);
         setIsRegistered(true);
         setCurrentStatus(response.surveyor.currentStatus as SurveyorStatus || 'AVAILABLE');
 
@@ -548,6 +555,21 @@ export default function App() {
     );
   };
 
+  const handleProfilePress = () => {
+    setActiveTab('profile');
+  };
+
+  const handlePasswordChange = async (currentPassword: string, newPassword: string): Promise<boolean> => {
+    if (!selectedSurveyorId) return false;
+    try {
+      const result = await apiService.changePassword(selectedSurveyorId, currentPassword, newPassword);
+      return result.success;
+    } catch (error) {
+      console.error('Error changing password:', error);
+      return false;
+    }
+  };
+
   const takePhoto = async () => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (!permission.granted) {
@@ -764,6 +786,7 @@ export default function App() {
         badgeScale={badgeScale}
         onNotificationPress={toggleNotificationPanel}
         onLogoutPress={logout}
+        onProfilePress={handleProfilePress}
         onStatusChange={handleStatusChange}
       />
 
@@ -830,6 +853,15 @@ export default function App() {
             onSendMessage={sendChatMessage}
           />
         )}
+        {activeTab === 'profile' && (
+          <ProfileScreen
+            surveyorName={surveyorName}
+            surveyorEmail={surveyorEmail}
+            surveyorPhone={surveyorPhone}
+            surveyorCode={surveyorCode}
+            onPasswordChange={handlePasswordChange}
+          />
+        )}
       </View>
 
       {/* Bottom Navigation */}
@@ -837,6 +869,7 @@ export default function App() {
         activeTab={activeTab}
         onTabChange={setActiveTab}
         unreadMessages={chatMessages.filter(m => m.sender === 'dispatcher').length}
+        onSOS={handleSOS}
       />
 
       {/* Modals */}

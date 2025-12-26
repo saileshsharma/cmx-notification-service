@@ -11,7 +11,7 @@ import * as Haptics from 'expo-haptics';
 export { Appointment, NotificationItem } from '../types';
 
 // Local types
-export type TabType = 'dashboard' | 'appointments' | 'inspection' | 'history' | 'chat';
+export type TabType = 'dashboard' | 'appointments' | 'inspection' | 'history' | 'chat' | 'profile';
 export type JobState = 'idle' | 'navigating' | 'arrived' | 'inspecting' | 'completed';
 export type QuickStatus = 'on_way' | 'arrived' | 'inspecting' | 'completed';
 

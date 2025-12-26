@@ -4,3 +4,4 @@ export { ScheduleScreen } from './ScheduleScreen';
 export { InspectionScreen } from './InspectionScreen';
 export { HistoryScreen } from './HistoryScreen';
 export { ChatScreen } from './ChatScreen';
+export { ProfileScreen } from './ProfileScreen';
