@@ -6,6 +6,7 @@ import com.cmx.dto.SurveyorDto.SurveyorContact;
 import com.cmx.repository.DeviceTokenRepository;
 import com.cmx.repository.NotificationLogRepository;
 import com.cmx.repository.SurveyorRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
@@ -24,11 +25,18 @@ import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -40,6 +48,14 @@ public class NotificationService {
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("EEEE, MMM d");
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("h:mm a");
     private static final Set<String> INVALID_TOKEN_CODES = Set.of("UNREGISTERED", "INVALID_ARGUMENT");
+
+    // Expo Push API configuration
+    private static final String EXPO_PUSH_API_URL = "https://exp.host/--/api/v2/push/send";
+    private static final String EXPO_TOKEN_PREFIX = "ExponentPushToken[";
+    private final HttpClient httpClient = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(10))
+            .build();
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     private final SurveyorRepository surveyorRepository;
     private final DeviceTokenRepository deviceTokenRepository;
@@ -305,26 +321,136 @@ public class NotificationService {
             return;
         }
 
-        if (!firebaseInitialized) {
-            log.warn("Firebase not initialized. Notification not sent: {} - {}", title, body);
-            auditService.logPushNotification(surveyorId, title, body, data, "FIREBASE_DISABLED", "Firebase not initialized", null, null);
-            return;
-        }
+        // Separate Expo tokens from FCM tokens
+        List<String> expoTokens = new ArrayList<>();
+        List<String> fcmTokens = new ArrayList<>();
 
         for (String token : tokens) {
-            try {
-                Message message = buildMessage(title, body, data, token);
-                String response = FirebaseMessaging.getInstance().send(message);
-                log.info("Notification sent successfully to surveyor {}: {}", surveyorId, response);
-                auditService.logPushNotification(surveyorId, title, body, data, "SENT", null, token, response);
-            } catch (FirebaseMessagingException e) {
-                log.error("Failed to send notification to surveyor {}: {}", surveyorId, e.getMessage());
-                auditService.logPushNotification(surveyorId, title, body, data, "FAILED", e.getMessage(), token, null);
+            if (isExpoToken(token)) {
+                expoTokens.add(token);
+            } else {
+                fcmTokens.add(token);
+            }
+        }
 
-                if (isInvalidToken(e)) {
-                    deviceTokenRepository.deleteByToken(token);
-                    log.info("Removed invalid device token");
+        log.info("Sending notifications to surveyor {}: {} Expo tokens, {} FCM tokens", surveyorId, expoTokens.size(), fcmTokens.size());
+
+        // Send to Expo tokens via Expo Push API
+        if (!expoTokens.isEmpty()) {
+            sendViaExpoPushApi(surveyorId, title, body, data, expoTokens);
+        }
+
+        // Send to FCM tokens via Firebase
+        if (!fcmTokens.isEmpty()) {
+            if (!firebaseInitialized) {
+                log.warn("Firebase not initialized. FCM notifications not sent: {} - {}", title, body);
+                for (String token : fcmTokens) {
+                    auditService.logPushNotification(surveyorId, title, body, data, "FIREBASE_DISABLED", "Firebase not initialized", token, null);
                 }
+            } else {
+                for (String token : fcmTokens) {
+                    try {
+                        Message message = buildMessage(title, body, data, token);
+                        String response = FirebaseMessaging.getInstance().send(message);
+                        log.info("FCM notification sent successfully to surveyor {}: {}", surveyorId, response);
+                        auditService.logPushNotification(surveyorId, title, body, data, "SENT", null, token, response);
+                    } catch (FirebaseMessagingException e) {
+                        log.error("Failed to send FCM notification to surveyor {}: {}", surveyorId, e.getMessage());
+                        auditService.logPushNotification(surveyorId, title, body, data, "FAILED", e.getMessage(), token, null);
+
+                        if (isInvalidToken(e)) {
+                            deviceTokenRepository.deleteByToken(token);
+                            log.info("Removed invalid FCM device token");
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private boolean isExpoToken(String token) {
+        return token != null && token.startsWith(EXPO_TOKEN_PREFIX);
+    }
+
+    private void sendViaExpoPushApi(Long surveyorId, String title, String body, Map<String, String> data, List<String> expoTokens) {
+        try {
+            // Build the request payload for Expo Push API
+            List<Map<String, Object>> messages = new ArrayList<>();
+            for (String token : expoTokens) {
+                Map<String, Object> message = new HashMap<>();
+                message.put("to", token);
+                message.put("title", title);
+                message.put("body", body);
+                message.put("sound", "default");
+                message.put("priority", "high");
+                message.put("data", data);
+
+                // Add badge and channelId for better notification handling
+                message.put("badge", 1);
+                message.put("channelId", "appointments");
+
+                messages.add(message);
+            }
+
+            String jsonPayload = objectMapper.writeValueAsString(messages);
+            log.info("Sending Expo Push notification to {} tokens for surveyor {}", expoTokens.size(), surveyorId);
+            log.debug("Expo Push payload: {}", jsonPayload);
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(EXPO_PUSH_API_URL))
+                    .header("Content-Type", "application/json")
+                    .header("Accept", "application/json")
+                    .header("Accept-Encoding", "gzip, deflate")
+                    .POST(HttpRequest.BodyPublishers.ofString(jsonPayload))
+                    .timeout(Duration.ofSeconds(30))
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+            log.info("Expo Push API response status: {}", response.statusCode());
+            log.info("Expo Push API response body: {}", response.body());
+
+            if (response.statusCode() == 200) {
+                // Parse response to check individual ticket status
+                Map<String, Object> responseBody = objectMapper.readValue(response.body(), Map.class);
+                List<Map<String, Object>> ticketData = (List<Map<String, Object>>) responseBody.get("data");
+
+                if (ticketData != null) {
+                    for (int i = 0; i < ticketData.size() && i < expoTokens.size(); i++) {
+                        Map<String, Object> ticket = ticketData.get(i);
+                        String status = (String) ticket.get("status");
+                        String ticketId = (String) ticket.get("id");
+                        String token = expoTokens.get(i);
+
+                        if ("ok".equals(status)) {
+                            log.info("Expo notification sent successfully to token {}..., ticket: {}", token.substring(0, Math.min(30, token.length())), ticketId);
+                            auditService.logPushNotification(surveyorId, title, body, data, "SENT", null, token, ticketId);
+                        } else {
+                            String errorMessage = (String) ticket.get("message");
+                            Map<String, Object> details = (Map<String, Object>) ticket.get("details");
+                            String errorCode = details != null ? (String) details.get("error") : null;
+
+                            log.error("Expo notification failed for token {}...: {} - {}", token.substring(0, Math.min(30, token.length())), errorCode, errorMessage);
+                            auditService.logPushNotification(surveyorId, title, body, data, "FAILED", errorCode + ": " + errorMessage, token, null);
+
+                            // Remove invalid tokens
+                            if ("DeviceNotRegistered".equals(errorCode) || "InvalidCredentials".equals(errorCode)) {
+                                deviceTokenRepository.deleteByToken(token);
+                                log.info("Removed invalid Expo device token");
+                            }
+                        }
+                    }
+                }
+            } else {
+                log.error("Expo Push API returned error status {}: {}", response.statusCode(), response.body());
+                for (String token : expoTokens) {
+                    auditService.logPushNotification(surveyorId, title, body, data, "FAILED", "HTTP " + response.statusCode() + ": " + response.body(), token, null);
+                }
+            }
+        } catch (Exception e) {
+            log.error("Failed to send Expo push notification to surveyor {}: {}", surveyorId, e.getMessage(), e);
+            for (String token : expoTokens) {
+                auditService.logPushNotification(surveyorId, title, body, data, "FAILED", e.getMessage(), token, null);
             }
         }
     }
@@ -345,25 +471,55 @@ public class NotificationService {
         String pushError = null;
 
         if (!tokens.isEmpty()) {
-            if (!firebaseInitialized) {
-                pushStatus = "FIREBASE_DISABLED";
-                pushError = "Firebase not initialized - set FIREBASE_CREDENTIALS_PATH";
-                auditService.logPushNotification(surveyorId, title, message, data, pushStatus, pushError, null, null);
-            } else {
-                for (String token : tokens) {
-                    try {
-                        Message msg = buildMessage(title, message, data, token);
-                        String response = FirebaseMessaging.getInstance().send(msg);
-                        pushSent++;
-                        auditService.logPushNotification(surveyorId, title, message, data, "SENT", null, token, response);
-                    } catch (FirebaseMessagingException e) {
-                        pushFailed++;
-                        pushError = e.getMessage();
-                        auditService.logPushNotification(surveyorId, title, message, data, "FAILED", e.getMessage(), token, null);
+            // Separate Expo tokens from FCM tokens
+            List<String> expoTokens = new ArrayList<>();
+            List<String> fcmTokens = new ArrayList<>();
+
+            for (String token : tokens) {
+                if (isExpoToken(token)) {
+                    expoTokens.add(token);
+                } else {
+                    fcmTokens.add(token);
+                }
+            }
+
+            // Send to Expo tokens via Expo Push API
+            if (!expoTokens.isEmpty()) {
+                try {
+                    sendViaExpoPushApi(surveyorId, title, message, data, expoTokens);
+                    pushSent += expoTokens.size(); // Approximate - actual status logged in sendViaExpoPushApi
+                } catch (Exception e) {
+                    pushFailed += expoTokens.size();
+                    pushError = e.getMessage();
+                }
+            }
+
+            // Send to FCM tokens via Firebase
+            if (!fcmTokens.isEmpty()) {
+                if (!firebaseInitialized) {
+                    pushStatus = "FIREBASE_DISABLED";
+                    pushError = "Firebase not initialized - set FIREBASE_CREDENTIALS_PATH";
+                    for (String token : fcmTokens) {
+                        auditService.logPushNotification(surveyorId, title, message, data, pushStatus, pushError, token, null);
+                    }
+                    pushFailed += fcmTokens.size();
+                } else {
+                    for (String token : fcmTokens) {
+                        try {
+                            Message msg = buildMessage(title, message, data, token);
+                            String response = FirebaseMessaging.getInstance().send(msg);
+                            pushSent++;
+                            auditService.logPushNotification(surveyorId, title, message, data, "SENT", null, token, response);
+                        } catch (FirebaseMessagingException e) {
+                            pushFailed++;
+                            pushError = e.getMessage();
+                            auditService.logPushNotification(surveyorId, title, message, data, "FAILED", e.getMessage(), token, null);
+                        }
                     }
                 }
-                pushStatus = pushSent > 0 ? "SENT" : "FAILED";
             }
+
+            pushStatus = pushSent > 0 ? "SENT" : "FAILED";
         } else {
             auditService.logPushNotification(surveyorId, title, message, data, pushStatus, "No device tokens registered", null, null);
         }
