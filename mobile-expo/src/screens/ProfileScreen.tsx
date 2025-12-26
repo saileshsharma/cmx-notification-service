@@ -23,6 +23,7 @@ interface ProfileScreenProps {
   biometricSupported?: boolean;
   biometricEnabled?: boolean;
   onToggleBiometric?: () => void;
+  onLogout?: () => void;
 }
 
 export const ProfileScreen: React.FC<ProfileScreenProps> = ({
@@ -34,6 +35,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   biometricSupported = false,
   biometricEnabled = false,
   onToggleBiometric,
+  onLogout,
 }) => {
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
@@ -278,6 +280,23 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           </View>
         </View>
 
+        {/* Logout Button */}
+        {onLogout && (
+          <View style={styles.section}>
+            <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
+              <LinearGradient
+                colors={gradients.danger}
+                style={styles.logoutGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+              >
+                <Ionicons name="log-out-outline" size={22} color={colors.white} />
+                <Text style={styles.logoutText}>Logout</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        )}
+
         <View style={styles.bottomSpacing} />
       </ScrollView>
     </KeyboardAvoidingView>
@@ -497,6 +516,23 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     color: colors.black,
     fontWeight: fontWeight.semibold,
+  },
+  logoutButton: {
+    borderRadius: borderRadius.button,
+    overflow: 'hidden',
+    ...shadows.dangerGlow,
+  },
+  logoutGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.lg,
+    gap: spacing.md,
+  },
+  logoutText: {
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.bold,
+    color: colors.white,
   },
   bottomSpacing: {
     height: 100,

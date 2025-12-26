@@ -15,7 +15,7 @@ module.exports = {
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.ch.cmx",
-      buildNumber: "8",
+      buildNumber: "9",
       infoPlist: {
         NSCameraUsageDescription: "FleetInspect Pro needs camera access to capture vehicle inspection photos",
         NSPhotoLibraryUsageDescription: "FleetInspect Pro needs photo library access to save and upload inspection photos",
@@ -49,6 +49,7 @@ module.exports = {
       favicon: "./assets/favicon.png"
     },
     plugins: [
+      "expo-splash-screen",
       [
         "expo-notifications",
         {

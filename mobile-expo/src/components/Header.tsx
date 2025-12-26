@@ -73,11 +73,6 @@ export const Header: React.FC<HeaderProps> = ({
               </View>
             )}
 
-            {/* Menu Button */}
-            <TouchableOpacity style={styles.iconButton} onPress={onNotificationPress}>
-              <Ionicons name="menu" size={22} color={colors.text.primary} />
-            </TouchableOpacity>
-
             {/* Notification Bell */}
             <TouchableOpacity style={styles.iconButton} onPress={onNotificationPress}>
               <Ionicons name="notifications-outline" size={22} color={colors.text.primary} />
@@ -86,13 +81,6 @@ export const Header: React.FC<HeaderProps> = ({
                   <Text style={styles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
                 </Animated.View>
               )}
-            </TouchableOpacity>
-
-            {/* Profile Avatar */}
-            <TouchableOpacity onPress={onProfilePress} style={styles.profileButton}>
-              <LinearGradient colors={gradients.cardPremium} style={styles.profileAvatar}>
-                <Text style={styles.profileAvatarText}>{getAvatarInitials(surveyorName)}</Text>
-              </LinearGradient>
             </TouchableOpacity>
           </View>
         </View>
@@ -249,23 +237,6 @@ const styles = StyleSheet.create({
     color: colors.black,
     fontSize: 10,
     fontWeight: fontWeight.bold,
-  },
-  profileButton: {
-    marginLeft: spacing.xs,
-  },
-  profileAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: colors.cardBorder,
-  },
-  profileAvatarText: {
-    color: colors.text.primary,
-    fontSize: fontSize.md,
-    fontWeight: fontWeight.semibold,
   },
   offlineBadge: {
     backgroundColor: colors.dangerSoft,

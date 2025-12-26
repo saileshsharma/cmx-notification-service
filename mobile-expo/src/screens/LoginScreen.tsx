@@ -235,26 +235,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                     </View>
                   )}
 
-                  {/* Social Login */}
-                  <View style={styles.socialSection}>
-                    <View style={styles.dividerContainer}>
-                      <View style={styles.divider} />
-                      <Text style={styles.dividerText}>Or continue with</Text>
-                      <View style={styles.divider} />
-                    </View>
-
-                    <View style={styles.socialButtons}>
-                      <TouchableOpacity style={styles.socialButton}>
-                        <Ionicons name="logo-google" size={22} color={colors.text.primary} />
-                      </TouchableOpacity>
-                      <TouchableOpacity style={styles.socialButton}>
-                        <Ionicons name="logo-apple" size={22} color={colors.text.primary} />
-                      </TouchableOpacity>
-                      <TouchableOpacity style={styles.socialButton}>
-                        <Ionicons name="logo-facebook" size={22} color="#1877F2" />
-                      </TouchableOpacity>
-                    </View>
-                  </View>
                 </>
               )}
             </View>
@@ -456,24 +436,6 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     fontWeight: fontWeight.semibold,
     color: colors.text.primary,
-  },
-  socialSection: {
-    marginTop: spacing.xl,
-  },
-  socialButtons: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: spacing.lg,
-  },
-  socialButton: {
-    width: 60,
-    height: 60,
-    borderRadius: borderRadius.lg,
-    backgroundColor: colors.card,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
   },
   registerContainer: {
     flexDirection: 'row',

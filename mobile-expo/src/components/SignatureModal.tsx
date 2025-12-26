@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -7,13 +7,14 @@ import {
   Modal,
   Dimensions,
   Platform,
+  Alert,
 } from 'react-native';
 import SignatureCanvas from 'react-native-signature-canvas';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, gradients, spacing, fontSize, fontWeight, borderRadius, shadows } from '../constants/theme';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 interface SignatureModalProps {
   visible: boolean;
@@ -27,17 +28,22 @@ export const SignatureModal: React.FC<SignatureModalProps> = ({
   onConfirm,
 }) => {
   const signatureRef = useRef<any>(null);
+  const [hasSignature, setHasSignature] = useState(false);
 
   const handleClear = () => {
     signatureRef.current?.clearSignature();
+    setHasSignature(false);
   };
 
   const handleConfirm = () => {
+    if (!hasSignature) {
+      Alert.alert('Signature Required', 'Please sign in the box before confirming.');
+      return;
+    }
     signatureRef.current?.readSignature();
   };
 
   const handleOK = (signature: string) => {
-    // signature is a base64 encoded PNG
     if (signature) {
       // Remove the data URL prefix if present
       const base64Data = signature.replace('data:image/png;base64,', '');
@@ -46,22 +52,26 @@ export const SignatureModal: React.FC<SignatureModalProps> = ({
   };
 
   const handleEmpty = () => {
-    // Show alert that signature is required
+    Alert.alert('Signature Required', 'Please sign in the box before confirming.');
   };
 
+  const handleBegin = () => {
+    setHasSignature(true);
+  };
+
+  // Simplified web style for better touch handling
   const webStyle = `
     .m-signature-pad {
       box-shadow: none;
       border: none;
-      background-color: ${colors.gray[50]};
-      border-radius: ${borderRadius.lg}px;
+      background-color: #FFFFFF;
       width: 100%;
       height: 100%;
-      position: relative;
+      margin: 0;
+      padding: 0;
     }
     .m-signature-pad--body {
-      border: 2px dashed ${colors.gray[300]};
-      border-radius: ${borderRadius.lg}px;
+      border: none;
       width: 100%;
       height: 100%;
       position: absolute;
@@ -73,32 +83,24 @@ export const SignatureModal: React.FC<SignatureModalProps> = ({
     .m-signature-pad--body canvas {
       width: 100% !important;
       height: 100% !important;
-      touch-action: none;
-      -webkit-touch-callout: none;
-      -webkit-user-select: none;
-      user-select: none;
+      touch-action: none !important;
+      -webkit-touch-callout: none !important;
     }
     .m-signature-pad--footer {
       display: none;
     }
     body, html {
-      background-color: ${colors.white};
       margin: 0;
       padding: 0;
       width: 100%;
       height: 100%;
       overflow: hidden;
-      touch-action: none;
+      touch-action: none !important;
       -webkit-overflow-scrolling: auto;
-      -webkit-touch-callout: none;
-      -webkit-user-select: none;
-      user-select: none;
-    }
-    canvas {
-      touch-action: none;
-      -webkit-touch-callout: none;
+      background-color: #FFFFFF;
     }
     * {
+      box-sizing: border-box;
       -webkit-tap-highlight-color: transparent;
     }
   `;
@@ -124,42 +126,37 @@ export const SignatureModal: React.FC<SignatureModalProps> = ({
           <View style={styles.instructionBox}>
             <Ionicons name="information-circle" size={20} color={colors.primary} />
             <Text style={styles.instruction}>
-              Please ask the vehicle owner to sign in the box below to confirm the inspection
+              Please ask the vehicle owner to sign in the box below using their finger
             </Text>
           </View>
 
-          {/* Signature Canvas */}
-          <View
-            style={styles.signatureContainer}
-            onStartShouldSetResponder={() => true}
-            onMoveShouldSetResponder={() => true}
-          >
-            <SignatureCanvas
-              ref={signatureRef}
-              onOK={handleOK}
-              onEmpty={handleEmpty}
-              onBegin={() => {
-                // Signature started - prevents parent scroll interference
-              }}
-              webStyle={webStyle}
-              backgroundColor={colors.gray[50]}
-              penColor={colors.gray[900]}
-              dotSize={2}
-              minWidth={1.5}
-              maxWidth={3}
-              style={styles.signatureCanvas}
-              androidHardwareAccelerationDisabled={false}
-              autoClear={false}
-              descriptionText=""
-              imageType="image/png"
-              dataURL=""
-              // iOS-specific WebView props for touch handling
-              scrollable={false}
-            />
-            <View style={styles.signaturePlaceholder}>
-              <Text style={styles.placeholderText}>Sign here</Text>
-              <View style={styles.signatureLine} />
+          {/* Signature Canvas Container */}
+          <View style={styles.signatureContainer}>
+            <View style={styles.signatureBox}>
+              <SignatureCanvas
+                ref={signatureRef}
+                onOK={handleOK}
+                onEmpty={handleEmpty}
+                onBegin={handleBegin}
+                webStyle={webStyle}
+                backgroundColor="#FFFFFF"
+                penColor="#000000"
+                dotSize={3}
+                minWidth={2}
+                maxWidth={4}
+                style={styles.signatureCanvas}
+                androidHardwareAccelerationDisabled={false}
+                autoClear={false}
+                descriptionText=""
+                imageType="image/png"
+              />
             </View>
+            {!hasSignature && (
+              <View style={styles.signaturePlaceholder} pointerEvents="none">
+                <Ionicons name="finger-print" size={32} color={colors.gray[300]} />
+                <Text style={styles.placeholderText}>Sign here with your finger</Text>
+              </View>
+            )}
           </View>
 
           {/* Action Buttons */}
@@ -169,9 +166,12 @@ export const SignatureModal: React.FC<SignatureModalProps> = ({
               <Text style={styles.clearText}>Clear</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.confirmButton} onPress={handleConfirm}>
+            <TouchableOpacity
+              style={[styles.confirmButton, !hasSignature && styles.confirmButtonDisabled]}
+              onPress={handleConfirm}
+            >
               <LinearGradient
-                colors={gradients.success}
+                colors={hasSignature ? gradients.success : [colors.gray[400], colors.gray[500]]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.confirmGradient}
@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: borderRadius.xxl,
     borderTopRightRadius: borderRadius.xxl,
     padding: spacing.xl,
-    paddingBottom: spacing.xxxl,
+    paddingBottom: Platform.OS === 'ios' ? spacing.xxxl + 20 : spacing.xxxl,
   },
   header: {
     flexDirection: 'row',
@@ -254,35 +254,37 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   signatureContainer: {
-    height: 220,
+    height: 250,
     marginBottom: spacing.lg,
     position: 'relative',
   },
-  signatureCanvas: {
+  signatureBox: {
     flex: 1,
     borderRadius: borderRadius.lg,
     borderWidth: 2,
-    borderColor: colors.gray[200],
+    borderColor: colors.gray[300],
     borderStyle: 'dashed',
+    backgroundColor: '#FFFFFF',
     overflow: 'hidden',
+  },
+  signatureCanvas: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
   },
   signaturePlaceholder: {
     position: 'absolute',
-    bottom: spacing.xl,
-    left: spacing.xl,
-    right: spacing.xl,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     alignItems: 'center',
-    pointerEvents: 'none',
+    justifyContent: 'center',
+    gap: spacing.sm,
   },
   placeholderText: {
-    fontSize: fontSize.sm,
+    fontSize: fontSize.md,
     color: colors.gray[300],
-    marginBottom: spacing.xs,
-  },
-  signatureLine: {
-    width: '80%',
-    height: 1,
-    backgroundColor: colors.gray[300],
   },
   buttonRow: {
     flexDirection: 'row',
@@ -309,6 +311,9 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     overflow: 'hidden',
     ...shadows.md,
+  },
+  confirmButtonDisabled: {
+    opacity: 0.7,
   },
   confirmGradient: {
     flexDirection: 'row',

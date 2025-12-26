@@ -287,26 +287,6 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
                     </LinearGradient>
                   </TouchableOpacity>
 
-                  {/* Social Registration */}
-                  <View style={styles.socialSection}>
-                    <View style={styles.dividerContainer}>
-                      <View style={styles.divider} />
-                      <Text style={styles.dividerText}>Or register with</Text>
-                      <View style={styles.divider} />
-                    </View>
-
-                    <View style={styles.socialButtons}>
-                      <TouchableOpacity style={styles.socialButton}>
-                        <Ionicons name="logo-google" size={22} color={colors.text.primary} />
-                      </TouchableOpacity>
-                      <TouchableOpacity style={styles.socialButton}>
-                        <Ionicons name="logo-apple" size={22} color={colors.text.primary} />
-                      </TouchableOpacity>
-                      <TouchableOpacity style={styles.socialButton}>
-                        <Ionicons name="logo-facebook" size={22} color="#1877F2" />
-                      </TouchableOpacity>
-                    </View>
-                  </View>
                 </>
               )}
             </View>
@@ -488,39 +468,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.15)',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  socialSection: {
-    marginTop: spacing.xl,
-  },
-  dividerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.lg,
-  },
-  divider: {
-    flex: 1,
-    height: 1,
-    backgroundColor: colors.cardBorder,
-  },
-  dividerText: {
-    paddingHorizontal: spacing.md,
-    fontSize: fontSize.sm,
-    color: colors.text.muted,
-  },
-  socialButtons: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: spacing.lg,
-  },
-  socialButton: {
-    width: 60,
-    height: 60,
-    borderRadius: borderRadius.lg,
-    backgroundColor: colors.card,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
   },
   loginContainer: {
     flexDirection: 'row',

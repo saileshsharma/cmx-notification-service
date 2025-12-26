@@ -17,7 +17,11 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import * as Network from 'expo-network';
 import * as LocalAuthentication from 'expo-local-authentication';
+import * as SplashScreen from 'expo-splash-screen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// Keep the splash screen visible while we fetch resources
+SplashScreen.preventAutoHideAsync();
 
 // Types
 import { NotificationItem, Appointment, SurveyorStatus, AppointmentResponseStatus, ChatMessage as APIChatMessage, ChatConversation, TypingIndicator } from './src/types';
@@ -301,21 +305,33 @@ export default function App() {
     return () => subscription?.remove();
   }, [selectedSurveyorId, surveyorName, activeConversationId]);
 
-  // Refresh messages when switching to chat tab
+  // Refresh messages when switching to chat tab and poll periodically when on chat screen
   useEffect(() => {
     if (activeTab === 'chat' && activeConversationId) {
       console.log('Entered chat tab, refreshing messages...');
-      chatService.loadMessages(activeConversationId).then(messages => {
-        const localMessages: ChatMessage[] = messages.map(m => ({
-          id: m.id?.toString() || Date.now().toString(),
-          text: m.content,
-          sender: m.senderType === 'SURVEYOR' ? 'surveyor' : 'dispatcher',
-          timestamp: new Date(m.sentAt),
-        }));
-        setChatMessages(localMessages.reverse());
-      }).catch(error => {
-        console.error('Failed to refresh chat messages:', error);
-      });
+
+      const refreshMessages = async () => {
+        try {
+          const messages = await chatService.loadMessages(activeConversationId);
+          const localMessages: ChatMessage[] = messages.map(m => ({
+            id: m.id?.toString() || Date.now().toString(),
+            text: m.content,
+            sender: m.senderType === 'SURVEYOR' ? 'surveyor' : 'dispatcher',
+            timestamp: new Date(m.sentAt),
+          }));
+          setChatMessages(localMessages.reverse());
+        } catch (error) {
+          console.error('Failed to refresh chat messages:', error);
+        }
+      };
+
+      // Initial refresh
+      refreshMessages();
+
+      // Poll every 3 seconds when on chat screen (in case WebSocket isn't working)
+      const pollInterval = setInterval(refreshMessages, 3000);
+
+      return () => clearInterval(pollInterval);
     }
   }, [activeTab, activeConversationId]);
 
@@ -448,6 +464,9 @@ export default function App() {
     notificationService.startListening();
 
     setIsLoading(false);
+
+    // Hide splash screen after initialization
+    await SplashScreen.hideAsync();
   };
 
   const checkBiometricSupport = async () => {
@@ -517,21 +536,14 @@ export default function App() {
 
   const loadSavedState = async () => {
     try {
-      const savedSurveyorId = await storageService.getSurveyorId();
-      const savedSurveyorName = await storageService.getSurveyorName();
-      const savedSurveyorEmail = await storageService.getSurveyorEmail();
-      const savedSurveyorPhone = await storageService.getSurveyorPhone();
-      const savedSurveyorCode = await storageService.getSurveyorCode();
-      const savedIsRegistered = await storageService.isDeviceRegistered();
+      // Load notifications only - don't auto-login
+      // User must login fresh each time (or use biometric)
       const savedNotifications = await storageService.getNotifications();
-
-      if (savedSurveyorId) setSelectedSurveyorId(savedSurveyorId);
-      if (savedSurveyorName) setSurveyorName(savedSurveyorName);
-      if (savedSurveyorEmail) setSurveyorEmail(savedSurveyorEmail);
-      if (savedSurveyorPhone) setSurveyorPhone(savedSurveyorPhone);
-      if (savedSurveyorCode) setSurveyorCode(savedSurveyorCode);
-      if (savedIsRegistered) setIsRegistered(true);
       if (savedNotifications) setNotifications(savedNotifications);
+
+      // Check if biometric is enabled (for showing biometric option on login screen)
+      const biometricPref = await AsyncStorage.getItem('biometric_enabled');
+      setBiometricEnabled(biometricPref === 'true');
     } catch (error) {
       console.error('Error loading saved state', error);
     }
@@ -1239,6 +1251,7 @@ export default function App() {
             biometricSupported={biometricSupported}
             biometricEnabled={biometricEnabled}
             onToggleBiometric={toggleBiometricLogin}
+            onLogout={logout}
           />
         )}
       </View>

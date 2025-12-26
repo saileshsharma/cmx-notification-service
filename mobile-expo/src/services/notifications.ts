@@ -101,6 +101,7 @@ class NotificationService {
     debugLogger.log(`Device.brand: ${Device.brand}`);
     debugLogger.log(`Device.manufacturer: ${Device.manufacturer}`);
     debugLogger.log(`Device.osName: ${Device.osName}`);
+    debugLogger.log(`Platform.OS: ${Platform.OS}`);
 
     if (!Device.isDevice) {
       debugLogger.log('Cannot get token: not a physical device (emulator/simulator)');
@@ -108,8 +109,15 @@ class NotificationService {
       return null;
     }
 
-    // First try native FCM token
-    debugLogger.log('Attempting to get native FCM token...');
+    // For iOS, we need to use Expo push tokens which handle APNs
+    // For Android, we can use native FCM tokens
+    if (Platform.OS === 'ios') {
+      debugLogger.log('iOS detected - using Expo Push Token for APNs...');
+      return this.getExpoPushTokenInternal();
+    }
+
+    // Android - First try native FCM token
+    debugLogger.log('Android detected - attempting to get native FCM token...');
     debugLogger.log('This requires google-services.json to be properly configured');
     try {
       const tokenData = await Notifications.getDevicePushTokenAsync();
@@ -123,11 +131,12 @@ class NotificationService {
       return tokenData.data;
     } catch (error) {
       debugLogger.error('Failed to get native FCM token', error);
-      debugLogger.log('This may mean google-services.json is missing or misconfigured');
+      debugLogger.log('Falling back to Expo Push Token...');
+      return this.getExpoPushTokenInternal();
     }
+  }
 
-    // Fallback to Expo push token
-    debugLogger.log('Falling back to Expo Push Token...');
+  private async getExpoPushTokenInternal(): Promise<string | null> {
     try {
       debugLogger.log('Checking Constants.expoConfig...');
       debugLogger.log(`expoConfig exists: ${!!Constants.expoConfig}`);
@@ -160,6 +169,7 @@ class NotificationService {
       debugLogger.log('2. google-services.json missing or misconfigured');
       debugLogger.log('3. No EAS project ID configured');
       debugLogger.log('4. Network connectivity issues');
+      debugLogger.log('5. For iOS: APNs certificate/key not configured in EAS');
       return null;
     }
   }
