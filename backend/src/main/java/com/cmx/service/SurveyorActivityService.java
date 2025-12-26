@@ -12,7 +12,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Value;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
@@ -103,9 +103,9 @@ public class SurveyorActivityService {
      */
     public List<SurveyorActivityLog> getActivityLog(Long surveyorId, String activityType,
                                                       Integer hoursBack, int limit, int offset) {
-        OffsetDateTime since = hoursBack != null
-                ? OffsetDateTime.now().minusHours(hoursBack)
-                : OffsetDateTime.now().minusDays(30); // Default 30 days
+        Instant since = hoursBack != null
+                ? Instant.now().minus(hoursBack, java.time.temporal.ChronoUnit.HOURS)
+                : Instant.now().minus(30, java.time.temporal.ChronoUnit.DAYS); // Default 30 days
 
         List<SurveyorActivityLog> logs = activityLogRepository.findWithFilters(
                 surveyorId, activityType, since, limit, offset);
@@ -121,7 +121,7 @@ public class SurveyorActivityService {
      */
     public List<SurveyorActivityLog> getRecentActivity(int hours, int limit) {
         try {
-            OffsetDateTime since = OffsetDateTime.now().minusHours(hours);
+            Instant since = Instant.now().minus(hours, java.time.temporal.ChronoUnit.HOURS);
             List<SurveyorActivityLog> logs = activityLogRepository.findRecent(since, limit, 0);
             enrichActivityLogs(logs);
             return logs;
@@ -188,7 +188,7 @@ public class SurveyorActivityService {
             eventData.put("surveyorCode", surveyor.getCode());
             eventData.put("activityType", activityType);
             eventData.put("newValue", newValue);
-            eventData.put("timestamp", OffsetDateTime.now().toString());
+            eventData.put("timestamp", Instant.now().toString());
 
             if (surveyor.getCurrentLat() != null && surveyor.getCurrentLng() != null) {
                 eventData.put("latitude", surveyor.getCurrentLat());

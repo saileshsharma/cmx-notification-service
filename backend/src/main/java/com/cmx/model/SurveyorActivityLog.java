@@ -7,7 +7,7 @@ import org.springframework.data.annotation.Transient;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 @Data
 @NoArgsConstructor
@@ -47,7 +47,7 @@ public class SurveyorActivityLog {
     private String notes;
 
     @Column("created_at")
-    private OffsetDateTime createdAt;
+    private Instant createdAt;
 
     // Transient fields for joined data (not persisted to DB)
     @Transient
@@ -68,7 +68,7 @@ public class SurveyorActivityLog {
         this.latitude = latitude;
         this.longitude = longitude;
         this.notes = notes;
-        this.createdAt = OffsetDateTime.now();
+        this.createdAt = Instant.now();
     }
 
     // Static factory methods

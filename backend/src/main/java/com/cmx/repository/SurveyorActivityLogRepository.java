@@ -6,7 +6,7 @@ import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 
 @Repository
@@ -23,7 +23,7 @@ public interface SurveyorActivityLogRepository extends CrudRepository<SurveyorAc
                                                    @Param("offset") int offset);
 
     @Query("SELECT * FROM surveyor_activity_log WHERE created_at >= :since ORDER BY created_at DESC LIMIT :limit OFFSET :offset")
-    List<SurveyorActivityLog> findRecent(@Param("since") OffsetDateTime since,
+    List<SurveyorActivityLog> findRecent(@Param("since") Instant since,
                                           @Param("limit") int limit,
                                           @Param("offset") int offset);
 
@@ -40,7 +40,7 @@ public interface SurveyorActivityLogRepository extends CrudRepository<SurveyorAc
     @Query("SELECT COUNT(*) FROM surveyor_activity_log WHERE surveyor_id = :surveyorId AND activity_type = :activityType AND created_at >= :since")
     int countBySurveyorAndTypeSince(@Param("surveyorId") Long surveyorId,
                                      @Param("activityType") String activityType,
-                                     @Param("since") OffsetDateTime since);
+                                     @Param("since") Instant since);
 
     @Query("""
         SELECT sal.*
@@ -53,7 +53,7 @@ public interface SurveyorActivityLogRepository extends CrudRepository<SurveyorAc
     """)
     List<SurveyorActivityLog> findWithFilters(@Param("surveyorId") Long surveyorId,
                                                @Param("activityType") String activityType,
-                                               @Param("since") OffsetDateTime since,
+                                               @Param("since") Instant since,
                                                @Param("limit") int limit,
                                                @Param("offset") int offset);
 }
