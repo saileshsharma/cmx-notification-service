@@ -192,6 +192,7 @@ export class AppComponent implements OnInit, OnDestroy {
   chatSurveyorSearch = '';
   private chatSubscriptions: Subscription[] = [];
   private typingTimeout: any;
+  private chatPollingInterval: any;
 
   // Export
   showExportModal = false;
@@ -3660,6 +3661,9 @@ export class AppComponent implements OnInit, OnDestroy {
     this.showChatPanel = !this.showChatPanel;
     if (this.showChatPanel) {
       this.showNewConversationPicker = false;
+      this.startChatPolling();
+    } else {
+      this.stopChatPolling();
     }
   }
 
@@ -3668,6 +3672,25 @@ export class AppComponent implements OnInit, OnDestroy {
     this.activeConversationId = null;
     this.activeConversationName = '';
     this.showNewConversationPicker = false;
+    this.stopChatPolling();
+  }
+
+  private startChatPolling(): void {
+    // Poll for new messages every 3 seconds when WebSocket might not be connected
+    this.stopChatPolling();
+    this.chatPollingInterval = setInterval(() => {
+      if (this.activeConversationId) {
+        this.chatService.refreshActiveMessages();
+      }
+      this.chatService.loadConversations();
+    }, 3000);
+  }
+
+  private stopChatPolling(): void {
+    if (this.chatPollingInterval) {
+      clearInterval(this.chatPollingInterval);
+      this.chatPollingInterval = null;
+    }
   }
 
   openConversation(conversation: ChatConversation): void {
@@ -3679,6 +3702,8 @@ export class AppComponent implements OnInit, OnDestroy {
     this.chatService.loadMessages(conversation.conversationId).subscribe({
       next: (messages) => {
         this.chatMessages = messages;
+        // Also update the service's message subject for consistency
+        this.chatService.setMessages(messages);
       },
       error: (e) => console.error('Failed to load messages:', e)
     });

@@ -171,8 +171,8 @@ export class ChatService implements OnDestroy {
 
     // Check if message already exists (avoid duplicates)
     if (!currentMessages.find(m => m.id === message.id)) {
-      // Add to the beginning (newest first)
-      this.messagesSubject.next([message, ...currentMessages]);
+      // Add to the end (oldest first, newest last - for chat display)
+      this.messagesSubject.next([...currentMessages, message]);
 
       // Update unread count if not in active conversation
       if (message.conversationId !== this.activeConversationId &&
@@ -301,6 +301,27 @@ export class ChatService implements OnDestroy {
     if (conversationId) {
       this.markAsRead(conversationId);
     }
+  }
+
+  /**
+   * Set messages (for syncing after load)
+   */
+  setMessages(messages: ChatMessage[]): void {
+    this.messagesSubject.next(messages);
+  }
+
+  /**
+   * Refresh messages for active conversation (for polling fallback)
+   */
+  refreshActiveMessages(): void {
+    if (!this.activeConversationId) return;
+
+    this.loadMessages(this.activeConversationId).subscribe({
+      next: (messages) => {
+        this.messagesSubject.next(messages);
+      },
+      error: (e) => console.error('Failed to refresh messages:', e)
+    });
   }
 
   /**
