@@ -187,6 +187,14 @@ public class MobileController {
         boolean success = availabilityService.respondToAppointment(appointmentId, surveyorId, response);
 
         if (success) {
+            // Log the appointment response activity (async, don't block response)
+            try {
+                activityService.logJobUpdate(surveyorId, "PENDING", response, appointmentId, null, null, null);
+            } catch (Exception e) {
+                org.slf4j.LoggerFactory.getLogger(MobileController.class)
+                    .warn("Failed to log appointment response activity for surveyor {}: {}", surveyorId, e.getMessage());
+            }
+
             // Send confirmation notification to the surveyor
             if (appointmentDetails != null) {
                 notificationService.sendAppointmentResponseConfirmation(

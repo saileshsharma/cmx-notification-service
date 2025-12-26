@@ -228,6 +228,8 @@ public class SurveyorActivityService {
                 case "ARRIVED" -> surveyorName + " has arrived at inspection location";
                 case "INSPECTING" -> surveyorName + " has started the inspection";
                 case "COMPLETED" -> surveyorName + " has completed the inspection";
+                case "ACCEPTED" -> surveyorName + " has accepted the appointment";
+                case "REJECTED" -> surveyorName + " has rejected the appointment";
                 default -> surveyorName + " job update: " + newValue;
             };
             case "LOGIN" -> surveyorName + " has logged in";
