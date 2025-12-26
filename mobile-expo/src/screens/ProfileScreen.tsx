@@ -20,6 +20,9 @@ interface ProfileScreenProps {
   surveyorPhone: string | null;
   surveyorCode: string | null;
   onPasswordChange: (currentPassword: string, newPassword: string) => Promise<boolean>;
+  biometricSupported?: boolean;
+  biometricEnabled?: boolean;
+  onToggleBiometric?: () => void;
 }
 
 export const ProfileScreen: React.FC<ProfileScreenProps> = ({
@@ -28,6 +31,9 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   surveyorPhone,
   surveyorCode,
   onPasswordChange,
+  biometricSupported = false,
+  biometricEnabled = false,
+  onToggleBiometric,
 }) => {
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
@@ -127,11 +133,41 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           </View>
         </View>
 
-        {/* Change Password Section */}
+        {/* Security Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Security</Text>
           <View style={[styles.card, shadows.card]}>
             <LinearGradient colors={[colors.card, colors.cardDark]} style={styles.cardGradient}>
+              {/* Biometric Authentication Toggle */}
+              {biometricSupported && onToggleBiometric && (
+                <TouchableOpacity
+                  style={styles.securityRow}
+                  onPress={onToggleBiometric}
+                >
+                  <View style={styles.buttonContent}>
+                    <View style={styles.infoIconContainer}>
+                      <Ionicons
+                        name={Platform.OS === 'ios' ? 'finger-print' : 'finger-print'}
+                        size={22}
+                        color={colors.accent}
+                      />
+                    </View>
+                    <View style={styles.securityTextContainer}>
+                      <Text style={styles.buttonText}>
+                        {Platform.OS === 'ios' ? 'Face ID / Touch ID' : 'Biometric Login'}
+                      </Text>
+                      <Text style={styles.securitySubtext}>
+                        {biometricEnabled ? 'Enabled' : 'Disabled'}
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={[styles.toggleIndicator, biometricEnabled && styles.toggleIndicatorActive]}>
+                    <View style={[styles.toggleDot, biometricEnabled && styles.toggleDotActive]} />
+                  </View>
+                </TouchableOpacity>
+              )}
+
+              {/* Change Password */}
               {!showPasswordForm ? (
                 <TouchableOpacity
                   style={styles.changePasswordButton}
@@ -342,6 +378,43 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     color: colors.text.primary,
     fontWeight: fontWeight.medium,
+  },
+  securityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.cardBorder,
+  },
+  securityTextContainer: {
+    flex: 1,
+  },
+  securitySubtext: {
+    fontSize: fontSize.xs,
+    color: colors.text.muted,
+    marginTop: 2,
+  },
+  toggleIndicator: {
+    width: 50,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.backgroundTertiary,
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+  },
+  toggleIndicatorActive: {
+    backgroundColor: colors.accentSoft,
+  },
+  toggleDot: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: colors.text.muted,
+  },
+  toggleDotActive: {
+    backgroundColor: colors.accent,
+    alignSelf: 'flex-end',
   },
   changePasswordButton: {
     flexDirection: 'row',

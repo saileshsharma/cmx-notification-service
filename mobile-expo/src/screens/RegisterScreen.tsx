@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -9,78 +9,86 @@ import {
   KeyboardAvoidingView,
   ActivityIndicator,
   StatusBar,
-  Dimensions,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import * as LocalAuthentication from 'expo-local-authentication';
 import { colors, gradients, spacing, fontSize, fontWeight, borderRadius, shadows } from '../constants/theme';
 
-const { width, height } = Dimensions.get('window');
-
-interface LoginScreenProps {
-  onLogin: (email: string, password: string) => Promise<void>;
+interface RegisterScreenProps {
+  onRegister: (data: {
+    name: string;
+    email: string;
+    phone: string;
+    password: string;
+  }) => Promise<void>;
   onBack?: () => void;
-  onRegister?: () => void;
-  onBiometricLogin?: () => Promise<boolean>;
-  biometricEnabled?: boolean;
-  isLoading: boolean;
+  onLogin?: () => void;
+  isLoading?: boolean;
 }
 
-export const LoginScreen: React.FC<LoginScreenProps> = ({
-  onLogin,
-  onBack,
+export const RegisterScreen: React.FC<RegisterScreenProps> = ({
   onRegister,
-  onBiometricLogin,
-  biometricEnabled = false,
-  isLoading,
+  onBack,
+  onLogin,
+  isLoading = false,
 }) => {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const [biometricType, setBiometricType] = useState<'face' | 'fingerprint' | null>(null);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
-  useEffect(() => {
-    checkBiometricType();
-  }, []);
-
-  const checkBiometricType = async () => {
-    try {
-      const types = await LocalAuthentication.supportedAuthenticationTypesAsync();
-      if (types.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION)) {
-        setBiometricType('face');
-      } else if (types.includes(LocalAuthentication.AuthenticationType.FINGERPRINT)) {
-        setBiometricType('fingerprint');
-      }
-    } catch (error) {
-      console.error('Error checking biometric type:', error);
+  const handleRegister = async () => {
+    // Validation
+    if (!name.trim()) {
+      Alert.alert('Error', 'Please enter your full name');
+      return;
     }
-  };
+    if (!email.trim()) {
+      Alert.alert('Error', 'Please enter your email address');
+      return;
+    }
+    if (!phone.trim()) {
+      Alert.alert('Error', 'Please enter your phone number');
+      return;
+    }
+    if (!password.trim()) {
+      Alert.alert('Error', 'Please enter a password');
+      return;
+    }
+    if (password.length < 6) {
+      Alert.alert('Error', 'Password must be at least 6 characters');
+      return;
+    }
+    if (password !== confirmPassword) {
+      Alert.alert('Error', 'Passwords do not match');
+      return;
+    }
+    if (!acceptedTerms) {
+      Alert.alert('Error', 'Please accept the Terms & Conditions');
+      return;
+    }
 
-  const handleLogin = async () => {
-    if (!email.trim() || !password.trim()) return;
-    setIsLoggingIn(true);
+    setIsRegistering(true);
     try {
-      await onLogin(email.trim().toLowerCase(), password.trim());
+      await onRegister({
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        phone: phone.trim(),
+        password: password.trim(),
+      });
     } finally {
-      setIsLoggingIn(false);
+      setIsRegistering(false);
     }
   };
 
-  const handleBiometricLogin = async () => {
-    if (onBiometricLogin) {
-      setIsLoggingIn(true);
-      try {
-        await onBiometricLogin();
-      } finally {
-        setIsLoggingIn(false);
-      }
-    }
-  };
-
-  const isValid = email.trim() && password.trim();
+  const isValid = name.trim() && email.trim() && phone.trim() && password.trim() && confirmPassword.trim() && acceptedTerms;
 
   return (
     <View style={styles.container}>
@@ -114,16 +122,16 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                   colors={['rgba(204, 255, 0, 0.15)', 'rgba(204, 255, 0, 0.05)']}
                   style={styles.iconGlow}
                 >
-                  <Ionicons name="person" size={40} color={colors.accent} />
+                  <Ionicons name="person-add" size={40} color={colors.accent} />
                 </LinearGradient>
               </View>
-              <Text style={styles.welcomeTitle}>Welcome Back!</Text>
+              <Text style={styles.welcomeTitle}>Hello!</Text>
               <Text style={styles.welcomeSubtitle}>
-                Sign in to continue your inspections
+                Register to get started as a Surveyor
               </Text>
             </View>
 
-            {/* Login Form */}
+            {/* Registration Form */}
             <View style={styles.formContainer}>
               {isLoading ? (
                 <View style={styles.loadingContainer}>
@@ -132,6 +140,23 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                 </View>
               ) : (
                 <>
+                  {/* Full Name Input */}
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Full Name</Text>
+                    <View style={styles.inputWrapper}>
+                      <Ionicons name="person-outline" size={20} color={colors.text.tertiary} style={styles.inputIcon} />
+                      <TextInput
+                        style={styles.input}
+                        placeholder="Enter your full name"
+                        placeholderTextColor={colors.text.muted}
+                        value={name}
+                        onChangeText={setName}
+                        autoCapitalize="words"
+                        editable={!isRegistering}
+                      />
+                    </View>
+                  </View>
+
                   {/* Email Input */}
                   <View style={styles.inputGroup}>
                     <Text style={styles.inputLabel}>Email Address</Text>
@@ -145,7 +170,24 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                         onChangeText={setEmail}
                         autoCapitalize="none"
                         keyboardType="email-address"
-                        editable={!isLoggingIn}
+                        editable={!isRegistering}
+                      />
+                    </View>
+                  </View>
+
+                  {/* Phone Input */}
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Phone Number</Text>
+                    <View style={styles.inputWrapper}>
+                      <Ionicons name="call-outline" size={20} color={colors.text.tertiary} style={styles.inputIcon} />
+                      <TextInput
+                        style={styles.input}
+                        placeholder="Enter your phone number"
+                        placeholderTextColor={colors.text.muted}
+                        value={phone}
+                        onChangeText={setPhone}
+                        keyboardType="phone-pad"
+                        editable={!isRegistering}
                       />
                     </View>
                   </View>
@@ -157,12 +199,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                       <Ionicons name="lock-closed-outline" size={20} color={colors.text.tertiary} style={styles.inputIcon} />
                       <TextInput
                         style={styles.input}
-                        placeholder="Enter your password"
+                        placeholder="Create a password"
                         placeholderTextColor={colors.text.muted}
                         value={password}
                         onChangeText={setPassword}
                         secureTextEntry={!showPassword}
-                        editable={!isLoggingIn}
+                        editable={!isRegistering}
                       />
                       <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
                         <Ionicons
@@ -174,30 +216,68 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                     </View>
                   </View>
 
-                  {/* Forgot Password */}
-                  <TouchableOpacity style={styles.forgotPassword}>
-                    <Text style={styles.forgotPasswordText}>Forgot password?</Text>
+                  {/* Confirm Password Input */}
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Confirm Password</Text>
+                    <View style={styles.inputWrapper}>
+                      <Ionicons name="shield-checkmark-outline" size={20} color={colors.text.tertiary} style={styles.inputIcon} />
+                      <TextInput
+                        style={styles.input}
+                        placeholder="Confirm your password"
+                        placeholderTextColor={colors.text.muted}
+                        value={confirmPassword}
+                        onChangeText={setConfirmPassword}
+                        secureTextEntry={!showConfirmPassword}
+                        editable={!isRegistering}
+                      />
+                      <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeIcon}>
+                        <Ionicons
+                          name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'}
+                          size={20}
+                          color={colors.text.tertiary}
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  {/* Terms & Conditions */}
+                  <TouchableOpacity
+                    style={styles.termsContainer}
+                    onPress={() => setAcceptedTerms(!acceptedTerms)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[styles.checkbox, acceptedTerms && styles.checkboxChecked]}>
+                      {acceptedTerms && (
+                        <Ionicons name="checkmark" size={16} color={colors.black} />
+                      )}
+                    </View>
+                    <Text style={styles.termsText}>
+                      I agree to the{' '}
+                      <Text style={styles.termsLink}>Terms & Conditions</Text>
+                      {' '}and{' '}
+                      <Text style={styles.termsLink}>Privacy Policy</Text>
+                    </Text>
                   </TouchableOpacity>
 
-                  {/* Login Button */}
+                  {/* Register Button */}
                   <TouchableOpacity
-                    style={[styles.loginButton, !isValid && styles.loginButtonDisabled]}
-                    onPress={handleLogin}
-                    disabled={!isValid || isLoggingIn}
+                    style={[styles.registerButton, !isValid && styles.registerButtonDisabled]}
+                    onPress={handleRegister}
+                    disabled={!isValid || isRegistering}
                     activeOpacity={0.8}
                   >
                     <LinearGradient
                       colors={isValid ? gradients.accent : [colors.gray[600], colors.gray[700]]}
-                      style={styles.loginButtonGradient}
+                      style={styles.registerButtonGradient}
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 0 }}
                     >
-                      {isLoggingIn ? (
+                      {isRegistering ? (
                         <ActivityIndicator color={colors.black} />
                       ) : (
                         <>
-                          <Text style={[styles.loginButtonText, !isValid && styles.loginButtonTextDisabled]}>
-                            Login
+                          <Text style={[styles.registerButtonText, !isValid && styles.registerButtonTextDisabled]}>
+                            Create Account
                           </Text>
                           <View style={styles.arrowContainer}>
                             <Ionicons name="arrow-forward" size={18} color={isValid ? colors.black : colors.gray[400]} />
@@ -207,39 +287,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                     </LinearGradient>
                   </TouchableOpacity>
 
-                  {/* Biometric Login */}
-                  {biometricEnabled && biometricType && (
-                    <View style={styles.biometricSection}>
-                      <View style={styles.dividerContainer}>
-                        <View style={styles.divider} />
-                        <Text style={styles.dividerText}>Or login with</Text>
-                        <View style={styles.divider} />
-                      </View>
-
-                      <TouchableOpacity
-                        style={styles.biometricButton}
-                        onPress={handleBiometricLogin}
-                        activeOpacity={0.8}
-                      >
-                        <View style={styles.biometricIconContainer}>
-                          <Ionicons
-                            name={biometricType === 'face' ? 'scan' : 'finger-print'}
-                            size={28}
-                            color={colors.accent}
-                          />
-                        </View>
-                        <Text style={styles.biometricButtonText}>
-                          {biometricType === 'face' ? 'Face ID' : 'Touch ID'}
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
-
-                  {/* Social Login */}
+                  {/* Social Registration */}
                   <View style={styles.socialSection}>
                     <View style={styles.dividerContainer}>
                       <View style={styles.divider} />
-                      <Text style={styles.dividerText}>Or continue with</Text>
+                      <Text style={styles.dividerText}>Or register with</Text>
                       <View style={styles.divider} />
                     </View>
 
@@ -259,12 +311,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
               )}
             </View>
 
-            {/* Register Link */}
-            {onRegister && (
-              <View style={styles.registerContainer}>
-                <Text style={styles.registerText}>Don't have an account? </Text>
-                <TouchableOpacity onPress={onRegister}>
-                  <Text style={styles.registerLink}>Register Now</Text>
+            {/* Login Link */}
+            {onLogin && (
+              <View style={styles.loginContainer}>
+                <Text style={styles.loginText}>Already have an account? </Text>
+                <TouchableOpacity onPress={onLogin}>
+                  <Text style={styles.loginLink}>Login Now</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -293,7 +345,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxxl,
   },
   header: {
-    marginBottom: spacing.xl,
+    marginBottom: spacing.lg,
   },
   backButton: {
     width: 44,
@@ -307,7 +359,7 @@ const styles = StyleSheet.create({
   },
   welcomeSection: {
     alignItems: 'center',
-    marginBottom: spacing.xxxl,
+    marginBottom: spacing.xl,
   },
   iconContainer: {
     marginBottom: spacing.lg,
@@ -333,7 +385,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   formContainer: {
-    marginBottom: spacing.xl,
+    marginBottom: spacing.lg,
   },
   loadingContainer: {
     alignItems: 'center',
@@ -345,7 +397,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
   },
   inputGroup: {
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
   },
   inputLabel: {
     fontSize: fontSize.sm,
@@ -374,37 +426,59 @@ const styles = StyleSheet.create({
   eyeIcon: {
     padding: spacing.sm,
   },
-  forgotPassword: {
-    alignSelf: 'flex-end',
+  termsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: spacing.xl,
+    marginTop: spacing.sm,
   },
-  forgotPasswordText: {
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: colors.cardBorder,
+    backgroundColor: colors.card,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: spacing.md,
+  },
+  checkboxChecked: {
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
+  },
+  termsText: {
+    flex: 1,
     fontSize: fontSize.sm,
+    color: colors.text.tertiary,
+    lineHeight: 20,
+  },
+  termsLink: {
     color: colors.accent,
     fontWeight: fontWeight.medium,
   },
-  loginButton: {
+  registerButton: {
     borderRadius: borderRadius.button,
     overflow: 'hidden',
     ...shadows.accentGlow,
   },
-  loginButtonDisabled: {
+  registerButtonDisabled: {
     opacity: 0.7,
     shadowOpacity: 0,
   },
-  loginButtonGradient: {
+  registerButtonGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: spacing.lg + 2,
     gap: spacing.sm,
   },
-  loginButtonText: {
+  registerButtonText: {
     color: colors.black,
     fontSize: fontSize.lg,
     fontWeight: fontWeight.bold,
   },
-  loginButtonTextDisabled: {
+  registerButtonTextDisabled: {
     color: colors.gray[400],
   },
   arrowContainer: {
@@ -415,7 +489,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  biometricSection: {
+  socialSection: {
     marginTop: spacing.xl,
   },
   dividerContainer: {
@@ -433,33 +507,6 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     color: colors.text.muted,
   },
-  biometricButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.card,
-    borderRadius: borderRadius.lg,
-    paddingVertical: spacing.lg,
-    gap: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-  },
-  biometricIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: colors.accentSoft,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  biometricButtonText: {
-    fontSize: fontSize.md,
-    fontWeight: fontWeight.semibold,
-    color: colors.text.primary,
-  },
-  socialSection: {
-    marginTop: spacing.xl,
-  },
   socialButtons: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -475,20 +522,21 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.cardBorder,
   },
-  registerContainer: {
+  loginContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+    marginTop: spacing.lg,
   },
-  registerText: {
+  loginText: {
     fontSize: fontSize.md,
     color: colors.text.tertiary,
   },
-  registerLink: {
+  loginLink: {
     fontSize: fontSize.md,
     fontWeight: fontWeight.semibold,
     color: colors.accent,
   },
 });
 
-export default LoginScreen;
+export default RegisterScreen;

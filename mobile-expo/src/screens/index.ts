@@ -1,4 +1,6 @@
+export { WelcomeScreen } from './WelcomeScreen';
 export { LoginScreen } from './LoginScreen';
+export { RegisterScreen } from './RegisterScreen';
 export { DashboardScreen } from './DashboardScreen';
 export { ScheduleScreen } from './ScheduleScreen';
 export { InspectionScreen } from './InspectionScreen';

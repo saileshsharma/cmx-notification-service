@@ -15,13 +15,15 @@ module.exports = {
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.ch.cmx",
-      buildNumber: "7",
+      buildNumber: "8",
       infoPlist: {
         NSCameraUsageDescription: "FleetInspect Pro needs camera access to capture vehicle inspection photos",
         NSPhotoLibraryUsageDescription: "FleetInspect Pro needs photo library access to save and upload inspection photos",
         NSLocationWhenInUseUsageDescription: "FleetInspect Pro needs location access to track inspection locations",
         NSLocationAlwaysAndWhenInUseUsageDescription: "FleetInspect Pro needs location access to track inspection locations",
-        ITSAppUsesNonExemptEncryption: false
+        NSFaceIDUsageDescription: "Allow FleetInspect Pro to use Face ID for secure authentication",
+        ITSAppUsesNonExemptEncryption: false,
+        UIBackgroundModes: ["remote-notification"]
       }
     },
     android: {
@@ -51,7 +53,8 @@ module.exports = {
         "expo-notifications",
         {
           icon: "./assets/notification-icon.png",
-          color: "#0F172A"
+          color: "#0F172A",
+          sounds: []
         }
       ],
       [
@@ -70,6 +73,12 @@ module.exports = {
         "expo-location",
         {
           locationAlwaysAndWhenInUsePermission: "FleetInspect Pro needs location access to track inspection locations"
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          faceIDPermission: "Allow FleetInspect Pro to use Face ID for secure authentication"
         }
       ]
     ],

@@ -16,6 +16,7 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import * as Network from 'expo-network';
+import * as LocalAuthentication from 'expo-local-authentication';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Types
@@ -39,6 +40,8 @@ import {
   ChatScreen,
   ProfileScreen,
 } from './src/screens';
+import { WelcomeScreen } from './src/screens/WelcomeScreen';
+import { RegisterScreen } from './src/screens/RegisterScreen';
 
 // Components
 import {
@@ -60,6 +63,7 @@ const { width } = Dimensions.get('window');
 type TabType = 'dashboard' | 'appointments' | 'inspection' | 'history' | 'chat' | 'profile';
 type QuickStatus = 'on_way' | 'arrived' | 'inspecting' | 'completed';
 type JobState = 'idle' | 'navigating' | 'arrived' | 'inspecting' | 'completed';
+type AuthScreen = 'welcome' | 'login' | 'register';
 
 interface InspectionStep {
   id: string;
@@ -101,9 +105,7 @@ export default function App() {
   // ==================== STATE ====================
 
   // Auth state
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [authScreen, setAuthScreen] = useState<AuthScreen>('welcome');
   const [selectedSurveyorId, setSelectedSurveyorId] = useState<number | null>(null);
   const [surveyorName, setSurveyorName] = useState<string | null>(null);
   const [surveyorEmail, setSurveyorEmail] = useState<string | null>(null);
@@ -147,15 +149,37 @@ export default function App() {
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [completedJob, setCompletedJob] = useState<CompletedJob | null>(null);
 
-  // Inspection state
+  // Inspection state - Enterprise-level checklist
   const [inspectionSteps, setInspectionSteps] = useState<InspectionStep[]>([
-    { id: '1', title: 'Vehicle Identification', description: 'Verify VIN, registration, and owner details', completed: false, required: true },
-    { id: '2', title: 'Exterior Inspection', description: 'Check body damage, paint, lights, mirrors', completed: false, required: true },
-    { id: '3', title: 'Interior Inspection', description: 'Check seats, dashboard, controls, odometer', completed: false, required: true },
-    { id: '4', title: 'Engine & Mechanical', description: 'Check engine bay, fluids, belts, battery', completed: false, required: true },
-    { id: '5', title: 'Undercarriage', description: 'Check suspension, brakes, exhaust, frame', completed: false, required: false },
-    { id: '6', title: 'Photo Documentation', description: 'Take required photos of damage areas', completed: false, required: true },
-    { id: '7', title: 'Owner Signature', description: 'Get vehicle owner to sign inspection report', completed: false, required: true },
+    // Vehicle Identification
+    { id: '1', title: 'Vehicle Identification', description: 'Verify VIN matches documents, check registration validity, confirm owner identity with ID', completed: false, required: true },
+    { id: '2', title: 'Document Verification', description: 'Insurance certificate, service history, MOT/roadworthiness certificate, ownership papers', completed: false, required: true },
+
+    // Exterior Inspection
+    { id: '3', title: 'Body & Paint Condition', description: 'Check for dents, scratches, rust, misaligned panels, repaint evidence, hail damage', completed: false, required: true },
+    { id: '4', title: 'Glass & Lights', description: 'Windshield chips/cracks, all windows, headlights, tail lights, indicators, fog lights', completed: false, required: true },
+    { id: '5', title: 'Tires & Wheels', description: 'Tread depth (min 1.6mm), tire condition, wheel alignment, spare tire, alloy damage', completed: false, required: true },
+
+    // Interior Inspection
+    { id: '6', title: 'Interior Condition', description: 'Seats (wear, tears, stains), carpets, headliner, door panels, trim condition', completed: false, required: true },
+    { id: '7', title: 'Dashboard & Controls', description: 'All gauges, warning lights, infotainment, A/C, heater, windows, locks, mirrors', completed: false, required: true },
+    { id: '8', title: 'Odometer & Service', description: 'Record mileage, check for tampering signs, verify against service records', completed: false, required: true },
+
+    // Mechanical Inspection
+    { id: '9', title: 'Engine Bay', description: 'Fluid levels (oil, coolant, brake, power steering), leaks, belts, hoses, battery condition', completed: false, required: true },
+    { id: '10', title: 'Transmission & Drivetrain', description: 'Gear shifting, clutch (manual), CV joints, differential, driveshaft', completed: false, required: true },
+    { id: '11', title: 'Brakes & Suspension', description: 'Brake pad wear, disc condition, suspension components, shock absorbers, steering play', completed: false, required: true },
+
+    // Undercarriage & Safety
+    { id: '12', title: 'Undercarriage Inspection', description: 'Frame/chassis condition, exhaust system, fuel lines, rust, previous accident damage', completed: false, required: false },
+    { id: '13', title: 'Safety Equipment', description: 'Seatbelts, airbag indicators, horn, hazard lights, first aid kit, warning triangle', completed: false, required: true },
+
+    // Road Test (if applicable)
+    { id: '14', title: 'Road Test', description: 'Engine performance, acceleration, braking, steering, noise/vibration, transmission', completed: false, required: false },
+
+    // Documentation
+    { id: '15', title: 'Photo Documentation', description: 'All angles exterior, interior, engine bay, damage close-ups, VIN plate, odometer', completed: false, required: true },
+    { id: '16', title: 'Owner Signature', description: 'Get vehicle owner to review findings and sign inspection report', completed: false, required: true },
   ]);
   const [capturedPhotos, setCapturedPhotos] = useState<string[]>([]);
   const [inspectionNotes, setInspectionNotes] = useState('');
@@ -178,6 +202,11 @@ export default function App() {
   const [isOnline, setIsOnline] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null);
+
+  // Biometric authentication state
+  const [biometricSupported, setBiometricSupported] = useState(false);
+  const [biometricEnabled, setBiometricEnabled] = useState(false);
+  const [biometricAuthenticated, setBiometricAuthenticated] = useState(false);
 
   // Animation refs
   const badgeScale = useRef(new Animated.Value(1)).current;
@@ -220,6 +249,16 @@ export default function App() {
       initializeChat();
     }
   }, [isRegistered, selectedSurveyorId]);
+
+  // Prompt for biometric authentication when app starts if enabled
+  useEffect(() => {
+    const promptBiometric = async () => {
+      if (isRegistered && biometricEnabled && !biometricAuthenticated && !isLoading) {
+        await authenticateWithBiometrics();
+      }
+    };
+    promptBiometric();
+  }, [isRegistered, biometricEnabled, isLoading]);
 
   // Handle app state changes (foreground/background) for iOS
   useEffect(() => {
@@ -397,6 +436,7 @@ export default function App() {
   const initializeApp = async () => {
     await loadSavedState();
     await setupPushNotifications();
+    await checkBiometricSupport();
 
     notificationService.setOnNotificationReceived((notification) => {
       setNotifications((prev) => [notification, ...prev].slice(0, 50));
@@ -410,15 +450,86 @@ export default function App() {
     setIsLoading(false);
   };
 
+  const checkBiometricSupport = async () => {
+    try {
+      const compatible = await LocalAuthentication.hasHardwareAsync();
+      setBiometricSupported(compatible);
+
+      if (compatible) {
+        const enrolled = await LocalAuthentication.isEnrolledAsync();
+        if (enrolled) {
+          // Check if user has enabled biometric login
+          const biometricPref = await AsyncStorage.getItem('biometric_enabled');
+          setBiometricEnabled(biometricPref === 'true');
+        }
+      }
+    } catch (error) {
+      console.error('Error checking biometric support:', error);
+    }
+  };
+
+  const authenticateWithBiometrics = async (): Promise<boolean> => {
+    try {
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: 'Authenticate to access Fleet Inspection',
+        fallbackLabel: 'Use Password',
+        cancelLabel: 'Cancel',
+        disableDeviceFallback: false,
+      });
+
+      if (result.success) {
+        setBiometricAuthenticated(true);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        return true;
+      } else {
+        if (result.error !== 'user_cancel') {
+          Alert.alert('Authentication Failed', 'Please try again or use your password.');
+        }
+        return false;
+      }
+    } catch (error) {
+      console.error('Biometric authentication error:', error);
+      return false;
+    }
+  };
+
+  const toggleBiometricLogin = async () => {
+    if (!biometricSupported) {
+      Alert.alert('Not Available', 'Biometric authentication is not available on this device.');
+      return;
+    }
+
+    if (!biometricEnabled) {
+      // Enable biometric - verify first
+      const success = await authenticateWithBiometrics();
+      if (success) {
+        await AsyncStorage.setItem('biometric_enabled', 'true');
+        setBiometricEnabled(true);
+        Alert.alert('Enabled', 'Biometric login has been enabled.');
+      }
+    } else {
+      // Disable biometric
+      await AsyncStorage.setItem('biometric_enabled', 'false');
+      setBiometricEnabled(false);
+      Alert.alert('Disabled', 'Biometric login has been disabled.');
+    }
+  };
+
   const loadSavedState = async () => {
     try {
       const savedSurveyorId = await storageService.getSurveyorId();
       const savedSurveyorName = await storageService.getSurveyorName();
+      const savedSurveyorEmail = await storageService.getSurveyorEmail();
+      const savedSurveyorPhone = await storageService.getSurveyorPhone();
+      const savedSurveyorCode = await storageService.getSurveyorCode();
       const savedIsRegistered = await storageService.isDeviceRegistered();
       const savedNotifications = await storageService.getNotifications();
 
       if (savedSurveyorId) setSelectedSurveyorId(savedSurveyorId);
       if (savedSurveyorName) setSurveyorName(savedSurveyorName);
+      if (savedSurveyorEmail) setSurveyorEmail(savedSurveyorEmail);
+      if (savedSurveyorPhone) setSurveyorPhone(savedSurveyorPhone);
+      if (savedSurveyorCode) setSurveyorCode(savedSurveyorCode);
       if (savedIsRegistered) setIsRegistered(true);
       if (savedNotifications) setNotifications(savedNotifications);
     } catch (error) {
@@ -436,13 +547,22 @@ export default function App() {
       });
 
       if (response.success && response.surveyor) {
+        // Save all surveyor data to storage
         await storageService.setSurveyorId(response.surveyor.id);
         await storageService.setSurveyorName(response.surveyor.displayName);
+        await storageService.setSurveyorEmail(response.surveyor.email || email);
+        if (response.surveyor.phone) {
+          await storageService.setSurveyorPhone(response.surveyor.phone);
+        }
+        if (response.surveyor.code) {
+          await storageService.setSurveyorCode(response.surveyor.code);
+        }
         await storageService.setDeviceRegistered(true);
         if (expoPushToken) {
           await storageService.setPushToken(expoPushToken);
         }
 
+        // Update state with surveyor data
         setSelectedSurveyorId(response.surveyor.id);
         setSurveyorName(response.surveyor.displayName);
         setSurveyorEmail(response.surveyor.email || email);
@@ -454,6 +574,76 @@ export default function App() {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       } else {
         Alert.alert('Login Failed', response.message || 'Invalid credentials');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Could not connect to server');
+    }
+  };
+
+  const handleBiometricLogin = async (): Promise<boolean> => {
+    // Check if we have saved credentials
+    const savedSurveyorId = await storageService.getSurveyorId();
+    if (!savedSurveyorId) {
+      Alert.alert('Not Available', 'Please login with email and password first to enable biometric login.');
+      return false;
+    }
+
+    // Authenticate with biometrics
+    const success = await authenticateWithBiometrics();
+    if (success) {
+      // Restore saved session
+      const savedSurveyorName = await storageService.getSurveyorName();
+      const savedSurveyorEmail = await storageService.getSurveyorEmail();
+      const savedSurveyorPhone = await storageService.getSurveyorPhone();
+      const savedSurveyorCode = await storageService.getSurveyorCode();
+
+      setSelectedSurveyorId(savedSurveyorId);
+      setSurveyorName(savedSurveyorName);
+      setSurveyorEmail(savedSurveyorEmail);
+      setSurveyorPhone(savedSurveyorPhone);
+      setSurveyorCode(savedSurveyorCode);
+      setIsRegistered(true);
+
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      return true;
+    }
+    return false;
+  };
+
+  const handleRegister = async (data: { name: string; email: string; phone: string; password: string }) => {
+    try {
+      // Call registration API
+      const response = await apiService.register({
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        password: data.password,
+        pushToken: expoPushToken || undefined,
+        platform: Platform.OS === 'ios' ? 'IOS' : 'ANDROID',
+      });
+
+      if (response.success && response.surveyor) {
+        // Save surveyor data
+        await storageService.setSurveyorId(response.surveyor.id);
+        await storageService.setSurveyorName(response.surveyor.displayName);
+        await storageService.setSurveyorEmail(data.email);
+        await storageService.setSurveyorPhone(data.phone);
+        if (response.surveyor.code) {
+          await storageService.setSurveyorCode(response.surveyor.code);
+        }
+        await storageService.setDeviceRegistered(true);
+
+        setSelectedSurveyorId(response.surveyor.id);
+        setSurveyorName(response.surveyor.displayName);
+        setSurveyorEmail(data.email);
+        setSurveyorPhone(data.phone);
+        setSurveyorCode(response.surveyor.code || null);
+        setIsRegistered(true);
+
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        Alert.alert('Success', 'Your account has been created successfully!');
+      } else {
+        Alert.alert('Registration Failed', response.message || 'Could not create account');
       }
     } catch (error) {
       Alert.alert('Error', 'Could not connect to server');
@@ -916,14 +1106,43 @@ export default function App() {
 
   // ==================== RENDER ====================
 
-  // Login Screen
+  // Auth Screens (Welcome → Login/Register)
   if (!isRegistered) {
-    return (
-      <LoginScreen
-        onLogin={handleLogin}
-        isLoading={isLoading}
-      />
-    );
+    // Welcome Screen
+    if (authScreen === 'welcome') {
+      return (
+        <WelcomeScreen
+          onLogin={() => setAuthScreen('login')}
+          onRegister={() => setAuthScreen('register')}
+        />
+      );
+    }
+
+    // Login Screen
+    if (authScreen === 'login') {
+      return (
+        <LoginScreen
+          onLogin={handleLogin}
+          onBack={() => setAuthScreen('welcome')}
+          onRegister={() => setAuthScreen('register')}
+          onBiometricLogin={handleBiometricLogin}
+          biometricEnabled={biometricEnabled}
+          isLoading={isLoading}
+        />
+      );
+    }
+
+    // Register Screen
+    if (authScreen === 'register') {
+      return (
+        <RegisterScreen
+          onRegister={handleRegister}
+          onBack={() => setAuthScreen('welcome')}
+          onLogin={() => setAuthScreen('login')}
+          isLoading={isLoading}
+        />
+      );
+    }
   }
 
   // Main App
@@ -1017,6 +1236,9 @@ export default function App() {
             surveyorPhone={surveyorPhone}
             surveyorCode={surveyorCode}
             onPasswordChange={handlePasswordChange}
+            biometricSupported={biometricSupported}
+            biometricEnabled={biometricEnabled}
+            onToggleBiometric={toggleBiometricLogin}
           />
         )}
       </View>

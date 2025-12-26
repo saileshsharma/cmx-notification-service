@@ -186,3 +186,4 @@ coverage/
 # pnpm-lock.yaml
 firebase-service-account.json
 /backend/design-system
+/design-system

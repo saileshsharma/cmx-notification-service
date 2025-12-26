@@ -4,6 +4,9 @@ import { NotificationItem } from '../types';
 const KEYS = {
   SURVEYOR_ID: 'surveyor_id',
   SURVEYOR_NAME: 'surveyor_name',
+  SURVEYOR_EMAIL: 'surveyor_email',
+  SURVEYOR_PHONE: 'surveyor_phone',
+  SURVEYOR_CODE: 'surveyor_code',
   PUSH_TOKEN: 'push_token',
   DEVICE_REGISTERED: 'device_registered',
   NOTIFICATIONS: 'notifications',
@@ -30,6 +33,33 @@ class StorageService {
 
   async setSurveyorName(name: string): Promise<void> {
     await AsyncStorage.setItem(KEYS.SURVEYOR_NAME, name);
+  }
+
+  // Surveyor Email
+  async getSurveyorEmail(): Promise<string | null> {
+    return AsyncStorage.getItem(KEYS.SURVEYOR_EMAIL);
+  }
+
+  async setSurveyorEmail(email: string): Promise<void> {
+    await AsyncStorage.setItem(KEYS.SURVEYOR_EMAIL, email);
+  }
+
+  // Surveyor Phone
+  async getSurveyorPhone(): Promise<string | null> {
+    return AsyncStorage.getItem(KEYS.SURVEYOR_PHONE);
+  }
+
+  async setSurveyorPhone(phone: string): Promise<void> {
+    await AsyncStorage.setItem(KEYS.SURVEYOR_PHONE, phone);
+  }
+
+  // Surveyor Code
+  async getSurveyorCode(): Promise<string | null> {
+    return AsyncStorage.getItem(KEYS.SURVEYOR_CODE);
+  }
+
+  async setSurveyorCode(code: string): Promise<void> {
+    await AsyncStorage.setItem(KEYS.SURVEYOR_CODE, code);
   }
 
   // Push Token
@@ -100,6 +130,9 @@ class StorageService {
     await AsyncStorage.multiRemove([
       KEYS.SURVEYOR_ID,
       KEYS.SURVEYOR_NAME,
+      KEYS.SURVEYOR_EMAIL,
+      KEYS.SURVEYOR_PHONE,
+      KEYS.SURVEYOR_CODE,
       KEYS.PUSH_TOKEN,
       KEYS.DEVICE_REGISTERED,
       KEYS.NOTIFICATIONS,

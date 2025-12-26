@@ -60,13 +60,22 @@ export const InspectionScreen: React.FC<InspectionScreenProps> = ({
 
   const getStepIcon = (step: InspectionStep, index: number) => {
     const icons: { [key: string]: keyof typeof Ionicons.glyphMap } = {
-      '1': 'car-sport',
-      '2': 'scan',
-      '3': 'speedometer',
-      '4': 'settings',
-      '5': 'construct',
-      '6': 'camera',
-      '7': 'create',
+      '1': 'car-sport',       // Vehicle Identification
+      '2': 'document-text',   // Document Verification
+      '3': 'color-palette',   // Body & Paint
+      '4': 'bulb',            // Glass & Lights
+      '5': 'ellipse',         // Tires & Wheels
+      '6': 'shirt',           // Interior Condition
+      '7': 'speedometer',     // Dashboard & Controls
+      '8': 'analytics',       // Odometer & Service
+      '9': 'settings',        // Engine Bay
+      '10': 'cog',            // Transmission
+      '11': 'disc',           // Brakes & Suspension
+      '12': 'construct',      // Undercarriage
+      '13': 'shield-checkmark', // Safety Equipment
+      '14': 'navigate',       // Road Test
+      '15': 'camera',         // Photo Documentation
+      '16': 'create',         // Owner Signature
     };
     return icons[step.id] || 'checkmark-circle';
   };

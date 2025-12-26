@@ -49,15 +49,24 @@ export const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
   onReject,
   onStartInspection,
 }) => {
-  const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>('all');
+  const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>('pending');
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const filteredAppointments = useMemo(() => {
-    if (selectedCategory === 'all') return appointments;
+  // Sort appointments by created date (most recent first), then by start_time
+  const sortedAppointments = useMemo(() => {
+    return [...appointments].sort((a, b) => {
+      // Sort by id descending (higher id = more recently created)
+      // This is a common pattern when created_at is not available
+      return b.id - a.id;
+    });
+  }, [appointments]);
 
-    return appointments.filter(a => {
+  const filteredAppointments = useMemo(() => {
+    if (selectedCategory === 'all') return sortedAppointments;
+
+    return sortedAppointments.filter(a => {
       const status = a.response_status?.toUpperCase();
       switch (selectedCategory) {
         case 'pending':
@@ -72,7 +81,7 @@ export const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
           return true;
       }
     });
-  }, [appointments, selectedCategory]);
+  }, [sortedAppointments, selectedCategory]);
 
   const categoryCounts = useMemo(() => {
     return {

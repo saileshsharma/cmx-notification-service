@@ -34,6 +34,26 @@ class ApiService {
     return data;
   }
 
+  async register(request: {
+    name: string;
+    email: string;
+    phone: string;
+    password: string;
+    pushToken?: string;
+    platform?: 'IOS' | 'ANDROID';
+  }): Promise<LoginResponse> {
+    const response = await fetch(`${this.baseUrl}/mobile/register`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    });
+
+    const data = await response.json();
+    return data;
+  }
+
   async getSurveyors(): Promise<Surveyor[]> {
     const response = await fetch(`${this.baseUrl}/surveyors`);
     if (!response.ok) {

@@ -76,28 +76,20 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={120}
     >
-      {/* AI Assistant Header */}
+      {/* Chat Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <TouchableOpacity style={styles.headerIconButton}>
-            <Ionicons name="star-outline" size={20} color={colors.text.secondary} />
-          </TouchableOpacity>
-
-          {/* AI Assistant Badge */}
-          <View style={styles.aiAssistantBadge}>
-            <View style={styles.aiBadgeIcon}>
-              <Ionicons name="sparkles" size={14} color={colors.black} />
+          <View style={styles.dispatchBadge}>
+            <View style={styles.dispatchIcon}>
+              <Ionicons name="headset" size={16} color={colors.accent} />
             </View>
-            <Text style={styles.aiBadgeText}>Assistant AI</Text>
+            <Text style={styles.dispatchText}>Dispatch Center</Text>
           </View>
         </View>
 
         <View style={styles.headerRight}>
           <TouchableOpacity style={styles.headerIconButton}>
-            <Ionicons name="chatbubble-ellipses-outline" size={20} color={colors.text.secondary} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.headerIconButton}>
-            <Ionicons name="settings-outline" size={20} color={colors.text.secondary} />
+            <Ionicons name="call-outline" size={20} color={colors.text.secondary} />
           </TouchableOpacity>
         </View>
       </View>
@@ -202,54 +194,46 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
         </ScrollView>
       </View>
 
-      {/* Input Bar - Neon Yellow-Green Style from Design 1 */}
+      {/* Input Bar */}
       <View style={styles.inputWrapper}>
-        <LinearGradient
-          colors={newMessage.trim() ? gradients.accent : [colors.card, colors.card]}
-          style={styles.inputContainer}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-        >
+        <View style={styles.inputContainer}>
           <TouchableOpacity style={styles.inputAction}>
-            <Ionicons name="arrow-back" size={20} color={newMessage.trim() ? colors.black : colors.text.tertiary} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.inputAction}>
-            <Ionicons name="folder-outline" size={20} color={newMessage.trim() ? colors.black : colors.text.tertiary} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.inputAction}>
-            <Ionicons name="bookmark-outline" size={20} color={newMessage.trim() ? colors.black : colors.text.tertiary} />
+            <Ionicons name="attach" size={22} color={colors.text.tertiary} />
           </TouchableOpacity>
 
-          <TextInput
-            key="chat-input"
-            style={[styles.textInput, newMessage.trim() && styles.textInputActive]}
-            placeholder="Type a message..."
-            placeholderTextColor={colors.text.muted}
-            value={newMessage || ''}
-            onChangeText={onMessageChange}
-            multiline
-            maxLength={500}
-            textAlignVertical="center"
-            blurOnSubmit={false}
-            returnKeyType="default"
-          />
-
-          <TouchableOpacity style={styles.inputAction}>
-            <Ionicons name="mic-outline" size={20} color={newMessage.trim() ? colors.black : colors.text.tertiary} />
-          </TouchableOpacity>
+          <View style={styles.textInputWrapper}>
+            <TextInput
+              key="chat-input"
+              style={styles.textInput}
+              placeholder="Type a message..."
+              placeholderTextColor={colors.text.muted}
+              value={newMessage || ''}
+              onChangeText={onMessageChange}
+              multiline
+              maxLength={500}
+              textAlignVertical="center"
+              blurOnSubmit={false}
+              returnKeyType="default"
+            />
+          </View>
 
           <TouchableOpacity
             style={[styles.sendButton, newMessage.trim() && styles.sendButtonActive]}
             onPress={onSendMessage}
             disabled={!newMessage.trim()}
           >
-            <Ionicons
-              name="send"
-              size={18}
-              color={newMessage.trim() ? colors.black : colors.text.tertiary}
-            />
+            <LinearGradient
+              colors={newMessage.trim() ? gradients.accent : [colors.backgroundTertiary, colors.backgroundTertiary]}
+              style={styles.sendButtonGradient}
+            >
+              <Ionicons
+                name="send"
+                size={18}
+                color={newMessage.trim() ? colors.black : colors.text.tertiary}
+              />
+            </LinearGradient>
           </TouchableOpacity>
-        </LinearGradient>
+        </View>
       </View>
     </KeyboardAvoidingView>
   );
@@ -289,27 +273,29 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.cardBorder,
   },
-  aiAssistantBadge: {
+  dispatchBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.white,
+    backgroundColor: colors.card,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
     borderRadius: borderRadius.full,
     gap: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
   },
-  aiBadgeIcon: {
-    width: 22,
-    height: 22,
-    borderRadius: 6,
-    backgroundColor: colors.accent,
+  dispatchIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: colors.accentSoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  aiBadgeText: {
-    fontSize: fontSize.sm,
+  dispatchText: {
+    fontSize: fontSize.md,
     fontWeight: fontWeight.semibold,
-    color: colors.black,
+    color: colors.text.primary,
   },
   statusBar: {
     flexDirection: 'row',
@@ -463,42 +449,52 @@ const styles = StyleSheet.create({
   },
   inputWrapper: {
     padding: spacing.md,
+    paddingBottom: spacing.lg,
   },
   inputContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: borderRadius.full,
-    paddingHorizontal: spacing.md,
+    alignItems: 'flex-end',
+    backgroundColor: colors.card,
+    borderRadius: borderRadius.lg,
+    paddingHorizontal: spacing.sm,
     paddingVertical: spacing.sm,
     gap: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
   },
   inputAction: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  textInput: {
+  textInputWrapper: {
     flex: 1,
+    backgroundColor: colors.backgroundSecondary,
+    borderRadius: borderRadius.md,
+    paddingHorizontal: spacing.md,
+    minHeight: 40,
+    justifyContent: 'center',
+  },
+  textInput: {
     fontSize: fontSize.md,
     color: colors.text.primary,
-    maxHeight: 80,
+    maxHeight: 100,
     paddingVertical: spacing.sm,
-  },
-  textInputActive: {
-    color: colors.black,
   },
   sendButton: {
     width: 40,
     height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(0,0,0,0.1)',
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  sendButtonActive: {},
+  sendButtonGradient: {
+    width: '100%',
+    height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  sendButtonActive: {
-    backgroundColor: 'rgba(0,0,0,0.2)',
   },
 });
 
