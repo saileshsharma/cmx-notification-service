@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,6 +21,8 @@ interface ChatScreenProps {
   newMessage: string;
   onMessageChange: (text: string) => void;
   onSendMessage: () => void;
+  isConnected?: boolean;
+  typingUser?: string | null;
 }
 
 export const ChatScreen: React.FC<ChatScreenProps> = ({
@@ -27,6 +30,8 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
   newMessage,
   onMessageChange,
   onSendMessage,
+  isConnected = false,
+  typingUser = null,
 }) => {
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -80,13 +85,15 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
           <LinearGradient colors={gradients.ocean} style={styles.avatar}>
             <Ionicons name="headset" size={24} color={colors.white} />
           </LinearGradient>
-          <View style={styles.onlineIndicator} />
+          <View style={[styles.onlineIndicator, !isConnected && styles.offlineIndicator]} />
         </View>
         <View style={styles.headerInfo}>
           <Text style={styles.headerTitle}>Dispatch Center</Text>
           <View style={styles.statusRow}>
-            <View style={styles.onlineDot} />
-            <Text style={styles.headerSubtitle}>Online • Responds quickly</Text>
+            <View style={[styles.onlineDot, !isConnected && styles.offlineDot]} />
+            <Text style={[styles.headerSubtitle, !isConnected && styles.offlineText]}>
+              {isConnected ? (typingUser ? `${typingUser} is typing...` : 'Online') : 'Connecting...'}
+            </Text>
           </View>
         </View>
         <TouchableOpacity style={styles.headerAction}>
@@ -148,6 +155,17 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
             </View>
           </View>
         ))}
+        {/* Typing Indicator */}
+        {typingUser && (
+          <View style={styles.typingIndicator}>
+            <View style={styles.typingDots}>
+              <View style={[styles.typingDot, styles.typingDot1]} />
+              <View style={[styles.typingDot, styles.typingDot2]} />
+              <View style={[styles.typingDot, styles.typingDot3]} />
+            </View>
+            <Text style={styles.typingText}>{typingUser} is typing...</Text>
+          </View>
+        )}
       </ScrollView>
 
       {/* Quick Actions */}
@@ -391,6 +409,49 @@ const styles = StyleSheet.create({
   },
   sendButtonActive: {
     backgroundColor: colors.primary,
+  },
+  // Offline/connecting styles
+  offlineIndicator: {
+    backgroundColor: colors.gray[400],
+  },
+  offlineDot: {
+    backgroundColor: colors.gray[400],
+  },
+  offlineText: {
+    color: colors.gray[500],
+  },
+  // Typing indicator styles
+  typingIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+  },
+  typingDots: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: spacing.sm,
+  },
+  typingDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.gray[400],
+    marginHorizontal: 2,
+  },
+  typingDot1: {
+    opacity: 0.4,
+  },
+  typingDot2: {
+    opacity: 0.6,
+  },
+  typingDot3: {
+    opacity: 0.8,
+  },
+  typingText: {
+    fontSize: fontSize.sm,
+    color: colors.gray[500],
+    fontStyle: 'italic',
   },
 });
 

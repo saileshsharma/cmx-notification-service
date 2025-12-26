@@ -17,7 +17,7 @@ import * as Network from 'expo-network';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Types
-import { NotificationItem, Appointment, SurveyorStatus, AppointmentResponseStatus } from './src/types';
+import { NotificationItem, Appointment, SurveyorStatus, AppointmentResponseStatus, ChatMessage as APIChatMessage, ChatConversation, TypingIndicator } from './src/types';
 
 // Services
 import { apiService } from './src/services/api';
@@ -25,6 +25,7 @@ import { storageService } from './src/services/storage';
 import { notificationService } from './src/services/notifications';
 import { locationService } from './src/services/location';
 import { imageUploadService, UploadProgress } from './src/services/imageUpload';
+import { chatService } from './src/services/chat';
 
 // Screens
 import {
@@ -160,10 +161,13 @@ export default function App() {
   const [signatureData, setSignatureData] = useState<string | null>(null);
 
   // Chat state
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
-    { id: '1', text: 'Hello! Dispatch here. Let us know if you need any assistance.', sender: 'dispatcher', timestamp: new Date(Date.now() - 3600000) },
-  ]);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
+  const [chatConnected, setChatConnected] = useState(false);
+  const [chatUnreadCount, setChatUnreadCount] = useState(0);
+  const [chatTypingUser, setChatTypingUser] = useState<string | null>(null);
+  const [chatConversations, setChatConversations] = useState<ChatConversation[]>([]);
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
 
   // History state
   const [inspectionHistory, setInspectionHistory] = useState<any[]>([]);
@@ -200,6 +204,7 @@ export default function App() {
     return () => {
       notificationService.stopListening();
       locationService.stopTracking();
+      chatService.disconnect();
     };
   }, []);
 
@@ -210,8 +215,81 @@ export default function App() {
       startLocationTracking();
       loadInspectionHistory();
       fetchWeather();
+      initializeChat();
     }
   }, [isRegistered, selectedSurveyorId]);
+
+  // Initialize chat service
+  const initializeChat = () => {
+    if (!selectedSurveyorId || !surveyorName) return;
+
+    // Set up chat event handlers
+    chatService.setOnConnection((connected) => {
+      setChatConnected(connected);
+      console.log('Chat connected:', connected);
+    });
+
+    chatService.setOnMessage((message: APIChatMessage) => {
+      // Convert API message to local format
+      const localMessage: ChatMessage = {
+        id: message.id?.toString() || Date.now().toString(),
+        text: message.content,
+        sender: message.senderType === 'SURVEYOR' ? 'surveyor' : 'dispatcher',
+        timestamp: new Date(message.sentAt),
+      };
+      setChatMessages(prev => [...prev, localMessage]);
+
+      // Haptic feedback for new message
+      if (message.senderType === 'DISPATCHER') {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+    });
+
+    chatService.setOnConversations((conversations) => {
+      setChatConversations(conversations);
+    });
+
+    chatService.setOnUnreadCount((count) => {
+      setChatUnreadCount(count);
+    });
+
+    chatService.setOnTyping((indicator: TypingIndicator) => {
+      if (indicator.isTyping && indicator.userType === 'DISPATCHER') {
+        setChatTypingUser(indicator.userName);
+        // Clear after 3 seconds
+        setTimeout(() => setChatTypingUser(null), 3000);
+      } else {
+        setChatTypingUser(null);
+      }
+    });
+
+    // Connect to chat
+    chatService.connect(selectedSurveyorId, surveyorName);
+
+    // Start/load conversation with dispatcher
+    startDispatcherConversation();
+  };
+
+  // Start conversation with dispatcher and load messages
+  const startDispatcherConversation = async () => {
+    try {
+      const conversationId = await chatService.startConversation(1); // Dispatcher ID 1
+      setActiveConversationId(conversationId);
+      chatService.setActiveConversation(conversationId);
+
+      // Load existing messages
+      const messages = await chatService.loadMessages(conversationId);
+      const localMessages: ChatMessage[] = messages.map(m => ({
+        id: m.id?.toString() || Date.now().toString(),
+        text: m.content,
+        sender: m.senderType === 'SURVEYOR' ? 'surveyor' : 'dispatcher',
+        timestamp: new Date(m.sentAt),
+      }));
+      setChatMessages(localMessages.reverse()); // API returns newest first
+    } catch (error) {
+      console.error('Failed to start dispatcher conversation:', error);
+    }
+  };
 
   // Badge animation
   useEffect(() => {
@@ -684,35 +762,42 @@ export default function App() {
     setActiveTab('dashboard');
   };
 
-  const sendChatMessage = () => {
+  const sendChatMessage = async () => {
     if (!newMessage.trim()) return;
 
-    const msg: ChatMessage = {
+    const messageText = newMessage.trim();
+    setNewMessage('');
+
+    // Optimistically add message to UI
+    const optimisticMsg: ChatMessage = {
       id: Date.now().toString(),
-      text: newMessage.trim(),
+      text: messageText,
       sender: 'surveyor',
       timestamp: new Date(),
     };
-    setChatMessages(prev => [...prev, msg]);
-    setNewMessage('');
+    setChatMessages(prev => [...prev, optimisticMsg]);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
-    // Simulate response
-    setTimeout(() => {
-      const responses = [
-        'Got it, thanks for the update!',
-        'Understood. Let me know if you need anything.',
-        'Roger that. Proceeding as planned.',
-        'Thanks for keeping us informed.',
-      ];
-      const response: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        text: responses[Math.floor(Math.random() * responses.length)],
-        sender: 'dispatcher',
-        timestamp: new Date(),
-      };
-      setChatMessages(prev => [...prev, response]);
-    }, 2000);
+    try {
+      // Send via WebSocket if connected, otherwise use REST
+      if (chatService.isConnected()) {
+        chatService.sendMessage(1, 'DISPATCHER', messageText); // Dispatcher ID 1
+      } else {
+        await chatService.sendMessageRest(1, 'DISPATCHER', messageText);
+      }
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      Alert.alert('Error', 'Failed to send message. Please try again.');
+    }
+  };
+
+  // Handle typing indicator
+  const handleChatMessageChange = (text: string) => {
+    setNewMessage(text);
+    // Send typing indicator when user is typing
+    if (activeConversationId && text.length > 0) {
+      chatService.sendTypingIndicator(activeConversationId, true);
+    }
   };
 
   const onRefresh = async () => {
@@ -850,8 +935,10 @@ export default function App() {
           <ChatScreen
             messages={chatMessages}
             newMessage={newMessage}
-            onMessageChange={setNewMessage}
+            onMessageChange={handleChatMessageChange}
             onSendMessage={sendChatMessage}
+            isConnected={chatConnected}
+            typingUser={chatTypingUser}
           />
         )}
         {activeTab === 'profile' && (
@@ -869,7 +956,7 @@ export default function App() {
       <BottomNav
         activeTab={activeTab}
         onTabChange={setActiveTab}
-        unreadMessages={chatMessages.filter(m => m.sender === 'dispatcher').length}
+        unreadMessages={chatUnreadCount}
       />
 
       {/* Modals */}

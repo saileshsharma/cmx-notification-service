@@ -104,3 +104,38 @@ export interface LoginResponse {
     currentStatus: string;
   };
 }
+
+// Chat types
+export interface ChatMessage {
+  id?: number;
+  conversationId: string;
+  senderId: number;
+  senderType: 'SURVEYOR' | 'DISPATCHER';
+  senderName: string;
+  recipientId: number;
+  recipientType: 'SURVEYOR' | 'DISPATCHER';
+  content: string;
+  messageType: 'TEXT' | 'IMAGE' | 'LOCATION';
+  sentAt: string;
+  deliveredAt?: string;
+  readAt?: string;
+  status: 'SENDING' | 'SENT' | 'DELIVERED' | 'READ' | 'FAILED';
+}
+
+export interface ChatConversation {
+  conversationId: string;
+  otherPartyId: number;
+  otherPartyName: string;
+  otherPartyType: 'SURVEYOR' | 'DISPATCHER';
+  lastMessage: string;
+  lastMessageAt: string;
+  unreadCount: number;
+}
+
+export interface TypingIndicator {
+  conversationId: string;
+  userId: number;
+  userType: 'SURVEYOR' | 'DISPATCHER';
+  userName: string;
+  isTyping: boolean;
+}
