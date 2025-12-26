@@ -33,17 +33,28 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
 
   const getStatusGradient = (status: AppointmentResponseStatus): [string, string] => {
     switch (status) {
-      case 'ACCEPTED': return gradients.success;
-      case 'REJECTED': return gradients.danger;
-      default: return gradients.warning;
+      case 'ACCEPTED': return ['#10B981', '#059669'];
+      case 'REJECTED': return ['#EF4444', '#DC2626'];
+      case 'COMPLETED': return ['#8B5CF6', '#7C3AED'];
+      default: return ['#F59E0B', '#D97706'];
     }
   };
 
   const getStatusColor = (status: AppointmentResponseStatus): string => {
     switch (status) {
-      case 'ACCEPTED': return colors.success;
-      case 'REJECTED': return colors.danger;
-      default: return colors.warning;
+      case 'ACCEPTED': return '#10B981';
+      case 'REJECTED': return '#EF4444';
+      case 'COMPLETED': return '#8B5CF6';
+      default: return '#F59E0B';
+    }
+  };
+
+  const getStatusLabel = (status: AppointmentResponseStatus): string => {
+    switch (status) {
+      case 'ACCEPTED': return 'Confirmed';
+      case 'REJECTED': return 'Declined';
+      case 'COMPLETED': return 'Completed';
+      default: return 'Pending';
     }
   };
 
@@ -65,11 +76,11 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
             >
               <View style={styles.statusBadge}>
                 <Ionicons
-                  name={appointment.response_status === 'ACCEPTED' ? 'checkmark-circle' : appointment.response_status === 'REJECTED' ? 'close-circle' : 'time'}
+                  name={appointment.response_status === 'ACCEPTED' ? 'checkmark-circle' : appointment.response_status === 'REJECTED' ? 'close-circle' : appointment.response_status === 'COMPLETED' ? 'checkmark-done-circle' : 'time'}
                   size={14}
                   color={colors.white}
                 />
-                <Text style={styles.statusText}>{appointment.response_status}</Text>
+                <Text style={styles.statusText}>{getStatusLabel(appointment.response_status)}</Text>
               </View>
             </LinearGradient>
           </ImageBackground>
@@ -155,7 +166,7 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
   },
   headerSection: {
-    height: 80,
+    height: 56,
     overflow: 'hidden',
   },
   headerImage: {
@@ -186,24 +197,24 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.semibold,
   },
   cardContent: {
-    padding: spacing.lg,
+    padding: spacing.md,
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.md,
+    marginBottom: spacing.xs,
   },
   cardTitle: {
-    fontSize: fontSize.lg,
+    fontSize: fontSize.md,
     fontWeight: fontWeight.semibold,
     color: colors.gray[800],
     flex: 1,
   },
   dateTimeContainer: {
     flexDirection: 'row',
-    gap: spacing.lg,
-    marginBottom: spacing.sm,
+    gap: spacing.md,
+    marginBottom: spacing.xs,
   },
   dateTimeItem: {
     flexDirection: 'row',
@@ -211,54 +222,56 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   iconBg: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: colors.gray[100],
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    backgroundColor: '#EFF6FF',
     alignItems: 'center',
     justifyContent: 'center',
   },
   dateTimeText: {
-    fontSize: fontSize.sm,
+    fontSize: fontSize.xs,
     color: colors.gray[600],
   },
   cardDescription: {
-    fontSize: fontSize.sm,
+    fontSize: fontSize.xs,
     color: colors.gray[500],
-    lineHeight: 18,
-    marginTop: spacing.sm,
+    lineHeight: 16,
+    marginTop: spacing.xs,
   },
   cardActions: {
     flexDirection: 'row',
-    marginTop: spacing.lg,
-    gap: spacing.sm,
+    marginTop: spacing.sm,
+    gap: spacing.xs,
   },
   actionButton: {
-    padding: spacing.md,
-    backgroundColor: colors.gray[100],
+    padding: spacing.sm,
+    backgroundColor: '#EFF6FF',
     borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
   },
   responseButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.sm,
     borderRadius: borderRadius.md,
-    gap: 6,
+    gap: 4,
   },
   acceptButton: {
-    backgroundColor: colors.success,
+    backgroundColor: '#10B981',
   },
   rejectButton: {
-    backgroundColor: colors.danger,
+    backgroundColor: '#EF4444',
   },
   startInspectionButton: {
-    backgroundColor: colors.primary,
+    backgroundColor: '#0F172A',
   },
   buttonText: {
     color: colors.white,
-    fontSize: fontSize.md,
+    fontSize: fontSize.sm,
     fontWeight: fontWeight.semibold,
   },
 });

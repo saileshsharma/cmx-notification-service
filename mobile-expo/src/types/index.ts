@@ -36,7 +36,7 @@ export interface DeviceRegistrationResponse {
 }
 
 // Appointment types
-export type AppointmentResponseStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED';
+export type AppointmentResponseStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'COMPLETED';
 
 export interface Appointment {
   id: number;

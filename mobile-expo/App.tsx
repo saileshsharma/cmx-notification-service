@@ -788,6 +788,7 @@ export default function App() {
         onLogoutPress={logout}
         onProfilePress={handleProfilePress}
         onStatusChange={handleStatusChange}
+        onSOS={handleSOS}
       />
 
       {/* Content */}
@@ -869,7 +870,6 @@ export default function App() {
         activeTab={activeTab}
         onTabChange={setActiveTab}
         unreadMessages={chatMessages.filter(m => m.sender === 'dispatcher').length}
-        onSOS={handleSOS}
       />
 
       {/* Modals */}

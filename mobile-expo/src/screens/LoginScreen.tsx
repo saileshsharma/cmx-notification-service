@@ -61,12 +61,18 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, isLoading }) 
             {/* Branding */}
             <View style={styles.brandingContainer}>
               <View style={styles.logoContainer}>
-                <LinearGradient colors={gradients.primary} style={styles.logoGradient}>
-                  <Ionicons name="car-sport" size={48} color={colors.white} />
+                <LinearGradient colors={['#0F172A', '#1E3A5F']} style={styles.logoGradient}>
+                  <View style={styles.logoInner}>
+                    <Ionicons name="shield-checkmark" size={36} color={colors.white} />
+                  </View>
                 </LinearGradient>
+                <View style={styles.logoBadge}>
+                  <Ionicons name="car-sport" size={16} color={colors.white} />
+                </View>
               </View>
-              <Text style={styles.brandTitle}>SurveyorPro</Text>
-              <Text style={styles.brandSubtitle}>Vehicle Inspection App</Text>
+              <Text style={styles.brandTitle}>FleetInspect</Text>
+              <Text style={styles.brandPro}>PRO</Text>
+              <Text style={styles.brandSubtitle}>Enterprise Vehicle Inspection</Text>
             </View>
 
             {/* Login Card */}
@@ -139,16 +145,22 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, isLoading }) 
 
                   <View style={styles.featuresContainer}>
                     <View style={styles.featureItem}>
-                      <Ionicons name="location" size={16} color={colors.primary} />
+                      <View style={[styles.featureIcon, { backgroundColor: '#EFF6FF' }]}>
+                        <Ionicons name="location" size={14} color="#3B82F6" />
+                      </View>
                       <Text style={styles.featureText}>GPS Tracking</Text>
                     </View>
                     <View style={styles.featureItem}>
-                      <Ionicons name="camera" size={16} color={colors.primary} />
-                      <Text style={styles.featureText}>Photo Upload</Text>
+                      <View style={[styles.featureIcon, { backgroundColor: '#F0FDF4' }]}>
+                        <Ionicons name="camera" size={14} color="#22C55E" />
+                      </View>
+                      <Text style={styles.featureText}>Photo Evidence</Text>
                     </View>
                     <View style={styles.featureItem}>
-                      <Ionicons name="notifications" size={16} color={colors.primary} />
-                      <Text style={styles.featureText}>Real-time Alerts</Text>
+                      <View style={[styles.featureIcon, { backgroundColor: '#FEF3C7' }]}>
+                        <Ionicons name="shield-checkmark" size={14} color="#F59E0B" />
+                      </View>
+                      <Text style={styles.featureText}>Compliance</Text>
                     </View>
                   </View>
                 </>
@@ -156,7 +168,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, isLoading }) 
             </View>
 
             {/* Footer */}
-            <Text style={styles.footerText}>Auto Insurance Vehicle Inspection</Text>
+            <View style={styles.footerContainer}>
+              <Text style={styles.footerText}>Enterprise Fleet Inspection Platform</Text>
+              <Text style={styles.footerVersion}>v1.0.0</Text>
+            </View>
           </KeyboardAvoidingView>
         </LinearGradient>
       </ImageBackground>
@@ -192,27 +207,63 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   logoGradient: {
-    width: 96,
-    height: 96,
-    borderRadius: borderRadius.xl,
+    width: 100,
+    height: 100,
+    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 12,
+  },
+  logoInner: {
+    width: 72,
+    height: 72,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  logoBadge: {
+    position: 'absolute',
+    bottom: -6,
+    right: -6,
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: '#3B82F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: '#1E3A5F',
   },
   brandTitle: {
-    fontSize: 32,
+    fontSize: 36,
     fontWeight: fontWeight.bold,
     color: colors.white,
     letterSpacing: 1,
+    marginTop: spacing.sm,
+  },
+  brandPro: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
+    color: '#3B82F6',
+    backgroundColor: 'rgba(59, 130, 246, 0.2)',
+    paddingHorizontal: spacing.md,
+    paddingVertical: 4,
+    borderRadius: 6,
+    marginTop: spacing.xs,
+    letterSpacing: 2,
+    overflow: 'hidden',
   },
   brandSubtitle: {
-    fontSize: fontSize.lg,
+    fontSize: fontSize.md,
     color: colors.gray[400],
-    marginTop: spacing.xs,
+    marginTop: spacing.sm,
   },
   loginCard: {
     backgroundColor: colors.white,
@@ -300,15 +351,33 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.xs,
   },
+  featureIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   featureText: {
     fontSize: fontSize.xs,
-    color: colors.gray[500],
+    color: colors.gray[600],
+    fontWeight: fontWeight.medium,
+  },
+  footerContainer: {
+    alignItems: 'center',
+    marginTop: spacing.xxxl,
   },
   footerText: {
     textAlign: 'center',
-    color: colors.gray[500],
+    color: colors.gray[400],
     fontSize: fontSize.sm,
-    marginTop: spacing.xxxl,
+  },
+  footerVersion: {
+    textAlign: 'center',
+    color: colors.gray[600],
+    fontSize: fontSize.xs,
+    marginTop: spacing.xs,
+    fontWeight: fontWeight.medium,
   },
 });
 

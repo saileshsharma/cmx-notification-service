@@ -124,7 +124,6 @@ export const SignatureModal: React.FC<SignatureModalProps> = ({
               minWidth={1.5}
               maxWidth={3}
               style={styles.signatureCanvas}
-              scrollEnabled={false}
               androidHardwareAccelerationDisabled={false}
               autoClear={false}
               descriptionText=""

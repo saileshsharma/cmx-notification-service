@@ -23,6 +23,7 @@ interface HeaderProps {
   onLogoutPress: () => void;
   onProfilePress: () => void;
   onStatusChange: (status: SurveyorStatus) => void;
+  onSOS?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -35,6 +36,7 @@ export const Header: React.FC<HeaderProps> = ({
   onLogoutPress,
   onProfilePress,
   onStatusChange,
+  onSOS,
 }) => {
   const getAvatarInitials = (name: string | null) => {
     if (!name) return '?';
@@ -60,6 +62,17 @@ export const Header: React.FC<HeaderProps> = ({
             <View style={styles.offlineBadge}>
               <Ionicons name="cloud-offline" size={16} color={colors.danger} />
             </View>
+          )}
+          {onSOS && (
+            <TouchableOpacity style={styles.sosButton} onPress={onSOS}>
+              <LinearGradient
+                colors={['#FF4444', '#CC0000']}
+                style={styles.sosGradient}
+              >
+                <Ionicons name="warning" size={14} color={colors.white} />
+                <Text style={styles.sosText}>SOS</Text>
+              </LinearGradient>
+            </TouchableOpacity>
           )}
           <TouchableOpacity style={styles.bellContainer} onPress={onNotificationPress}>
             <Ionicons name="notifications" size={26} color={colors.white} />
@@ -178,6 +191,22 @@ const styles = StyleSheet.create({
     backgroundColor: '#FEE2E2',
     padding: 6,
     borderRadius: spacing.sm,
+  },
+  sosButton: {
+    marginRight: spacing.xs,
+  },
+  sosGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 4,
+  },
+  sosText: {
+    color: colors.white,
+    fontSize: 11,
+    fontWeight: fontWeight.bold,
   },
   statusRow: {
     flexDirection: 'row',
