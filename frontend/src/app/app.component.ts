@@ -169,6 +169,14 @@ export class AppComponent implements OnInit, OnDestroy {
   loadingActivities = false;
   private activitySubscriptions: Subscription[] = [];
 
+  // Activity History Modal
+  showActivityHistoryModal = false;
+  activityHistoryPage = 0;
+  activityHistoryPageSize = 20;
+  activityHistoryTotal = 0;
+  activityHistoryItems: SurveyorActivity[] = [];
+  loadingActivityHistory = false;
+
   // Export
   showExportModal = false;
   exportFormat: 'pdf' | 'excel' | 'csv' = 'pdf';
@@ -3526,7 +3534,64 @@ export class AppComponent implements OnInit, OnDestroy {
     if (this.activityFilter !== 'ALL') {
       activities = activities.filter(a => a.activityType === this.activityFilter);
     }
-    // Return only the last 10 activities, already sorted by createdAt DESC from backend
-    return activities.slice(0, 10);
+    // Return only the last 20 activities, already sorted by createdAt DESC from backend
+    return activities.slice(0, 20);
+  }
+
+  // ============ ACTIVITY HISTORY MODAL ============
+  openActivityHistory(): void {
+    this.showActivityHistoryModal = true;
+    this.activityHistoryPage = 0;
+    this.loadActivityHistoryPage();
+  }
+
+  closeActivityHistory(): void {
+    this.showActivityHistoryModal = false;
+  }
+
+  loadActivityHistoryPage(): void {
+    this.loadingActivityHistory = true;
+    const offset = this.activityHistoryPage * this.activityHistoryPageSize;
+
+    this.surveyorActivityService.loadActivities(
+      undefined,
+      this.activityFilter === 'ALL' ? undefined : this.activityFilter,
+      168, // Last 7 days
+      this.activityHistoryPageSize,
+      offset
+    ).subscribe({
+      next: (activities) => {
+        this.activityHistoryItems = activities;
+        // Estimate total from current results
+        if (activities.length < this.activityHistoryPageSize) {
+          this.activityHistoryTotal = offset + activities.length;
+        } else {
+          this.activityHistoryTotal = offset + activities.length + 1; // At least one more page
+        }
+        this.loadingActivityHistory = false;
+      },
+      error: (e) => {
+        console.error('Failed to load activity history:', e);
+        this.loadingActivityHistory = false;
+        this.showToast('error', 'Failed to load activity history');
+      }
+    });
+  }
+
+  activityHistoryNextPage(): void {
+    this.activityHistoryPage++;
+    this.loadActivityHistoryPage();
+  }
+
+  activityHistoryPrevPage(): void {
+    if (this.activityHistoryPage > 0) {
+      this.activityHistoryPage--;
+      this.loadActivityHistoryPage();
+    }
+  }
+
+  hasMoreActivityHistory(): boolean {
+    const currentEnd = (this.activityHistoryPage + 1) * this.activityHistoryPageSize;
+    return currentEnd < this.activityHistoryTotal;
   }
 }

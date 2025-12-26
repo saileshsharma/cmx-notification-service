@@ -260,6 +260,89 @@
       Loading activity...
     </div>
   </div>
+  <div class="activity-footer" *ngIf="surveyorActivities.length > 0">
+    <button class="view-all-btn" (click)="openActivityHistory()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+        <polyline points="14 2 14 8 20 8"></polyline>
+      </svg>
+      View All History
+    </button>
+  </div>
+</div>
+
+<!-- Activity History Modal -->
+<div class="modal-overlay" *ngIf="showActivityHistoryModal" (click)="closeActivityHistory()">
+  <div class="modal activity-history-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Surveyor Activity History</h2>
+      <button class="close-btn" (click)="closeActivityHistory()">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="activity-history-filters">
+        <select [(ngModel)]="activityFilter" (change)="loadActivityHistoryPage()" class="activity-filter-select">
+          <option value="ALL">All Activity</option>
+          <option value="STATUS_CHANGE">Status Changes</option>
+          <option value="JOB_UPDATE">Job Updates</option>
+          <option value="LOGIN">Login/Logout</option>
+        </select>
+        <span class="page-info">Page {{activityHistoryPage + 1}}</span>
+      </div>
+      <div class="activity-history-list">
+        <div *ngFor="let entry of activityHistoryItems" class="activity-item" [ngClass]="getActivityClass(entry.activityType)">
+          <div class="activity-icon-wrapper" [style.background]="getSurveyorActivityColor(entry.activityType, entry.newValue)">
+            <span class="material-icons activity-icon">{{getSurveyorActivityIcon(entry.activityType, entry.newValue)}}</span>
+          </div>
+          <div class="activity-content">
+            <div class="activity-action">
+              <strong>{{entry.surveyorName || 'Surveyor ' + entry.surveyorId}}</strong>
+              <span class="activity-value-badge" [style.background]="getSurveyorActivityColor(entry.activityType, entry.newValue)">
+                {{getSurveyorActivityLabel(entry.activityType, entry.newValue)}}
+              </span>
+            </div>
+            <div class="activity-meta">
+              <span *ngIf="entry.appointmentTitle" class="appointment-tag">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+                {{entry.appointmentTitle}}
+              </span>
+              <span class="activity-time">{{formatActivityTimestamp(entry.createdAt)}}</span>
+            </div>
+          </div>
+        </div>
+        <div *ngIf="activityHistoryItems.length === 0 && !loadingActivityHistory" class="no-activity">
+          <p>No activity found</p>
+        </div>
+        <div *ngIf="loadingActivityHistory" class="activity-loading">
+          <svg class="spinner" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+          </svg>
+          Loading...
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <div class="pagination-controls">
+        <button class="btn-secondary" (click)="activityHistoryPrevPage()" [disabled]="activityHistoryPage === 0">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+          Previous
+        </button>
+        <button class="btn-secondary" (click)="activityHistoryNextPage()" [disabled]="!hasMoreActivityHistory()">
+          Next
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
+      </div>
+      <button class="btn-secondary" (click)="closeActivityHistory()">Close</button>
+    </div>
+  </div>
 </div>
 
 <div class="main-layout">
