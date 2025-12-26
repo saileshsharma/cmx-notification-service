@@ -24,12 +24,16 @@ public class SurveyorService {
     private final JdbcTemplate jdbcTemplate;
 
     private static final RowMapper<Surveyor> SURVEYOR_MAPPER = (rs, rowNum) -> {
+        // Handle potentially null numeric values safely
+        Double homeLat = rs.getObject("home_lat") != null ? rs.getDouble("home_lat") : null;
+        Double homeLng = rs.getObject("home_lng") != null ? rs.getDouble("home_lng") : null;
+
         Surveyor s = new Surveyor(
             rs.getLong("id"),
             rs.getString("code"),
             rs.getString("display_name"),
-            rs.getDouble("home_lat"),
-            rs.getDouble("home_lng"),
+            homeLat != null ? homeLat : 0.0,
+            homeLng != null ? homeLng : 0.0,
             rs.getString("status"),
             rs.getString("surveyor_type"),
             rs.getString("email"),
@@ -39,9 +43,13 @@ public class SurveyorService {
         s.setCurrentLat(rs.getObject("current_lat") != null ? rs.getDouble("current_lat") : null);
         s.setCurrentLng(rs.getObject("current_lng") != null ? rs.getDouble("current_lng") : null);
         s.setCurrentStatus(rs.getString("current_status"));
-        java.sql.Timestamp lastUpdate = rs.getTimestamp("last_location_update");
-        if (lastUpdate != null) {
-            s.setLastLocationUpdate(java.time.OffsetDateTime.ofInstant(lastUpdate.toInstant(), java.time.ZoneId.systemDefault()));
+        try {
+            java.sql.Timestamp lastUpdate = rs.getTimestamp("last_location_update");
+            if (lastUpdate != null) {
+                s.setLastLocationUpdate(java.time.OffsetDateTime.ofInstant(lastUpdate.toInstant(), java.time.ZoneId.systemDefault()));
+            }
+        } catch (Exception e) {
+            // Ignore timestamp parsing errors for PostgreSQL compatibility
         }
         return s;
     };

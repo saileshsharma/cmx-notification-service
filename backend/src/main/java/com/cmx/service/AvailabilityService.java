@@ -169,8 +169,15 @@ public class AvailabilityService {
     }
 
     public String getCurrentState(Long surveyorId, OffsetDateTime now) {
-        String state = availabilityRepository.findCurrentState(surveyorId, now);
-        return state != null ? state : "AVAILABLE";
+        try {
+            String state = availabilityRepository.findCurrentState(surveyorId, now);
+            return state != null ? state : "AVAILABLE";
+        } catch (Exception e) {
+            // Log the error but don't crash - return AVAILABLE as default
+            org.slf4j.LoggerFactory.getLogger(getClass()).warn(
+                "Error getting current state for surveyor {}: {}", surveyorId, e.getMessage());
+            return "AVAILABLE";
+        }
     }
 
     public Long getSurveyorIdForAvailability(Long availabilityId) {
