@@ -1222,9 +1222,22 @@ export class AppComponent implements OnInit, OnDestroy {
     // Try to load from cache first for instant display
     const cachedData = this.loadFromCache(cacheKey);
     if (cachedData) {
-      const evs = this.processEvents(cachedData);
-      this.existingEvents = evs;
-      this.calendarOptions = { ...this.calendarOptions, events: evs };
+      const allEvs = this.processEvents(cachedData);
+      this.existingEvents = allEvs;
+
+      // Apply same filtering to cached events
+      let displayEvents = allEvs;
+      if (this.selectedSurveyorIds.length > 0) {
+        displayEvents = allEvs.filter(e =>
+          e.extendedProps?.surveyorId && this.selectedSurveyorIds.includes(e.extendedProps.surveyorId)
+        );
+      } else if (this.selectedSurveyorId !== 'ALL') {
+        displayEvents = allEvs.filter(e =>
+          e.extendedProps?.surveyorId === this.selectedSurveyorId
+        );
+      }
+
+      this.calendarOptions = { ...this.calendarOptions, events: displayEvents };
       this.loadingEvents = false;
     }
 

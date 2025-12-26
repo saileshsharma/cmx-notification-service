@@ -120,10 +120,15 @@ public class SurveyorActivityService {
      * Get recent activity (last N hours)
      */
     public List<SurveyorActivityLog> getRecentActivity(int hours, int limit) {
-        OffsetDateTime since = OffsetDateTime.now().minusHours(hours);
-        List<SurveyorActivityLog> logs = activityLogRepository.findRecent(since, limit, 0);
-        enrichActivityLogs(logs);
-        return logs;
+        try {
+            OffsetDateTime since = OffsetDateTime.now().minusHours(hours);
+            List<SurveyorActivityLog> logs = activityLogRepository.findRecent(since, limit, 0);
+            enrichActivityLogs(logs);
+            return logs;
+        } catch (Exception e) {
+            logger.warn("Error loading recent activity: {}", e.getMessage());
+            return java.util.Collections.emptyList();
+        }
     }
 
     /**
