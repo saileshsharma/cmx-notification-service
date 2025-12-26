@@ -18,7 +18,11 @@ public class SseService {
     private static final long SSE_TIMEOUT = 30 * 60 * 1000L; // 30 minutes
 
     private final List<SseEmitter> emitters = new CopyOnWriteArrayList<>();
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
+
+    public SseService(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
 
     /**
      * Create a new SSE emitter for a client connection
