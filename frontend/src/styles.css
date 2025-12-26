@@ -727,6 +727,78 @@ header {
   }
 }
 
+/* Travel Time Warning Badge */
+.travel-warning-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+  color: white;
+  margin-right: 4px;
+  flex-shrink: 0;
+  cursor: help;
+  animation: travel-badge-pulse 2s ease-in-out infinite;
+  box-shadow: 0 2px 8px rgba(255, 152, 0, 0.4);
+  transition: all 0.2s ease;
+}
+
+.travel-warning-badge:hover {
+  transform: scale(1.15);
+  box-shadow: 0 4px 12px rgba(255, 152, 0, 0.6);
+}
+
+.travel-warning-badge.warning {
+  background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+  box-shadow: 0 2px 8px rgba(255, 152, 0, 0.4);
+}
+
+.travel-warning-badge.critical {
+  background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+  box-shadow: 0 2px 8px rgba(244, 67, 54, 0.4);
+  animation: travel-badge-critical 1s ease-in-out infinite;
+}
+
+.travel-warning-badge.critical:hover {
+  box-shadow: 0 4px 12px rgba(244, 67, 54, 0.6);
+}
+
+.travel-warning-badge svg {
+  width: 12px;
+  height: 12px;
+}
+
+@keyframes travel-badge-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes travel-badge-critical {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.85;
+  }
+}
+
+/* Surveyor card with travel warning highlight */
+.surveyor-card.has-travel-warning {
+  border-left: 3px solid #ff9800;
+}
+
+.surveyor-card.has-travel-warning:hover {
+  border-left-color: #f57c00;
+}
+
 /* Enhanced empty state styling */
 .no-results {
   text-align: center;
@@ -1955,6 +2027,12 @@ header {
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   pointer-events: none;
+  z-index: 0;
+}
+
+.toolbar-btn svg {
+  position: relative;
+  z-index: 1;
 }
 
 .toolbar-btn:hover {

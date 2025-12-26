@@ -352,6 +352,7 @@
             <div *ngFor="let s of getInternalSurveyors()" class="surveyor-card-wrapper">
               <div class="surveyor-card"
                    [class.selected]="isSurveyorSelected(s.id)"
+                   [class.has-travel-warning]="showTravelTimes && getTravelTimeWarning(s.id)"
                    (click)="toggleSurveyorSelection(s.id)">
                 <div class="avatar" [style.background-color]="getAvatarColor(s.display_name)">
                   <img *ngIf="!hasAvatarError(s.id)"
@@ -367,6 +368,17 @@
                     <span class="status-dot" [style.background-color]="getCurrentStatusColor(s.current_status)"></span>
                     <span class="status-text">{{s.current_status}}</span>
                   </div>
+                </div>
+                <!-- Travel Time Warning Indicator -->
+                <div class="travel-warning-badge"
+                     *ngIf="showTravelTimes && getTravelTimeWarning(s.id) as warning"
+                     [class.warning]="warning.level === 'warning'"
+                     [class.critical]="warning.level === 'critical'"
+                     [title]="warning.message">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                  </svg>
                 </div>
                 <button class="contact-btn" (click)="toggleContactInfo(s.id); $event.stopPropagation()" title="Contact Info">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -411,6 +423,7 @@
             <div *ngFor="let s of getExternalSurveyors()" class="surveyor-card-wrapper">
               <div class="surveyor-card"
                    [class.selected]="isSurveyorSelected(s.id)"
+                   [class.has-travel-warning]="showTravelTimes && getTravelTimeWarning(s.id)"
                    (click)="toggleSurveyorSelection(s.id)">
                 <div class="avatar" [style.background-color]="getAvatarColor(s.display_name)">
                   <img *ngIf="!hasAvatarError(s.id)"
@@ -426,6 +439,17 @@
                     <span class="status-dot" [style.background-color]="getCurrentStatusColor(s.current_status)"></span>
                     <span class="status-text">{{s.current_status}}</span>
                   </div>
+                </div>
+                <!-- Travel Time Warning Indicator -->
+                <div class="travel-warning-badge"
+                     *ngIf="showTravelTimes && getTravelTimeWarning(s.id) as warning"
+                     [class.warning]="warning.level === 'warning'"
+                     [class.critical]="warning.level === 'critical'"
+                     [title]="warning.message">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                  </svg>
                 </div>
                 <button class="contact-btn" (click)="toggleContactInfo(s.id); $event.stopPropagation()" title="Contact Info">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
