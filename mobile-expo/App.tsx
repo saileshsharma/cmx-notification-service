@@ -556,12 +556,18 @@ export default function App() {
 
   const handleLogin = async (email: string, password: string) => {
     try {
+      // Debug: Log push token status
+      console.log('[Login] Push token status:', expoPushToken ? `Token obtained (${expoPushToken.substring(0, 30)}...)` : 'NO TOKEN');
+      console.log('[Login] Platform:', Platform.OS);
+
       const response = await apiService.login({
         email,
         password,
         pushToken: expoPushToken || undefined,
         platform: Platform.OS === 'ios' ? 'IOS' : 'ANDROID',
       });
+
+      console.log('[Login] Response:', response.success ? 'Success' : 'Failed', response.message || '');
 
       if (response.success && response.surveyor) {
         // Check if this is first time login (for biometric prompt)

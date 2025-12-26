@@ -24,11 +24,14 @@ public class NotificationController {
 
     private final NotificationService notificationService;
     private final NotificationAuditService auditService;
+    private final com.cmx.service.DeviceTokenService deviceTokenService;
 
     public NotificationController(NotificationService notificationService,
-                                   NotificationAuditService auditService) {
+                                   NotificationAuditService auditService,
+                                   com.cmx.service.DeviceTokenService deviceTokenService) {
         this.notificationService = notificationService;
         this.auditService = auditService;
+        this.deviceTokenService = deviceTokenService;
     }
 
     @Operation(
@@ -107,6 +110,27 @@ public class NotificationController {
                 "emailsSent", emailSent,
                 "smsSent", smsSent,
                 "results", results
+        );
+    }
+
+    @Operation(
+        summary = "Get device tokens for surveyor",
+        description = "Returns all registered device tokens for a surveyor (for debugging)"
+    )
+    @Tag(name = "Development")
+    @GetMapping("/dev/device-tokens/{surveyorId}")
+    public Map<String, Object> getDeviceTokens(
+            @Parameter(description = "Surveyor ID") @PathVariable("surveyorId") Long surveyorId) {
+        List<String> tokens = deviceTokenService.getTokensForSurveyor(surveyorId);
+        return Map.of(
+                "surveyorId", surveyorId,
+                "tokenCount", tokens.size(),
+                "tokens", tokens.stream().map(t -> Map.of(
+                        "token", t.length() > 50 ? t.substring(0, 50) + "..." : t,
+                        "fullToken", t,
+                        "isExpoToken", t.startsWith("ExponentPushToken["),
+                        "length", t.length()
+                )).toList()
         );
     }
 }

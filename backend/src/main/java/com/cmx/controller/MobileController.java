@@ -90,7 +90,15 @@ public class MobileController {
 
         // Auto-register device if push token is provided
         if (pushToken != null && !pushToken.isEmpty()) {
+            org.slf4j.LoggerFactory.getLogger(MobileController.class)
+                .info("Registering device token for surveyor {}: {} (platform: {})",
+                    surveyor.getId(),
+                    pushToken.length() > 50 ? pushToken.substring(0, 50) + "..." : pushToken,
+                    platform);
             deviceTokenService.registerToken(surveyor.getId(), pushToken, platform != null ? platform : "ANDROID");
+        } else {
+            org.slf4j.LoggerFactory.getLogger(MobileController.class)
+                .warn("No push token provided for surveyor {} during login", surveyor.getId());
         }
 
         // Log login activity (async, don't block login on failure)

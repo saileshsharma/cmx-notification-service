@@ -109,31 +109,10 @@ class NotificationService {
       return null;
     }
 
-    // For iOS, we need to use Expo push tokens which handle APNs
-    // For Android, we can use native FCM tokens
-    if (Platform.OS === 'ios') {
-      debugLogger.log('iOS detected - using Expo Push Token for APNs...');
-      return this.getExpoPushTokenInternal();
-    }
-
-    // Android - First try native FCM token
-    debugLogger.log('Android detected - attempting to get native FCM token...');
-    debugLogger.log('This requires google-services.json to be properly configured');
-    try {
-      const tokenData = await Notifications.getDevicePushTokenAsync();
-      debugLogger.log(`SUCCESS: Native token type: ${tokenData.type}`);
-      debugLogger.log(`Native token (first 50 chars): ${tokenData.data.substring(0, 50)}...`);
-      debugLogger.log(`Native token length: ${tokenData.data.length}`);
-
-      await storageService.setPushToken(tokenData.data);
-      debugLogger.log('FCM token saved to storage');
-
-      return tokenData.data;
-    } catch (error) {
-      debugLogger.error('Failed to get native FCM token', error);
-      debugLogger.log('Falling back to Expo Push Token...');
-      return this.getExpoPushTokenInternal();
-    }
+    // Use Expo Push Token for BOTH iOS and Android
+    // This ensures consistent handling via Expo Push API on the backend
+    debugLogger.log(`${Platform.OS} detected - using Expo Push Token...`);
+    return this.getExpoPushTokenInternal();
   }
 
   private async getExpoPushTokenInternal(): Promise<string | null> {
