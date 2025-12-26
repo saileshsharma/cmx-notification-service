@@ -155,6 +155,26 @@ public class SurveyorActivityController {
         } catch (Exception e) {
             result.put("serviceInsert", "FAILED");
             result.put("serviceInsertError", e.getMessage());
+            // Get root cause
+            Throwable cause = e;
+            while (cause.getCause() != null) {
+                cause = cause.getCause();
+            }
+            result.put("rootCause", cause.getClass().getSimpleName() + ": " + cause.getMessage());
+        }
+
+        // Try direct JDBC insert with real surveyor
+        try {
+            int inserted = jdbcTemplate.update(
+                "INSERT INTO surveyor_activity_log (surveyor_id, activity_type, previous_value, new_value, created_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)",
+                71L, "STATUS_CHANGE", "DIRECT_TEST", "DIRECT_DEBUG"
+            );
+            result.put("directInsert", inserted == 1 ? "SUCCESS" : "FAILED");
+            // Clean up
+            jdbcTemplate.update("DELETE FROM surveyor_activity_log WHERE surveyor_id = 71 AND activity_type = 'STATUS_CHANGE' AND new_value = 'DIRECT_DEBUG'");
+        } catch (Exception e) {
+            result.put("directInsert", "FAILED");
+            result.put("directInsertError", e.getMessage());
         }
 
         result.put("status", "debug_complete");
