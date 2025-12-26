@@ -4,11 +4,12 @@ import { ChatMessage, ChatConversation, TypingIndicator } from '../types';
 // WebSocket URL derived from API URL
 const getWebSocketUrl = () => {
   // Convert http(s)://host/api to ws(s)://host/ws/chat
+  // Note: /ws/chat is the pure WebSocket endpoint (without SockJS /websocket suffix)
   const wsUrl = API_BASE_URL
     .replace('/api', '')
     .replace('https://', 'wss://')
     .replace('http://', 'ws://');
-  return `${wsUrl}/ws/chat/websocket`;
+  return `${wsUrl}/ws/chat`;
 };
 
 type MessageHandler = (message: ChatMessage) => void;
@@ -57,12 +58,10 @@ class ChatService {
       this.ws = new WebSocket(wsUrl);
 
       this.ws.onopen = () => {
-        console.log('Chat WebSocket connected');
-        this.connected = true;
+        console.log('Chat WebSocket transport connected, sending STOMP CONNECT...');
         this.reconnectAttempts = 0;
-        this.onConnection?.(true);
 
-        // Send STOMP CONNECT frame
+        // Send STOMP CONNECT frame - we wait for CONNECTED response before marking as connected
         this.sendFrame('CONNECT', {
           'accept-version': '1.2',
           'heart-beat': '10000,10000',
@@ -311,7 +310,9 @@ class ChatService {
     const command = lines[0];
 
     if (command === 'CONNECTED') {
-      console.log('STOMP connected');
+      console.log('STOMP CONNECTED frame received - fully connected!');
+      this.connected = true;
+      this.onConnection?.(true);
       this.subscribeToTopics();
       this.startHeartbeat();
       this.loadConversations();
@@ -342,16 +343,20 @@ class ChatService {
 
   private handleStompMessage(headers: Record<string, string>, body: string): void {
     const destination = headers['destination'] || '';
+    console.log('STOMP MESSAGE received - destination:', destination, 'body:', body.substring(0, 100));
 
     try {
       const payload = JSON.parse(body);
 
       if (destination.includes('/typing')) {
+        console.log('Typing indicator:', payload);
         this.onTyping?.(payload as TypingIndicator);
       } else if (destination.includes('/read')) {
         // Read receipt - could update message status
+        console.log('Read receipt:', payload);
       } else {
         // Regular message
+        console.log('Chat message received:', payload);
         const message = payload as ChatMessage;
         this.onMessage?.(message);
 

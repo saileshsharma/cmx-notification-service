@@ -154,10 +154,7 @@ export const SignatureModal: React.FC<SignatureModalProps> = ({
               imageType="image/png"
               dataURL=""
               // iOS-specific WebView props for touch handling
-              scrollEnabled={false}
-              bounces={false}
-              overScrollMode="never"
-              nestedScrollEnabled={false}
+              scrollable={false}
             />
             <View style={styles.signaturePlaceholder}>
               <Text style={styles.placeholderText}>Sign here</Text>

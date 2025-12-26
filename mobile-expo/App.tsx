@@ -10,6 +10,8 @@ import {
   StatusBar,
   Vibration,
   Linking,
+  AppState,
+  AppStateStatus,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
@@ -219,6 +221,65 @@ export default function App() {
     }
   }, [isRegistered, selectedSurveyorId]);
 
+  // Handle app state changes (foreground/background) for iOS
+  useEffect(() => {
+    const appStateRef = { current: AppState.currentState };
+
+    const handleAppStateChange = async (nextAppState: AppStateStatus) => {
+      // App came to foreground from background
+      if (appStateRef.current.match(/inactive|background/) && nextAppState === 'active') {
+        console.log('App came to foreground, refreshing chat...');
+
+        // Reconnect WebSocket if needed
+        if (selectedSurveyorId && surveyorName && !chatService.isConnected()) {
+          chatService.connect(selectedSurveyorId, surveyorName);
+        }
+
+        // Refresh messages from server
+        if (activeConversationId) {
+          try {
+            const messages = await chatService.loadMessages(activeConversationId);
+            const localMessages: ChatMessage[] = messages.map(m => ({
+              id: m.id?.toString() || Date.now().toString(),
+              text: m.content,
+              sender: m.senderType === 'SURVEYOR' ? 'surveyor' : 'dispatcher',
+              timestamp: new Date(m.sentAt),
+            }));
+            setChatMessages(localMessages.reverse());
+          } catch (error) {
+            console.error('Failed to refresh messages on foreground:', error);
+          }
+        }
+
+        // Refresh unread count
+        chatService.getUnreadCount();
+      }
+
+      appStateRef.current = nextAppState;
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    return () => subscription?.remove();
+  }, [selectedSurveyorId, surveyorName, activeConversationId]);
+
+  // Refresh messages when switching to chat tab
+  useEffect(() => {
+    if (activeTab === 'chat' && activeConversationId) {
+      console.log('Entered chat tab, refreshing messages...');
+      chatService.loadMessages(activeConversationId).then(messages => {
+        const localMessages: ChatMessage[] = messages.map(m => ({
+          id: m.id?.toString() || Date.now().toString(),
+          text: m.content,
+          sender: m.senderType === 'SURVEYOR' ? 'surveyor' : 'dispatcher',
+          timestamp: new Date(m.sentAt),
+        }));
+        setChatMessages(localMessages.reverse());
+      }).catch(error => {
+        console.error('Failed to refresh chat messages:', error);
+      });
+    }
+  }, [activeTab, activeConversationId]);
+
   // Initialize chat service
   const initializeChat = () => {
     if (!selectedSurveyorId || !surveyorName) return;
@@ -230,14 +291,22 @@ export default function App() {
     });
 
     chatService.setOnMessage((message: APIChatMessage) => {
-      // Convert API message to local format
+      // Convert API message to local format with unique ID
+      const msgId = message.id?.toString() || `ws-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       const localMessage: ChatMessage = {
-        id: message.id?.toString() || Date.now().toString(),
+        id: msgId,
         text: message.content,
         sender: message.senderType === 'SURVEYOR' ? 'surveyor' : 'dispatcher',
         timestamp: new Date(message.sentAt),
       };
-      setChatMessages(prev => [...prev, localMessage]);
+
+      // Add message only if it doesn't already exist (prevent duplicates)
+      setChatMessages(prev => {
+        if (prev.some(m => m.id === msgId || (m.text === localMessage.text && m.sender === localMessage.sender && Math.abs(m.timestamp.getTime() - localMessage.timestamp.getTime()) < 5000))) {
+          return prev;
+        }
+        return [...prev, localMessage];
+      });
 
       // Haptic feedback for new message
       if (message.senderType === 'DISPATCHER') {
@@ -515,9 +584,9 @@ export default function App() {
       completed: "Inspection completed successfully",
     };
 
-    // Add chat message for local display
+    // Add chat message for local display with unique ID
     const newMsg: ChatMessage = {
-      id: Date.now().toString(),
+      id: `status-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       text: statusMessages[status],
       sender: 'surveyor',
       timestamp: new Date(),
@@ -620,7 +689,7 @@ export default function App() {
           style: 'destructive',
           onPress: () => {
             const sosMsg: ChatMessage = {
-              id: Date.now().toString(),
+              id: `sos-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
               text: '🚨 EMERGENCY SOS - Need immediate assistance!',
               sender: 'surveyor',
               timestamp: new Date(),
@@ -768,9 +837,9 @@ export default function App() {
     const messageText = newMessage.trim();
     setNewMessage('');
 
-    // Optimistically add message to UI
+    // Optimistically add message to UI with unique ID
     const optimisticMsg: ChatMessage = {
-      id: Date.now().toString(),
+      id: `opt-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       text: messageText,
       sender: 'surveyor',
       timestamp: new Date(),

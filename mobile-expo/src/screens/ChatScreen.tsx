@@ -195,13 +195,17 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
           <Ionicons name="add-circle" size={28} color={colors.gray[400]} />
         </TouchableOpacity>
         <TextInput
+          key="chat-input"
           style={styles.textInput}
           placeholder="Type a message..."
           placeholderTextColor={colors.gray[400]}
-          value={newMessage}
+          value={newMessage || ''}
           onChangeText={onMessageChange}
           multiline
           maxLength={500}
+          textAlignVertical="center"
+          blurOnSubmit={false}
+          returnKeyType="default"
         />
         <TouchableOpacity
           style={[styles.sendButton, newMessage.trim() && styles.sendButtonActive]}
