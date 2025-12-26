@@ -19,7 +19,13 @@
             "polyfills": ["zone.js"],
             "tsConfig": "tsconfig.app.json",
             "assets": ["src/favicon.ico", "src/assets", "src/firebase-messaging-sw.js"],
-            "styles": ["src/styles.css"],
+            "styles": [
+              "src/styles.css",
+              "src/styles/activity.css",
+              "src/styles/dashboard.css",
+              "src/styles/timeline.css",
+              "src/styles/toast.css"
+            ],
             "scripts": []
           },
           "configurations": {
