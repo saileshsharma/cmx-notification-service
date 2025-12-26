@@ -26,7 +26,7 @@ public class ChatService {
     private final ChatMessageRepository chatMessageRepository;
     private final SurveyorRepository surveyorRepository;
     private final SimpMessagingTemplate messagingTemplate;
-    private final PushNotificationService pushNotificationService;
+    private final NotificationService notificationService;
 
     /**
      * Send a new chat message
@@ -229,7 +229,7 @@ public class ChatService {
 
     private void sendPushNotification(ChatMessage message) {
         try {
-            pushNotificationService.sendPushNotification(
+            notificationService.sendNotificationToSurveyor(
                 message.getRecipientId(),
                 "New message from " + message.getSenderName(),
                 message.getContent(),
