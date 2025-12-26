@@ -5,9 +5,11 @@ import com.cmx.service.SurveyorActivityService;
 import com.cmx.service.SseService;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -18,10 +20,12 @@ public class SurveyorActivityController {
 
     private final SurveyorActivityService activityService;
     private final SseService sseService;
+    private final JdbcTemplate jdbcTemplate;
 
-    public SurveyorActivityController(SurveyorActivityService activityService, SseService sseService) {
+    public SurveyorActivityController(SurveyorActivityService activityService, SseService sseService, JdbcTemplate jdbcTemplate) {
         this.activityService = activityService;
         this.sseService = sseService;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     /**
@@ -80,5 +84,66 @@ public class SurveyorActivityController {
                 "activeConnections", sseService.getActiveConnectionCount(),
                 "status", "running"
         ));
+    }
+
+    /**
+     * Diagnostic endpoint to check activity log table status
+     */
+    @GetMapping("/activity/debug")
+    public ResponseEntity<Map<String, Object>> getActivityLogDebug() {
+        Map<String, Object> result = new HashMap<>();
+
+        // Check if table exists
+        try {
+            Boolean tableExists = jdbcTemplate.queryForObject(
+                "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'surveyor_activity_log')",
+                Boolean.class
+            );
+            result.put("tableExists", tableExists);
+        } catch (Exception e) {
+            result.put("tableExists", false);
+            result.put("tableExistsError", e.getMessage());
+        }
+
+        // Try to get row count
+        try {
+            Integer count = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM surveyor_activity_log",
+                Integer.class
+            );
+            result.put("rowCount", count);
+        } catch (Exception e) {
+            result.put("rowCount", -1);
+            result.put("rowCountError", e.getMessage());
+        }
+
+        // Get table structure
+        try {
+            List<Map<String, Object>> columns = jdbcTemplate.queryForList(
+                "SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'surveyor_activity_log'"
+            );
+            result.put("columns", columns);
+        } catch (Exception e) {
+            result.put("columnsError", e.getMessage());
+        }
+
+        // Try a direct insert and read as a test
+        try {
+            // Insert a test record
+            int inserted = jdbcTemplate.update(
+                "INSERT INTO surveyor_activity_log (surveyor_id, activity_type, new_value, created_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)",
+                0L, "TEST", "DEBUG_TEST"
+            );
+            result.put("testInsert", inserted == 1 ? "SUCCESS" : "FAILED");
+
+            // Clean up test record
+            jdbcTemplate.update("DELETE FROM surveyor_activity_log WHERE surveyor_id = 0 AND activity_type = 'TEST'");
+        } catch (Exception e) {
+            result.put("testInsert", "FAILED");
+            result.put("testInsertError", e.getMessage());
+        }
+
+        result.put("status", "debug_complete");
+        return ResponseEntity.ok(result);
     }
 }
