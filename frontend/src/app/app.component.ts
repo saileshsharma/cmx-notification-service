@@ -159,7 +159,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   // Activity Log
   activityLog: ActivityLogEntry[] = [];
-  showActivityLog = false;
+  showActivityLog = true;  // Show activity panel by default for better visibility
   private activityLogId = 0;
 
   // Surveyor Activity (Real-time from Backend)
