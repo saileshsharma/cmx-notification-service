@@ -131,47 +131,55 @@ public class NotificationAuditService {
     }
 
     public NotificationStats getNotificationStats(Long surveyorId, int hours) {
-        // Using JdbcTemplate with H2-compatible SQL
+        // Using JdbcTemplate with PostgreSQL-compatible SQL
         int totalPush, totalEmail, totalSms;
         int successPush, successEmail, successSms;
         int failedTotal;
 
-        String baseQuery = "SELECT COUNT(*) FROM notification_log WHERE created_at > DATEADD('HOUR', ?, CURRENT_TIMESTAMP)";
+        // Use INTERVAL syntax which works in PostgreSQL
+        String hoursStr = String.valueOf(hours);
+        String baseQuery = "SELECT COUNT(*) FROM notification_log WHERE created_at > (CURRENT_TIMESTAMP - CAST('" + hoursStr + " hours' AS INTERVAL))";
 
-        if (surveyorId != null) {
-            totalPush = jdbc.queryForObject(baseQuery + " AND surveyor_id = ? AND channel = ?",
-                    Integer.class, -hours, surveyorId, "PUSH");
-            totalEmail = jdbc.queryForObject(baseQuery + " AND surveyor_id = ? AND channel = ?",
-                    Integer.class, -hours, surveyorId, "EMAIL");
-            totalSms = jdbc.queryForObject(baseQuery + " AND surveyor_id = ? AND channel = ?",
-                    Integer.class, -hours, surveyorId, "SMS");
+        try {
+            if (surveyorId != null) {
+                totalPush = jdbc.queryForObject(baseQuery + " AND surveyor_id = ? AND channel = ?",
+                        Integer.class, surveyorId, "PUSH");
+                totalEmail = jdbc.queryForObject(baseQuery + " AND surveyor_id = ? AND channel = ?",
+                        Integer.class, surveyorId, "EMAIL");
+                totalSms = jdbc.queryForObject(baseQuery + " AND surveyor_id = ? AND channel = ?",
+                        Integer.class, surveyorId, "SMS");
 
-            successPush = jdbc.queryForObject(baseQuery + " AND surveyor_id = ? AND channel = ? AND status = ?",
-                    Integer.class, -hours, surveyorId, "PUSH", "SENT");
-            successEmail = jdbc.queryForObject(baseQuery + " AND surveyor_id = ? AND channel = ? AND status = ?",
-                    Integer.class, -hours, surveyorId, "EMAIL", "SENT");
-            successSms = jdbc.queryForObject(baseQuery + " AND surveyor_id = ? AND channel = ? AND status = ?",
-                    Integer.class, -hours, surveyorId, "SMS", "SENT");
+                successPush = jdbc.queryForObject(baseQuery + " AND surveyor_id = ? AND channel = ? AND status = ?",
+                        Integer.class, surveyorId, "PUSH", "SENT");
+                successEmail = jdbc.queryForObject(baseQuery + " AND surveyor_id = ? AND channel = ? AND status = ?",
+                        Integer.class, surveyorId, "EMAIL", "SENT");
+                successSms = jdbc.queryForObject(baseQuery + " AND surveyor_id = ? AND channel = ? AND status = ?",
+                        Integer.class, surveyorId, "SMS", "SENT");
 
-            failedTotal = jdbc.queryForObject(baseQuery + " AND surveyor_id = ? AND status = ?",
-                    Integer.class, -hours, surveyorId, "FAILED");
-        } else {
-            totalPush = jdbc.queryForObject(baseQuery + " AND channel = ?",
-                    Integer.class, -hours, "PUSH");
-            totalEmail = jdbc.queryForObject(baseQuery + " AND channel = ?",
-                    Integer.class, -hours, "EMAIL");
-            totalSms = jdbc.queryForObject(baseQuery + " AND channel = ?",
-                    Integer.class, -hours, "SMS");
+                failedTotal = jdbc.queryForObject(baseQuery + " AND surveyor_id = ? AND status = ?",
+                        Integer.class, surveyorId, "FAILED");
+            } else {
+                totalPush = jdbc.queryForObject(baseQuery + " AND channel = ?",
+                        Integer.class, "PUSH");
+                totalEmail = jdbc.queryForObject(baseQuery + " AND channel = ?",
+                        Integer.class, "EMAIL");
+                totalSms = jdbc.queryForObject(baseQuery + " AND channel = ?",
+                        Integer.class, "SMS");
 
-            successPush = jdbc.queryForObject(baseQuery + " AND channel = ? AND status = ?",
-                    Integer.class, -hours, "PUSH", "SENT");
-            successEmail = jdbc.queryForObject(baseQuery + " AND channel = ? AND status = ?",
-                    Integer.class, -hours, "EMAIL", "SENT");
-            successSms = jdbc.queryForObject(baseQuery + " AND channel = ? AND status = ?",
-                    Integer.class, -hours, "SMS", "SENT");
+                successPush = jdbc.queryForObject(baseQuery + " AND channel = ? AND status = ?",
+                        Integer.class, "PUSH", "SENT");
+                successEmail = jdbc.queryForObject(baseQuery + " AND channel = ? AND status = ?",
+                        Integer.class, "EMAIL", "SENT");
+                successSms = jdbc.queryForObject(baseQuery + " AND channel = ? AND status = ?",
+                        Integer.class, "SMS", "SENT");
 
-            failedTotal = jdbc.queryForObject(baseQuery + " AND status = ?",
-                    Integer.class, -hours, "FAILED");
+                failedTotal = jdbc.queryForObject(baseQuery + " AND status = ?",
+                        Integer.class, "FAILED");
+            }
+        } catch (Exception e) {
+            log.warn("Error getting notification stats: {}", e.getMessage());
+            // Return zeros on error
+            return new NotificationStats(hours, 0, 0, 0, 0, 0, 0, 0);
         }
 
         return new NotificationStats(

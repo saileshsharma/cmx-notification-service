@@ -108,10 +108,11 @@ public class AvailabilityService {
             @CacheEvict(value = "surveyorsCache", allEntries = true)
     })
     public void upsertAvailability(Long surveyorId, List<AvailabilityBlock> blocks) {
+        // Use INSERT...ON CONFLICT for PostgreSQL upsert behavior
         String upsert =
-                "MERGE INTO surveyor_availability (surveyor_id, start_time, end_time, state, title, description, source, updated_at) " +
-                "KEY(surveyor_id, start_time, end_time) " +
-                "VALUES (?, CAST(? AS TIMESTAMP), CAST(? AS TIMESTAMP), ?, ?, ?, 'MOBILE', CURRENT_TIMESTAMP)";
+                "INSERT INTO surveyor_availability (surveyor_id, start_time, end_time, state, title, description, source, updated_at) " +
+                "VALUES (?, CAST(? AS TIMESTAMP WITH TIME ZONE), CAST(? AS TIMESTAMP WITH TIME ZONE), ?, ?, ?, 'MOBILE', CURRENT_TIMESTAMP) " +
+                "ON CONFLICT (surveyor_id, start_time, end_time) DO UPDATE SET state = EXCLUDED.state, title = EXCLUDED.title, description = EXCLUDED.description, updated_at = CURRENT_TIMESTAMP";
 
         for (AvailabilityBlock b : blocks) {
             jdbc.update(upsert, surveyorId, b.startTime(), b.endTime(), b.state(), b.title(), b.description());

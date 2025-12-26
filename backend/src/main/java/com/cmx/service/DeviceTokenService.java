@@ -20,11 +20,11 @@ public class DeviceTokenService {
     }
 
     public Map<String, Object> registerToken(Long surveyorId, String token, String platform) {
-        // Use MERGE for upsert behavior (H2 compatible)
+        // Use INSERT...ON CONFLICT for PostgreSQL upsert behavior
         String upsert =
-                "MERGE INTO device_token (surveyor_id, token, platform, updated_at) " +
-                "KEY(surveyor_id, token) " +
-                "VALUES (?, ?, ?, CURRENT_TIMESTAMP)";
+                "INSERT INTO device_token (surveyor_id, token, platform, updated_at) " +
+                "VALUES (?, ?, ?, CURRENT_TIMESTAMP) " +
+                "ON CONFLICT (surveyor_id, token) DO UPDATE SET platform = EXCLUDED.platform, updated_at = CURRENT_TIMESTAMP";
 
         jdbc.update(upsert, surveyorId, token, platform);
         return Map.of("ok", true);
