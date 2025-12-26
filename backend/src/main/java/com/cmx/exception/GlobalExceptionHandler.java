@@ -39,18 +39,21 @@ public class GlobalExceptionHandler {
             String error,
             String message,
             String path,
-            OffsetDateTime timestamp
-    ) {}
+            String timestamp
+    ) {
+        public static ErrorResponse of(int status, String error, String message, String path) {
+            return new ErrorResponse(status, error, message, path, OffsetDateTime.now().toString());
+        }
+    }
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleResourceNotFound(ResourceNotFoundException ex) {
         log.warn("Resource not found: {}", ex.getMessage());
-        ErrorResponse error = new ErrorResponse(
+        ErrorResponse error = ErrorResponse.of(
                 HttpStatus.NOT_FOUND.value(),
                 "Not Found",
                 ex.getMessage(),
-                null,
-                OffsetDateTime.now()
+                null
         );
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
@@ -81,12 +84,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex) {
         log.warn("Invalid argument: {}", ex.getMessage());
-        ErrorResponse error = new ErrorResponse(
+        ErrorResponse error = ErrorResponse.of(
                 HttpStatus.BAD_REQUEST.value(),
                 "Bad Request",
                 ex.getMessage(),
-                null,
-                OffsetDateTime.now()
+                null
         );
         return ResponseEntity.badRequest().body(error);
     }
@@ -95,12 +97,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ErrorResponse> handleHttpMessageNotReadable(HttpMessageNotReadableException ex) {
         log.warn("Malformed JSON request: {}", ex.getMessage());
-        ErrorResponse error = new ErrorResponse(
+        ErrorResponse error = ErrorResponse.of(
                 HttpStatus.BAD_REQUEST.value(),
                 "Bad Request",
                 "Malformed JSON request body",
-                null,
-                OffsetDateTime.now()
+                null
         );
         return ResponseEntity.badRequest().body(error);
     }
@@ -109,12 +110,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NoHandlerFoundException.class)
     public ResponseEntity<ErrorResponse> handleNoHandlerFound(NoHandlerFoundException ex) {
         log.warn("No handler found: {} {}", ex.getHttpMethod(), ex.getRequestURL());
-        ErrorResponse error = new ErrorResponse(
+        ErrorResponse error = ErrorResponse.of(
                 HttpStatus.NOT_FOUND.value(),
                 "Not Found",
                 "Endpoint not found: " + ex.getRequestURL(),
-                ex.getRequestURL(),
-                OffsetDateTime.now()
+                ex.getRequestURL()
         );
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
@@ -123,12 +123,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NoResourceFoundException.class)
     public ResponseEntity<ErrorResponse> handleNoResourceFound(NoResourceFoundException ex) {
         log.warn("No resource found: {}", ex.getResourcePath());
-        ErrorResponse error = new ErrorResponse(
+        ErrorResponse error = ErrorResponse.of(
                 HttpStatus.NOT_FOUND.value(),
                 "Not Found",
                 "Resource not found: " + ex.getResourcePath(),
-                ex.getResourcePath(),
-                OffsetDateTime.now()
+                ex.getResourcePath()
         );
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
@@ -137,12 +136,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public ResponseEntity<ErrorResponse> handleMethodNotSupported(HttpRequestMethodNotSupportedException ex) {
         log.warn("Method not supported: {}", ex.getMethod());
-        ErrorResponse error = new ErrorResponse(
+        ErrorResponse error = ErrorResponse.of(
                 HttpStatus.METHOD_NOT_ALLOWED.value(),
                 "Method Not Allowed",
                 "HTTP method " + ex.getMethod() + " is not supported for this endpoint",
-                null,
-                OffsetDateTime.now()
+                null
         );
         return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(error);
     }
@@ -154,12 +152,11 @@ public class GlobalExceptionHandler {
         String message = String.format("Invalid value '%s' for parameter '%s'. Expected type: %s",
                 ex.getValue(), ex.getName(),
                 ex.getRequiredType() != null ? ex.getRequiredType().getSimpleName() : "unknown");
-        ErrorResponse error = new ErrorResponse(
+        ErrorResponse error = ErrorResponse.of(
                 HttpStatus.BAD_REQUEST.value(),
                 "Bad Request",
                 message,
-                null,
-                OffsetDateTime.now()
+                null
         );
         return ResponseEntity.badRequest().body(error);
     }
@@ -168,12 +165,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public ResponseEntity<ErrorResponse> handleMissingParameter(MissingServletRequestParameterException ex) {
         log.warn("Missing parameter: {}", ex.getParameterName());
-        ErrorResponse error = new ErrorResponse(
+        ErrorResponse error = ErrorResponse.of(
                 HttpStatus.BAD_REQUEST.value(),
                 "Bad Request",
                 "Required parameter '" + ex.getParameterName() + "' is missing",
-                null,
-                OffsetDateTime.now()
+                null
         );
         return ResponseEntity.badRequest().body(error);
     }
@@ -182,12 +178,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DateTimeParseException.class)
     public ResponseEntity<ErrorResponse> handleDateTimeParse(DateTimeParseException ex) {
         log.warn("Invalid date/time format: {}", ex.getParsedString());
-        ErrorResponse error = new ErrorResponse(
+        ErrorResponse error = ErrorResponse.of(
                 HttpStatus.BAD_REQUEST.value(),
                 "Bad Request",
                 "Invalid date/time format: " + ex.getParsedString(),
-                null,
-                OffsetDateTime.now()
+                null
         );
         return ResponseEntity.badRequest().body(error);
     }
@@ -196,12 +191,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NumberFormatException.class)
     public ResponseEntity<ErrorResponse> handleNumberFormat(NumberFormatException ex) {
         log.warn("Invalid number format: {}", ex.getMessage());
-        ErrorResponse error = new ErrorResponse(
+        ErrorResponse error = ErrorResponse.of(
                 HttpStatus.BAD_REQUEST.value(),
                 "Bad Request",
                 "Invalid number format",
-                null,
-                OffsetDateTime.now()
+                null
         );
         return ResponseEntity.badRequest().body(error);
     }
@@ -228,12 +222,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<ErrorResponse> handleMaxUploadSize(MaxUploadSizeExceededException ex) {
         log.warn("Upload size exceeded: {}", ex.getMessage());
-        ErrorResponse error = new ErrorResponse(
+        ErrorResponse error = ErrorResponse.of(
                 HttpStatus.PAYLOAD_TOO_LARGE.value(),
                 "Payload Too Large",
                 "Request body is too large",
-                null,
-                OffsetDateTime.now()
+                null
         );
         return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(error);
     }
@@ -242,12 +235,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MultipartException.class)
     public ResponseEntity<ErrorResponse> handleMultipart(MultipartException ex) {
         log.warn("Multipart error: {}", ex.getMessage());
-        ErrorResponse error = new ErrorResponse(
+        ErrorResponse error = ErrorResponse.of(
                 HttpStatus.BAD_REQUEST.value(),
                 "Bad Request",
                 "Invalid multipart request. This endpoint does not accept file uploads.",
-                null,
-                OffsetDateTime.now()
+                null
         );
         return ResponseEntity.badRequest().body(error);
     }
@@ -256,12 +248,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
     public ResponseEntity<ErrorResponse> handleMediaTypeNotSupported(HttpMediaTypeNotSupportedException ex) {
         log.warn("Media type not supported: {}", ex.getContentType());
-        ErrorResponse error = new ErrorResponse(
+        ErrorResponse error = ErrorResponse.of(
                 HttpStatus.UNSUPPORTED_MEDIA_TYPE.value(),
                 "Unsupported Media Type",
                 "Content type '" + ex.getContentType() + "' is not supported",
-                null,
-                OffsetDateTime.now()
+                null
         );
         return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).body(error);
     }
@@ -270,12 +261,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NullPointerException.class)
     public ResponseEntity<ErrorResponse> handleNullPointer(NullPointerException ex) {
         log.error("Null pointer exception: {}", ex.getMessage(), ex);
-        ErrorResponse error = new ErrorResponse(
+        ErrorResponse error = ErrorResponse.of(
                 HttpStatus.BAD_REQUEST.value(),
                 "Bad Request",
                 "Missing required field or invalid request data",
-                null,
-                OffsetDateTime.now()
+                null
         );
         return ResponseEntity.badRequest().body(error);
     }
@@ -299,12 +289,11 @@ public class GlobalExceptionHandler {
             }
         }
 
-        ErrorResponse error = new ErrorResponse(
+        ErrorResponse error = ErrorResponse.of(
                 HttpStatus.BAD_REQUEST.value(),
                 "Bad Request",
                 message,
-                null,
-                OffsetDateTime.now()
+                null
         );
         return ResponseEntity.badRequest().body(error);
     }
@@ -312,12 +301,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
         log.error("Unexpected error", ex);
-        ErrorResponse error = new ErrorResponse(
+        ErrorResponse error = ErrorResponse.of(
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 "Internal Server Error",
                 "An unexpected error occurred",
-                null,
-                OffsetDateTime.now()
+                null
         );
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
