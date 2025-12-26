@@ -118,6 +118,7 @@ export default function App() {
   const [isRegistered, setIsRegistered] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [expoPushToken, setExpoPushToken] = useState<string>('');
+  const [hasPreviousLogin, setHasPreviousLogin] = useState(false);
 
   // Navigation state
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
@@ -544,6 +545,10 @@ export default function App() {
       // Check if biometric is enabled (for showing biometric option on login screen)
       const biometricPref = await AsyncStorage.getItem('biometric_enabled');
       setBiometricEnabled(biometricPref === 'true');
+
+      // Check if user has previously logged in (for biometric flow)
+      const savedSurveyorId = await storageService.getSurveyorId();
+      setHasPreviousLogin(savedSurveyorId !== null);
     } catch (error) {
       console.error('Error loading saved state', error);
     }
@@ -559,6 +564,9 @@ export default function App() {
       });
 
       if (response.success && response.surveyor) {
+        // Check if this is first time login (for biometric prompt)
+        const isFirstLogin = !hasPreviousLogin;
+
         // Save all surveyor data to storage
         await storageService.setSurveyorId(response.surveyor.id);
         await storageService.setSurveyorName(response.surveyor.displayName);
@@ -581,15 +589,49 @@ export default function App() {
         setSurveyorPhone(response.surveyor.phone || null);
         setSurveyorCode(response.surveyor.code || null);
         setIsRegistered(true);
+        setHasPreviousLogin(true);
         setCurrentStatus(response.surveyor.currentStatus as SurveyorStatus || 'AVAILABLE');
 
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+        // Prompt for biometric setup on first login if biometric is available
+        if (isFirstLogin && biometricSupported && !biometricEnabled) {
+          setTimeout(() => {
+            promptBiometricSetup();
+          }, 1000);
+        }
       } else {
         Alert.alert('Login Failed', response.message || 'Invalid credentials');
       }
     } catch (error) {
       Alert.alert('Error', 'Could not connect to server');
     }
+  };
+
+  const promptBiometricSetup = async () => {
+    const biometricLabel = Platform.OS === 'ios' ? 'Face ID / Touch ID' : 'Biometric';
+
+    Alert.alert(
+      'Enable Quick Login',
+      `Would you like to use ${biometricLabel} to login faster next time?`,
+      [
+        {
+          text: 'Not Now',
+          style: 'cancel',
+        },
+        {
+          text: 'Enable',
+          onPress: async () => {
+            const success = await authenticateWithBiometrics();
+            if (success) {
+              await AsyncStorage.setItem('biometric_enabled', 'true');
+              setBiometricEnabled(true);
+              Alert.alert('Success', `${biometricLabel} login has been enabled for future logins.`);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleBiometricLogin = async (): Promise<boolean> => {
@@ -1139,6 +1181,7 @@ export default function App() {
           onRegister={() => setAuthScreen('register')}
           onBiometricLogin={handleBiometricLogin}
           biometricEnabled={biometricEnabled}
+          hasPreviousLogin={hasPreviousLogin}
           isLoading={isLoading}
         />
       );
