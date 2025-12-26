@@ -3522,9 +3522,11 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   getFilteredActivities(): SurveyorActivity[] {
-    if (this.activityFilter === 'ALL') {
-      return this.surveyorActivities;
+    let activities = this.surveyorActivities;
+    if (this.activityFilter !== 'ALL') {
+      activities = activities.filter(a => a.activityType === this.activityFilter);
     }
-    return this.surveyorActivities.filter(a => a.activityType === this.activityFilter);
+    // Return only the last 10 activities, already sorted by createdAt DESC from backend
+    return activities.slice(0, 10);
   }
 }
