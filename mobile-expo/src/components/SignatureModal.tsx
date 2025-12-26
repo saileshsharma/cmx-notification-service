@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Modal,
   Dimensions,
+  Platform,
 } from 'react-native';
 import SignatureCanvas from 'react-native-signature-canvas';
 import { Ionicons } from '@expo/vector-icons';
@@ -56,17 +57,26 @@ export const SignatureModal: React.FC<SignatureModalProps> = ({
       border-radius: ${borderRadius.lg}px;
       width: 100%;
       height: 100%;
+      position: relative;
     }
     .m-signature-pad--body {
       border: 2px dashed ${colors.gray[300]};
       border-radius: ${borderRadius.lg}px;
       width: 100%;
       height: 100%;
+      position: absolute;
+      left: 0;
+      top: 0;
+      right: 0;
+      bottom: 0;
     }
     .m-signature-pad--body canvas {
       width: 100% !important;
       height: 100% !important;
       touch-action: none;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
     }
     .m-signature-pad--footer {
       display: none;
@@ -80,9 +90,16 @@ export const SignatureModal: React.FC<SignatureModalProps> = ({
       overflow: hidden;
       touch-action: none;
       -webkit-overflow-scrolling: auto;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
     }
     canvas {
       touch-action: none;
+      -webkit-touch-callout: none;
+    }
+    * {
+      -webkit-tap-highlight-color: transparent;
     }
   `;
 
@@ -112,11 +129,18 @@ export const SignatureModal: React.FC<SignatureModalProps> = ({
           </View>
 
           {/* Signature Canvas */}
-          <View style={styles.signatureContainer}>
+          <View
+            style={styles.signatureContainer}
+            onStartShouldSetResponder={() => true}
+            onMoveShouldSetResponder={() => true}
+          >
             <SignatureCanvas
               ref={signatureRef}
               onOK={handleOK}
               onEmpty={handleEmpty}
+              onBegin={() => {
+                // Signature started - prevents parent scroll interference
+              }}
               webStyle={webStyle}
               backgroundColor={colors.gray[50]}
               penColor={colors.gray[900]}
@@ -127,6 +151,13 @@ export const SignatureModal: React.FC<SignatureModalProps> = ({
               androidHardwareAccelerationDisabled={false}
               autoClear={false}
               descriptionText=""
+              imageType="image/png"
+              dataURL=""
+              // iOS-specific WebView props for touch handling
+              scrollEnabled={false}
+              bounces={false}
+              overScrollMode="never"
+              nestedScrollEnabled={false}
             />
             <View style={styles.signaturePlaceholder}>
               <Text style={styles.placeholderText}>Sign here</Text>
