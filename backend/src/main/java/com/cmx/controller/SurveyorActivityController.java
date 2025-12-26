@@ -127,7 +127,7 @@ public class SurveyorActivityController {
             result.put("columnsError", e.getMessage());
         }
 
-        // Try a direct insert and read as a test
+        // Try a direct insert and read as a test (with surveyorId=0, will fail FK constraint - expected)
         try {
             // Insert a test record
             int inserted = jdbcTemplate.update(
@@ -141,6 +141,20 @@ public class SurveyorActivityController {
         } catch (Exception e) {
             result.put("testInsert", "FAILED");
             result.put("testInsertError", e.getMessage());
+        }
+
+        // Try insert using the actual service with a real surveyor (id=71)
+        try {
+            SurveyorActivityLog saved = activityService.logStatusChange(71L, "DEBUG_PREV", "DEBUG_TEST", null, null);
+            result.put("serviceInsert", saved != null && saved.getId() != null ? "SUCCESS" : "FAILED");
+            result.put("serviceInsertId", saved != null ? saved.getId() : null);
+            // Clean up
+            if (saved != null && saved.getId() != null) {
+                jdbcTemplate.update("DELETE FROM surveyor_activity_log WHERE id = ?", saved.getId());
+            }
+        } catch (Exception e) {
+            result.put("serviceInsert", "FAILED");
+            result.put("serviceInsertError", e.getMessage());
         }
 
         result.put("status", "debug_complete");
