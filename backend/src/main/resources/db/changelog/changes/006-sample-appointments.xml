@@ -5,10 +5,10 @@
     xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
     http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
 
-    <changeSet id="006-sample-appointments" author="system">
-        <!-- Add sample appointments for testing - using SQL with DATEADD for H2 compatibility -->
+    <!-- H2 version using DATEADD function -->
+    <changeSet id="006-sample-appointments-h2" author="system" dbms="h2">
         <sql>
-            -- Sample appointments for first 8 surveyors
+            -- Sample appointments for first 8 surveyors (H2 syntax)
             INSERT INTO surveyor_availability (surveyor_id, start_time, end_time, state, source) VALUES
             (1, DATEADD('DAY', 1, DATEADD('HOUR', 9, CURRENT_TIMESTAMP)), DATEADD('DAY', 1, DATEADD('HOUR', 11, CURRENT_TIMESTAMP)), 'BUSY', 'CMX'),
             (1, DATEADD('DAY', 1, DATEADD('HOUR', 14, CURRENT_TIMESTAMP)), DATEADD('DAY', 1, DATEADD('HOUR', 16, CURRENT_TIMESTAMP)), 'BUSY', 'CMX'),
@@ -46,6 +46,50 @@
             (8, DATEADD('DAY', 1, DATEADD('HOUR', 9, CURRENT_TIMESTAMP)), DATEADD('DAY', 1, DATEADD('HOUR', 11, CURRENT_TIMESTAMP)), 'BUSY', 'CMX'),
             (8, DATEADD('DAY', 2, DATEADD('HOUR', 18, CURRENT_TIMESTAMP)), DATEADD('DAY', 2, DATEADD('HOUR', 21, CURRENT_TIMESTAMP)), 'BUSY', 'CMX'),
             (8, DATEADD('DAY', 10, DATEADD('HOUR', 8, CURRENT_TIMESTAMP)), DATEADD('DAY', 10, DATEADD('HOUR', 17, CURRENT_TIMESTAMP)), 'OFFLINE', 'CMX');
+        </sql>
+    </changeSet>
+
+    <!-- PostgreSQL version using INTERVAL syntax -->
+    <changeSet id="006-sample-appointments-postgresql" author="system" dbms="postgresql">
+        <sql>
+            -- Sample appointments for first 8 surveyors (PostgreSQL syntax)
+            INSERT INTO surveyor_availability (surveyor_id, start_time, end_time, state, source) VALUES
+            (1, CURRENT_TIMESTAMP + INTERVAL '1 day' + INTERVAL '9 hours', CURRENT_TIMESTAMP + INTERVAL '1 day' + INTERVAL '11 hours', 'BUSY', 'CMX'),
+            (1, CURRENT_TIMESTAMP + INTERVAL '1 day' + INTERVAL '14 hours', CURRENT_TIMESTAMP + INTERVAL '1 day' + INTERVAL '16 hours', 'BUSY', 'CMX'),
+            (1, CURRENT_TIMESTAMP + INTERVAL '3 days' + INTERVAL '18 hours', CURRENT_TIMESTAMP + INTERVAL '3 days' + INTERVAL '20 hours', 'BUSY', 'CMX'),
+            (1, CURRENT_TIMESTAMP + INTERVAL '5 days' + INTERVAL '11 hours', CURRENT_TIMESTAMP + INTERVAL '5 days' + INTERVAL '13 hours', 'BUSY', 'CMX'),
+            (1, CURRENT_TIMESTAMP + INTERVAL '7 days' + INTERVAL '8 hours', CURRENT_TIMESTAMP + INTERVAL '7 days' + INTERVAL '12 hours', 'OFFLINE', 'CMX'),
+            (1, CURRENT_TIMESTAMP + INTERVAL '9 days' + INTERVAL '15 hours', CURRENT_TIMESTAMP + INTERVAL '9 days' + INTERVAL '18 hours', 'BUSY', 'CMX'),
+
+            (2, CURRENT_TIMESTAMP + INTERVAL '1 day' + INTERVAL '10 hours', CURRENT_TIMESTAMP + INTERVAL '1 day' + INTERVAL '12 hours', 'BUSY', 'CMX'),
+            (2, CURRENT_TIMESTAMP + INTERVAL '2 days' + INTERVAL '17 hours', CURRENT_TIMESTAMP + INTERVAL '2 days' + INTERVAL '19 hours', 'BUSY', 'CMX'),
+            (2, CURRENT_TIMESTAMP + INTERVAL '4 days' + INTERVAL '8 hours', CURRENT_TIMESTAMP + INTERVAL '4 days' + INTERVAL '11 hours', 'BUSY', 'CMX'),
+            (2, CURRENT_TIMESTAMP + INTERVAL '6 days' + INTERVAL '19 hours', CURRENT_TIMESTAMP + INTERVAL '6 days' + INTERVAL '21 hours', 'BUSY', 'CMX'),
+            (2, CURRENT_TIMESTAMP + INTERVAL '8 days' + INTERVAL '8 hours', CURRENT_TIMESTAMP + INTERVAL '8 days' + INTERVAL '17 hours', 'OFFLINE', 'CMX'),
+
+            (3, CURRENT_TIMESTAMP + INTERVAL '1 day' + INTERVAL '12 hours', CURRENT_TIMESTAMP + INTERVAL '1 day' + INTERVAL '14 hours', 'BUSY', 'CMX'),
+            (3, CURRENT_TIMESTAMP + INTERVAL '2 days' + INTERVAL '18 hours', CURRENT_TIMESTAMP + INTERVAL '2 days' + INTERVAL '21 hours', 'BUSY', 'CMX'),
+            (3, CURRENT_TIMESTAMP + INTERVAL '9 days' + INTERVAL '8 hours', CURRENT_TIMESTAMP + INTERVAL '9 days' + INTERVAL '17 hours', 'OFFLINE', 'CMX'),
+
+            (4, CURRENT_TIMESTAMP + INTERVAL '1 day' + INTERVAL '17 hours', CURRENT_TIMESTAMP + INTERVAL '1 day' + INTERVAL '19 hours', 'BUSY', 'CMX'),
+            (4, CURRENT_TIMESTAMP + INTERVAL '3 days' + INTERVAL '9 hours', CURRENT_TIMESTAMP + INTERVAL '3 days' + INTERVAL '12 hours', 'BUSY', 'CMX'),
+            (4, CURRENT_TIMESTAMP + INTERVAL '6 days' + INTERVAL '8 hours', CURRENT_TIMESTAMP + INTERVAL '6 days' + INTERVAL '17 hours', 'OFFLINE', 'CMX'),
+
+            (5, CURRENT_TIMESTAMP + INTERVAL '1 day' + INTERVAL '8 hours', CURRENT_TIMESTAMP + INTERVAL '1 day' + INTERVAL '11 hours', 'BUSY', 'CMX'),
+            (5, CURRENT_TIMESTAMP + INTERVAL '2 days' + INTERVAL '16 hours', CURRENT_TIMESTAMP + INTERVAL '2 days' + INTERVAL '18 hours', 'BUSY', 'CMX'),
+            (5, CURRENT_TIMESTAMP + INTERVAL '7 days' + INTERVAL '8 hours', CURRENT_TIMESTAMP + INTERVAL '7 days' + INTERVAL '17 hours', 'OFFLINE', 'CMX'),
+
+            (6, CURRENT_TIMESTAMP + INTERVAL '1 day' + INTERVAL '14 hours', CURRENT_TIMESTAMP + INTERVAL '1 day' + INTERVAL '17 hours', 'BUSY', 'CMX'),
+            (6, CURRENT_TIMESTAMP + INTERVAL '2 days' + INTERVAL '19 hours', CURRENT_TIMESTAMP + INTERVAL '2 days' + INTERVAL '21 hours', 'BUSY', 'CMX'),
+            (6, CURRENT_TIMESTAMP + INTERVAL '10 days' + INTERVAL '8 hours', CURRENT_TIMESTAMP + INTERVAL '10 days' + INTERVAL '17 hours', 'OFFLINE', 'CMX'),
+
+            (7, CURRENT_TIMESTAMP + INTERVAL '1 day' + INTERVAL '18 hours', CURRENT_TIMESTAMP + INTERVAL '1 day' + INTERVAL '21 hours', 'BUSY', 'CMX'),
+            (7, CURRENT_TIMESTAMP + INTERVAL '3 days' + INTERVAL '8 hours', CURRENT_TIMESTAMP + INTERVAL '3 days' + INTERVAL '11 hours', 'BUSY', 'CMX'),
+            (7, CURRENT_TIMESTAMP + INTERVAL '11 days' + INTERVAL '8 hours', CURRENT_TIMESTAMP + INTERVAL '11 days' + INTERVAL '17 hours', 'OFFLINE', 'CMX'),
+
+            (8, CURRENT_TIMESTAMP + INTERVAL '1 day' + INTERVAL '9 hours', CURRENT_TIMESTAMP + INTERVAL '1 day' + INTERVAL '11 hours', 'BUSY', 'CMX'),
+            (8, CURRENT_TIMESTAMP + INTERVAL '2 days' + INTERVAL '18 hours', CURRENT_TIMESTAMP + INTERVAL '2 days' + INTERVAL '21 hours', 'BUSY', 'CMX'),
+            (8, CURRENT_TIMESTAMP + INTERVAL '10 days' + INTERVAL '8 hours', CURRENT_TIMESTAMP + INTERVAL '10 days' + INTERVAL '17 hours', 'OFFLINE', 'CMX');
         </sql>
     </changeSet>
 
