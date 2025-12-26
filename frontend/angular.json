@@ -24,7 +24,8 @@
               "src/styles/activity.css",
               "src/styles/dashboard.css",
               "src/styles/timeline.css",
-              "src/styles/toast.css"
+              "src/styles/toast.css",
+              "src/styles/chat.css"
             ],
             "scripts": []
           },

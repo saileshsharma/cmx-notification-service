@@ -22,5 +22,6 @@
     <include file="db/changelog/changes/015-remove-username-use-email.xml"/>
     <include file="db/changelog/changes/016-surveyor-activity-log.xml"/>
     <include file="db/changelog/changes/017-fix-activity-log-table.xml"/>
+    <include file="db/changelog/changes/018-chat-messages.xml"/>
 
 </databaseChangeLog>

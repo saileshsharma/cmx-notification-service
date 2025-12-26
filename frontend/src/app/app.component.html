@@ -158,6 +158,13 @@
         <line x1="16" y1="17" x2="8" y2="17"></line>
       </svg>
     </button>
+    <!-- Chat -->
+    <button class="btn-icon chat-toggle-btn" (click)="toggleChatPanel()" title="Chat" [class.active]="showChatPanel">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+      </svg>
+      <span class="chat-badge" *ngIf="chatUnreadCount > 0">{{chatUnreadCount}}</span>
+    </button>
     <!-- Export -->
     <button class="btn-icon" (click)="openExportModal()" title="Export Data">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1514,6 +1521,145 @@
       <button class="btn btn-primary" (click)="confirmPushRegistration()" [disabled]="!pushRegistrationSurveyorId">
         Enable Notifications
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- Chat Panel -->
+<div class="chat-panel" *ngIf="showChatPanel">
+  <div class="chat-header">
+    <h3>
+      <span class="connection-status" [class.disconnected]="!chatConnected" [class.connecting]="!chatConnected"></span>
+      Chat
+    </h3>
+    <button class="close-btn" (click)="closeChatPanel()">&#10005;</button>
+  </div>
+
+  <div class="chat-content">
+    <!-- New Conversation Picker -->
+    <div *ngIf="showNewConversationPicker" class="surveyor-picker">
+      <h4>Start New Conversation</h4>
+      <input type="text"
+             class="surveyor-picker-search"
+             [(ngModel)]="chatSurveyorSearch"
+             placeholder="Search surveyors...">
+      <div class="surveyor-picker-list">
+        <div *ngFor="let s of getFilteredChatSurveyors()"
+             class="surveyor-picker-item"
+             (click)="startConversationWith(s)">
+          <div class="avatar" [style.background-color]="getChatAvatarColor(s.display_name)">
+            {{getChatInitials(s.display_name)}}
+          </div>
+          <div class="info">
+            <div class="name">{{s.display_name}}</div>
+            <div class="status">{{s.current_status}}</div>
+          </div>
+        </div>
+      </div>
+      <button class="new-conversation-btn" style="margin-top: 12px; color: #666;" (click)="cancelNewConversation()">
+        Cancel
+      </button>
+    </div>
+
+    <!-- Conversation List (when no active conversation) -->
+    <ng-container *ngIf="!activeConversationId && !showNewConversationPicker">
+      <button class="new-conversation-btn" (click)="showNewConversation()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        New Conversation
+      </button>
+
+      <div class="conversations-list" *ngIf="chatConversations.length > 0">
+        <div *ngFor="let conv of chatConversations"
+             class="conversation-item"
+             [class.active]="activeConversationId === conv.conversationId"
+             (click)="openConversation(conv)">
+          <div class="conversation-avatar" [style.background-color]="getChatAvatarColor(conv.otherPartyName)">
+            {{getChatInitials(conv.otherPartyName)}}
+          </div>
+          <div class="conversation-info">
+            <div class="conversation-name">{{conv.otherPartyName}}</div>
+            <div class="conversation-preview">{{conv.lastMessage}}</div>
+          </div>
+          <div class="conversation-meta">
+            <span class="conversation-time">{{formatChatTime(conv.lastMessageAt)}}</span>
+            <span class="conversation-unread" *ngIf="conv.unreadCount > 0">{{conv.unreadCount}}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="no-conversation" *ngIf="chatConversations.length === 0">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+        </svg>
+        <p>No conversations yet</p>
+        <span>Start a new conversation with a surveyor</span>
+      </div>
+    </ng-container>
+
+    <!-- Active Conversation Messages -->
+    <div class="messages-container" *ngIf="activeConversationId && !showNewConversationPicker">
+      <div class="messages-header">
+        <button class="back-btn" (click)="backToConversations()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
+        <div class="messages-header-info">
+          <div class="messages-header-name">{{activeConversationName}}</div>
+          <div class="messages-header-status" *ngIf="chatTypingUser">typing...</div>
+        </div>
+      </div>
+
+      <div class="messages-list">
+        <div *ngIf="chatMessages.length === 0" class="no-messages">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+          </svg>
+          <p>No messages yet</p>
+          <span>Send a message to start the conversation</span>
+        </div>
+
+        <div *ngFor="let msg of chatMessages"
+             class="message-bubble"
+             [class.sent]="isChatMessageSent(msg)"
+             [class.received]="!isChatMessageSent(msg)">
+          <div class="message-content">{{msg.content}}</div>
+          <div class="message-meta">
+            <span>{{formatChatTime(msg.sentAt)}}</span>
+            <span *ngIf="isChatMessageSent(msg)" class="message-status-icon" [class]="msg.status.toLowerCase()">
+              <span class="material-icons" style="font-size: 14px;">{{getChatMessageStatusIcon(msg)}}</span>
+            </span>
+          </div>
+        </div>
+
+        <div class="typing-indicator" *ngIf="chatTypingUser">
+          <div class="typing-dots">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+          <span>{{chatTypingUser}} is typing...</span>
+        </div>
+      </div>
+
+      <div class="message-input-container">
+        <textarea class="message-input"
+                  [(ngModel)]="chatMessageInput"
+                  (keydown)="onChatInputKeydown($event)"
+                  placeholder="Type a message..."
+                  rows="1"></textarea>
+        <button class="send-btn"
+                (click)="sendChatMessage()"
+                [disabled]="!chatMessageInput.trim()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        </button>
+      </div>
     </div>
   </div>
 </div>

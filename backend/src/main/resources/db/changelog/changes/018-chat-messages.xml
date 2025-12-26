@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="018-1-create-chat-message-table" author="system">
+        <comment>Create chat_message table for real-time messaging between surveyors and dispatchers</comment>
+
+        <createTable tableName="chat_message">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="conversation_id" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="sender_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="sender_type" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="sender_name" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="recipient_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="recipient_type" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="content" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="message_type" type="VARCHAR(20)" defaultValue="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="sent_at" type="TIMESTAMP WITH TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="delivered_at" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="true"/>
+            </column>
+            <column name="read_at" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="true"/>
+            </column>
+            <column name="status" type="VARCHAR(20)" defaultValue="SENT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <!-- Index for conversation queries -->
+        <createIndex tableName="chat_message" indexName="idx_chat_conversation_id">
+            <column name="conversation_id"/>
+        </createIndex>
+
+        <!-- Composite index for conversation with ordering -->
+        <createIndex tableName="chat_message" indexName="idx_chat_conversation_sent">
+            <column name="conversation_id"/>
+            <column name="sent_at" descending="true"/>
+        </createIndex>
+
+        <!-- Index for sender lookups -->
+        <createIndex tableName="chat_message" indexName="idx_chat_sender">
+            <column name="sender_id"/>
+            <column name="sender_type"/>
+        </createIndex>
+
+        <!-- Index for recipient lookups -->
+        <createIndex tableName="chat_message" indexName="idx_chat_recipient">
+            <column name="recipient_id"/>
+            <column name="recipient_type"/>
+        </createIndex>
+
+        <!-- Index for unread messages -->
+        <createIndex tableName="chat_message" indexName="idx_chat_unread">
+            <column name="recipient_id"/>
+            <column name="recipient_type"/>
+            <column name="read_at"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

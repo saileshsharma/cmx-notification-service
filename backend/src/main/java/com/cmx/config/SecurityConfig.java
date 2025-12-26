@@ -53,6 +53,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/mobile/**").permitAll()
                         // SSE streams
                         .requestMatchers("/api/dispatcher/stream", "/api/location/stream").permitAll()
+                        // WebSocket endpoints
+                        .requestMatchers("/ws/**").permitAll()
+                        // Chat REST endpoints (authenticated by sender/recipient IDs)
+                        .requestMatchers("/api/chat/**").permitAll()
                         // QStash webhooks (verified by signature)
                         .requestMatchers("/api/qstash/**").permitAll()
                         // All other endpoints require authentication

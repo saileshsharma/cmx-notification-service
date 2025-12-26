@@ -6,6 +6,7 @@ import { HttpClient } from '@angular/common/http';
 import { Subscription } from 'rxjs';
 import { API_BASE } from './core/services/api-config';
 import { SurveyorActivityService, SurveyorActivity } from './core/services/surveyor-activity.service';
+import { ChatService, ChatMessage, ChatConversation, TypingIndicator } from './core/services/chat.service';
 
 import { FullCalendarModule } from '@fullcalendar/angular';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -176,6 +177,21 @@ export class AppComponent implements OnInit, OnDestroy {
   activityHistoryTotal = 0;
   activityHistoryItems: SurveyorActivity[] = [];
   loadingActivityHistory = false;
+
+  // Chat
+  showChatPanel = false;
+  chatConnected = false;
+  chatConversations: ChatConversation[] = [];
+  chatMessages: ChatMessage[] = [];
+  activeConversationId: string | null = null;
+  activeConversationName = '';
+  chatMessageInput = '';
+  chatUnreadCount = 0;
+  chatTypingUser: string | null = null;
+  showNewConversationPicker = false;
+  chatSurveyorSearch = '';
+  private chatSubscriptions: Subscription[] = [];
+  private typingTimeout: any;
 
   // Export
   showExportModal = false;
@@ -349,7 +365,11 @@ export class AppComponent implements OnInit, OnDestroy {
     eventColor: '#3788d8'
   };
 
-  constructor(private http: HttpClient, private surveyorActivityService: SurveyorActivityService) {}
+  constructor(
+    private http: HttpClient,
+    private surveyorActivityService: SurveyorActivityService,
+    private chatService: ChatService
+  ) {}
 
   ngOnInit(): void {
     this.loadAllSurveyors();
@@ -364,11 +384,14 @@ export class AppComponent implements OnInit, OnDestroy {
     this.loadSavedColors();
     this.initWebPushNotifications();
     this.initSurveyorActivity();
+    this.initChat();
   }
 
   ngOnDestroy(): void {
     this.surveyorActivityService.disconnect();
     this.activitySubscriptions.forEach(sub => sub.unsubscribe());
+    this.chatService.disconnect();
+    this.chatSubscriptions.forEach(sub => sub.unsubscribe());
   }
 
   // Load all surveyors for stats calculation
@@ -3597,5 +3620,164 @@ export class AppComponent implements OnInit, OnDestroy {
   hasMoreActivityHistory(): boolean {
     const currentEnd = (this.activityHistoryPage + 1) * this.activityHistoryPageSize;
     return currentEnd < this.activityHistoryTotal;
+  }
+
+  // ============ CHAT FUNCTIONALITY ============
+  initChat(): void {
+    // Subscribe to chat observables
+    this.chatSubscriptions.push(
+      this.chatService.connected$.subscribe(connected => {
+        this.chatConnected = connected;
+      }),
+      this.chatService.conversations$.subscribe(conversations => {
+        this.chatConversations = conversations;
+      }),
+      this.chatService.messages$.subscribe(messages => {
+        this.chatMessages = messages;
+      }),
+      this.chatService.unreadCount$.subscribe(count => {
+        this.chatUnreadCount = count;
+      }),
+      this.chatService.typing$.subscribe(indicator => {
+        if (indicator.conversationId === this.activeConversationId && indicator.isTyping) {
+          this.chatTypingUser = indicator.userName;
+          // Clear typing indicator after 3 seconds
+          if (this.typingTimeout) clearTimeout(this.typingTimeout);
+          this.typingTimeout = setTimeout(() => {
+            this.chatTypingUser = null;
+          }, 3000);
+        } else if (indicator.conversationId === this.activeConversationId && !indicator.isTyping) {
+          this.chatTypingUser = null;
+        }
+      })
+    );
+
+    // Connect as dispatcher (ID 1 by default)
+    this.chatService.connectAsDispatcher(1, 'Dispatcher');
+  }
+
+  toggleChatPanel(): void {
+    this.showChatPanel = !this.showChatPanel;
+    if (this.showChatPanel) {
+      this.showNewConversationPicker = false;
+    }
+  }
+
+  closeChatPanel(): void {
+    this.showChatPanel = false;
+    this.activeConversationId = null;
+    this.activeConversationName = '';
+    this.showNewConversationPicker = false;
+  }
+
+  openConversation(conversation: ChatConversation): void {
+    this.activeConversationId = conversation.conversationId;
+    this.activeConversationName = conversation.otherPartyName;
+    this.showNewConversationPicker = false;
+
+    // Load messages for this conversation
+    this.chatService.loadMessages(conversation.conversationId).subscribe({
+      next: (messages) => {
+        this.chatMessages = messages;
+      },
+      error: (e) => console.error('Failed to load messages:', e)
+    });
+
+    // Mark as read
+    this.chatService.setActiveConversation(conversation.conversationId);
+  }
+
+  backToConversations(): void {
+    this.activeConversationId = null;
+    this.activeConversationName = '';
+    this.chatService.setActiveConversation(null);
+  }
+
+  showNewConversation(): void {
+    this.showNewConversationPicker = true;
+    this.chatSurveyorSearch = '';
+  }
+
+  cancelNewConversation(): void {
+    this.showNewConversationPicker = false;
+    this.chatSurveyorSearch = '';
+  }
+
+  startConversationWith(surveyor: Surveyor): void {
+    this.chatService.startConversation(surveyor.id).subscribe({
+      next: (result) => {
+        this.activeConversationId = result.conversationId;
+        this.activeConversationName = surveyor.display_name;
+        this.showNewConversationPicker = false;
+        this.chatMessages = [];
+        this.chatService.setActiveConversation(result.conversationId);
+      },
+      error: (e) => {
+        console.error('Failed to start conversation:', e);
+        this.showToast('error', 'Failed to start conversation');
+      }
+    });
+  }
+
+  getFilteredChatSurveyors(): Surveyor[] {
+    if (!this.chatSurveyorSearch) {
+      return this.allSurveyors;
+    }
+    const search = this.chatSurveyorSearch.toLowerCase();
+    return this.allSurveyors.filter(s =>
+      s.display_name.toLowerCase().includes(search) ||
+      s.code.toLowerCase().includes(search)
+    );
+  }
+
+  sendChatMessage(): void {
+    if (!this.chatMessageInput.trim() || !this.activeConversationId) return;
+
+    // Find the recipient from the active conversation
+    const conversation = this.chatConversations.find(c => c.conversationId === this.activeConversationId);
+    if (!conversation) return;
+
+    this.chatService.sendMessage(
+      conversation.otherPartyId,
+      conversation.otherPartyType,
+      this.chatMessageInput.trim()
+    );
+
+    this.chatMessageInput = '';
+  }
+
+  onChatInputKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      this.sendChatMessage();
+    }
+
+    // Send typing indicator
+    if (this.activeConversationId) {
+      this.chatService.sendTypingIndicator(this.activeConversationId, true);
+    }
+  }
+
+  getChatAvatarColor(name: string): string {
+    return this.getAvatarColor(name);
+  }
+
+  getChatInitials(name: string): string {
+    return this.getInitials(name);
+  }
+
+  formatChatTime(timestamp: string): string {
+    return this.chatService.formatTimestamp(timestamp);
+  }
+
+  isChatMessageSent(message: ChatMessage): boolean {
+    return message.senderType === 'DISPATCHER';
+  }
+
+  getChatMessageStatusIcon(message: ChatMessage): string {
+    if (message.readAt) return 'done_all'; // Double check
+    if (message.deliveredAt) return 'done_all';
+    if (message.status === 'SENT') return 'done';
+    return 'schedule';
   }
 }

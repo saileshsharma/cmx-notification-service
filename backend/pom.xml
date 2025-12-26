@@ -136,6 +136,12 @@
       <artifactId>spring-boot-starter-security</artifactId>
     </dependency>
 
+    <!-- WebSocket - Real-time chat -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-websocket</artifactId>
+    </dependency>
+
     <!-- Spring Security Test -->
     <dependency>
       <groupId>org.springframework.security</groupId>
