@@ -1613,20 +1613,6 @@
   </div>
 </div>
 
-<!-- Dispatcher Tools Bar -->
-<div class="dispatcher-toolbar">
-  <button class="toolbar-btn push-notification-btn" (click)="toggleWebPushNotifications()"
-          [class.active]="webPushEnabled"
-          [class.permission-denied]="webPushPermission === 'denied'"
-          [title]="webPushEnabled ? 'Push Notifications Enabled (click to disable)' : webPushPermission === 'denied' ? 'Notifications Blocked - Enable in Browser Settings' : 'Enable Push Notifications'">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-      <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-    </svg>
-    <span *ngIf="webPushEnabled" class="push-indicator"></span>
-  </button>
-</div>
-
 <!-- Keyboard Help Hint -->
 <div class="keyboard-hint" (click)="toggleKeyboardHelp()">
   Press <kbd>?</kbd> for shortcuts

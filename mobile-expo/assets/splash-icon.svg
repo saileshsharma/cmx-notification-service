@@ -1,0 +1,162 @@
+<svg width="288" height="288" viewBox="0 0 288 288" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Premium Car Icon for FleetInspect Pro -->
+  <!-- Background is transparent - splash screen uses #0F172A -->
+
+  <!-- Outer Glow Ring -->
+  <circle cx="144" cy="144" r="140" stroke="url(#glowGradient)" stroke-width="2" opacity="0.3"/>
+  <circle cx="144" cy="144" r="120" stroke="url(#glowGradient)" stroke-width="1" opacity="0.2"/>
+
+  <!-- Car Body - Sleek Sports Car Profile -->
+  <g transform="translate(44, 100)">
+    <!-- Car Shadow -->
+    <ellipse cx="100" cy="95" rx="85" ry="8" fill="#000000" opacity="0.3"/>
+
+    <!-- Car Body Main Shape -->
+    <path d="M15 60
+             Q20 45, 45 40
+             L70 35
+             Q90 25, 120 25
+             Q150 25, 165 35
+             L180 45
+             Q190 50, 185 60
+             L185 70
+             Q185 75, 180 75
+             L20 75
+             Q15 75, 15 70
+             Z"
+          fill="url(#carBodyGradient)"
+          stroke="#CCFF00"
+          stroke-width="2"/>
+
+    <!-- Car Roof/Cabin -->
+    <path d="M55 40
+             Q60 20, 90 15
+             Q120 12, 140 18
+             Q155 25, 155 35
+             L145 40
+             Q130 42, 100 42
+             Q70 42, 55 40
+             Z"
+          fill="url(#cabinGradient)"
+          stroke="#CCFF00"
+          stroke-width="1.5"/>
+
+    <!-- Window -->
+    <path d="M60 38
+             Q65 22, 90 18
+             Q115 15, 135 20
+             Q148 26, 148 35
+             L140 38
+             Q120 40, 100 40
+             Q75 40, 60 38
+             Z"
+          fill="url(#windowGradient)"
+          opacity="0.8"/>
+
+    <!-- Window Shine -->
+    <path d="M65 35 Q70 25, 85 22 Q95 20, 100 21"
+          stroke="#FFFFFF"
+          stroke-width="2"
+          stroke-linecap="round"
+          fill="none"
+          opacity="0.5"/>
+
+    <!-- Hood Lines -->
+    <line x1="45" y1="45" x2="75" y2="38" stroke="#CCFF00" stroke-width="1" opacity="0.5"/>
+    <line x1="50" y1="50" x2="80" y2="42" stroke="#CCFF00" stroke-width="1" opacity="0.3"/>
+
+    <!-- Front Grille -->
+    <rect x="18" y="58" width="12" height="12" rx="2" fill="#1E293B" stroke="#CCFF00" stroke-width="1"/>
+    <line x1="21" y1="61" x2="27" y2="61" stroke="#CCFF00" stroke-width="0.5" opacity="0.7"/>
+    <line x1="21" y1="64" x2="27" y2="64" stroke="#CCFF00" stroke-width="0.5" opacity="0.7"/>
+    <line x1="21" y1="67" x2="27" y2="67" stroke="#CCFF00" stroke-width="0.5" opacity="0.7"/>
+
+    <!-- Headlight -->
+    <ellipse cx="22" cy="52" rx="6" ry="4" fill="url(#headlightGradient)"/>
+    <ellipse cx="22" cy="52" rx="3" ry="2" fill="#FFFFFF" opacity="0.9"/>
+
+    <!-- Tail Light -->
+    <rect x="178" y="55" width="6" height="10" rx="1" fill="#FF4444"/>
+    <rect x="179" y="56" width="4" height="3" fill="#FF8888" opacity="0.8"/>
+
+    <!-- Side Mirror -->
+    <ellipse cx="58" cy="42" rx="4" ry="3" fill="#1E293B" stroke="#CCFF00" stroke-width="0.5"/>
+
+    <!-- Door Line -->
+    <path d="M85 42 L85 72" stroke="#CCFF00" stroke-width="0.5" opacity="0.4"/>
+    <path d="M130 38 L125 72" stroke="#CCFF00" stroke-width="0.5" opacity="0.4"/>
+
+    <!-- Door Handle -->
+    <rect x="100" y="55" width="12" height="3" rx="1" fill="#CCFF00" opacity="0.6"/>
+
+    <!-- Front Wheel -->
+    <circle cx="50" cy="78" r="18" fill="#1E293B" stroke="#CCFF00" stroke-width="2"/>
+    <circle cx="50" cy="78" r="12" fill="#0F172A" stroke="#475569" stroke-width="1"/>
+    <circle cx="50" cy="78" r="6" fill="#CCFF00"/>
+    <circle cx="50" cy="78" r="3" fill="#0F172A"/>
+    <!-- Wheel Spokes -->
+    <line x1="50" y1="66" x2="50" y2="72" stroke="#CCFF00" stroke-width="1.5"/>
+    <line x1="50" y1="84" x2="50" y2="90" stroke="#CCFF00" stroke-width="1.5"/>
+    <line x1="38" y1="78" x2="44" y2="78" stroke="#CCFF00" stroke-width="1.5"/>
+    <line x1="56" y1="78" x2="62" y2="78" stroke="#CCFF00" stroke-width="1.5"/>
+
+    <!-- Rear Wheel -->
+    <circle cx="150" cy="78" r="18" fill="#1E293B" stroke="#CCFF00" stroke-width="2"/>
+    <circle cx="150" cy="78" r="12" fill="#0F172A" stroke="#475569" stroke-width="1"/>
+    <circle cx="150" cy="78" r="6" fill="#CCFF00"/>
+    <circle cx="150" cy="78" r="3" fill="#0F172A"/>
+    <!-- Wheel Spokes -->
+    <line x1="150" y1="66" x2="150" y2="72" stroke="#CCFF00" stroke-width="1.5"/>
+    <line x1="150" y1="84" x2="150" y2="90" stroke="#CCFF00" stroke-width="1.5"/>
+    <line x1="138" y1="78" x2="144" y2="78" stroke="#CCFF00" stroke-width="1.5"/>
+    <line x1="156" y1="78" x2="162" y2="78" stroke="#CCFF00" stroke-width="1.5"/>
+
+    <!-- Speed Lines (Motion Effect) -->
+    <line x1="-15" y1="50" x2="5" y2="50" stroke="#CCFF00" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+    <line x1="-25" y1="60" x2="0" y2="60" stroke="#CCFF00" stroke-width="2" stroke-linecap="round" opacity="0.4"/>
+    <line x1="-20" y1="70" x2="-5" y2="70" stroke="#CCFF00" stroke-width="2" stroke-linecap="round" opacity="0.3"/>
+  </g>
+
+  <!-- Checkmark Badge (Inspection Complete) -->
+  <g transform="translate(195, 75)">
+    <circle cx="20" cy="20" r="22" fill="#0F172A" stroke="#CCFF00" stroke-width="2"/>
+    <circle cx="20" cy="20" r="18" fill="url(#badgeGradient)"/>
+    <path d="M12 20 L18 26 L28 14" stroke="#0F172A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </g>
+
+  <!-- Gradients -->
+  <defs>
+    <linearGradient id="carBodyGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#334155"/>
+      <stop offset="50%" style="stop-color:#1E293B"/>
+      <stop offset="100%" style="stop-color:#0F172A"/>
+    </linearGradient>
+
+    <linearGradient id="cabinGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#475569"/>
+      <stop offset="100%" style="stop-color:#1E293B"/>
+    </linearGradient>
+
+    <linearGradient id="windowGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#64748B"/>
+      <stop offset="50%" style="stop-color:#334155"/>
+      <stop offset="100%" style="stop-color:#1E293B"/>
+    </linearGradient>
+
+    <linearGradient id="headlightGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#CCFF00"/>
+      <stop offset="100%" style="stop-color:#A3E635"/>
+    </linearGradient>
+
+    <linearGradient id="badgeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#CCFF00"/>
+      <stop offset="100%" style="stop-color:#84CC16"/>
+    </linearGradient>
+
+    <linearGradient id="glowGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#CCFF00"/>
+      <stop offset="50%" style="stop-color:#84CC16"/>
+      <stop offset="100%" style="stop-color:#CCFF00"/>
+    </linearGradient>
+  </defs>
+</svg>
