@@ -3,6 +3,7 @@ package com.cmx.model;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
@@ -48,10 +49,13 @@ public class SurveyorActivityLog {
     @Column("created_at")
     private OffsetDateTime createdAt;
 
-    // Transient fields for joined data
-    private transient String surveyorName;
-    private transient String surveyorCode;
-    private transient String appointmentTitle;
+    // Transient fields for joined data (not persisted to DB)
+    @Transient
+    private String surveyorName;
+    @Transient
+    private String surveyorCode;
+    @Transient
+    private String appointmentTitle;
 
     public SurveyorActivityLog(Long surveyorId, ActivityType activityType, String previousValue,
                                 String newValue, Long appointmentId, Double latitude,
