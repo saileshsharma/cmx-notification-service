@@ -64,6 +64,7 @@ public class SurveyorActivityLog {
         this.latitude = latitude;
         this.longitude = longitude;
         this.notes = notes;
+        this.createdAt = OffsetDateTime.now();
     }
 
     // Static factory methods
