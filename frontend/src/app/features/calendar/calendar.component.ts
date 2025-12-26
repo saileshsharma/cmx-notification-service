@@ -366,7 +366,9 @@ export class CalendarComponent implements OnInit, OnDestroy {
     const to = new Date();
     to.setDate(to.getDate() + 30);
 
-    this.appointmentService.loadEvents(from, to, this.selectedSurveyorIds.length > 0 ? this.selectedSurveyorIds : undefined)
+    // Always load all events - filtering is done client-side in updateCalendarEvents()
+    // This prevents losing other surveyors' appointments when selecting a surveyor
+    this.appointmentService.loadEvents(from, to)
       .subscribe();
   }
 

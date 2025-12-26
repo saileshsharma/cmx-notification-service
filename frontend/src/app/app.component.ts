@@ -1228,23 +1228,31 @@ export class AppComponent implements OnInit, OnDestroy {
       this.loadingEvents = false;
     }
 
+    // Always fetch ALL events - filtering is done client-side for display
+    // This prevents losing other surveyors' appointments when selecting a surveyor
     let q = `${this.apiBase}/availability?from=${encodeURIComponent(fromIso)}&to=${encodeURIComponent(toIso)}`;
-
-    // Use multi-select if any surveyors are selected
-    if (this.selectedSurveyorIds.length > 0) {
-      q += `&surveyorIds=${this.selectedSurveyorIds.join(',')}`;
-    } else if (this.selectedSurveyorId !== 'ALL') {
-      q += `&surveyorId=${this.selectedSurveyorId}`;
-    }
 
     this.http.get<any[]>(q).subscribe({
       next: (rows) => {
         // Save to cache
         this.saveToCache(cacheKey, rows);
 
-        const evs = this.processEvents(rows);
-        this.existingEvents = evs; // Store for conflict detection
-        this.calendarOptions = { ...this.calendarOptions, events: evs };
+        const allEvs = this.processEvents(rows);
+        this.existingEvents = allEvs; // Store ALL events for conflict detection
+
+        // Filter for display based on selected surveyors
+        let displayEvents = allEvs;
+        if (this.selectedSurveyorIds.length > 0) {
+          displayEvents = allEvs.filter(e =>
+            e.extendedProps?.surveyorId && this.selectedSurveyorIds.includes(e.extendedProps.surveyorId)
+          );
+        } else if (this.selectedSurveyorId !== 'ALL') {
+          displayEvents = allEvs.filter(e =>
+            e.extendedProps?.surveyorId === this.selectedSurveyorId
+          );
+        }
+
+        this.calendarOptions = { ...this.calendarOptions, events: displayEvents };
         this.loadingEvents = false;
         this.lastSyncTime = new Date();
         // Refresh stats after events load
@@ -1276,13 +1284,8 @@ export class AppComponent implements OnInit, OnDestroy {
     });
   }
 
-  // Build unique cache key based on current filter
+  // Build unique cache key - always cache all events
   private buildCacheKey(): string {
-    if (this.selectedSurveyorIds.length > 0) {
-      return `${this.CACHE_KEY}_surveyors_${this.selectedSurveyorIds.sort().join('_')}`;
-    } else if (this.selectedSurveyorId !== 'ALL') {
-      return `${this.CACHE_KEY}_surveyor_${this.selectedSurveyorId}`;
-    }
     return `${this.CACHE_KEY}_all`;
   }
 

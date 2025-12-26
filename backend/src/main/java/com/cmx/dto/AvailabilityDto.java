@@ -12,8 +12,8 @@ import java.util.List;
 public class AvailabilityDto {
 
     // Valid state values for availability blocks
-    private static final String STATE_PATTERN = "^(AVAILABLE|BUSY|AWAY|VACATION|PENDING|CONFIRMED|CANCELLED)$";
-    private static final String STATE_MESSAGE = "State must be one of: AVAILABLE, BUSY, AWAY, VACATION, PENDING, CONFIRMED, CANCELLED";
+    private static final String STATE_PATTERN = "^(AVAILABLE|BUSY|OFFLINE|AWAY|VACATION|PENDING|CONFIRMED|CANCELLED)$";
+    private static final String STATE_MESSAGE = "State must be one of: AVAILABLE, BUSY, OFFLINE, AWAY, VACATION, PENDING, CONFIRMED, CANCELLED";
 
     public record AvailabilityUpdateRequest(
             @NotBlank(message = "Start time is required") String startTime,
