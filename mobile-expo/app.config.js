@@ -41,9 +41,11 @@ module.exports = {
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.RECEIVE_BOOT_COMPLETED",
         "android.permission.VIBRATE",
-        "android.permission.RECORD_AUDIO"
+        "android.permission.RECORD_AUDIO",
+        "android.permission.POST_NOTIFICATIONS"
       ],
-      googleServicesFile: process.env.GOOGLE_SERVICES_JSON || "./google-services.json"
+      googleServicesFile: process.env.GOOGLE_SERVICES_JSON || "./google-services.json",
+      useNextNotificationsApi: true
     },
     web: {
       favicon: "./assets/favicon.png"
@@ -55,7 +57,9 @@ module.exports = {
         {
           icon: "./assets/notification-icon.png",
           color: "#0F172A",
-          sounds: []
+          sounds: [],
+          androidMode: "default",
+          androidCollapsedTitle: "FleetInspect Pro"
         }
       ],
       [

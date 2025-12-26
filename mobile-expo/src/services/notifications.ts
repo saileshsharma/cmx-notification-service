@@ -109,10 +109,29 @@ class NotificationService {
       return null;
     }
 
-    // Use Expo Push Token for BOTH iOS and Android
-    // This ensures consistent handling via Expo Push API on the backend
-    debugLogger.log(`${Platform.OS} detected - using Expo Push Token...`);
-    return this.getExpoPushTokenInternal();
+    // iOS: Use Expo Push Token (handled via Expo Push API on backend)
+    if (Platform.OS === 'ios') {
+      debugLogger.log('iOS detected - using Expo Push Token...');
+      return this.getExpoPushTokenInternal();
+    }
+
+    // Android: Use native FCM token (handled via Firebase Admin SDK on backend)
+    debugLogger.log('Android detected - getting native FCM token...');
+    try {
+      const tokenData = await Notifications.getDevicePushTokenAsync();
+      debugLogger.log(`SUCCESS: Native FCM token type: ${tokenData.type}`);
+      debugLogger.log(`Native FCM token (first 50 chars): ${tokenData.data.substring(0, 50)}...`);
+      debugLogger.log(`Native FCM token length: ${tokenData.data.length}`);
+
+      await storageService.setPushToken(tokenData.data);
+      debugLogger.log('FCM token saved to storage');
+
+      return tokenData.data;
+    } catch (error) {
+      debugLogger.error('Failed to get native FCM token', error);
+      debugLogger.log('Falling back to Expo Push Token...');
+      return this.getExpoPushTokenInternal();
+    }
   }
 
   private async getExpoPushTokenInternal(): Promise<string | null> {
