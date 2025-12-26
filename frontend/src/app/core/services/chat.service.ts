@@ -212,14 +212,9 @@ export class ChatService implements OnDestroy {
   }
 
   /**
-   * Send a chat message
+   * Send a chat message (with REST fallback)
    */
   sendMessage(recipientId: number, recipientType: string, content: string): void {
-    if (!this.stompClient?.active) {
-      console.error('Not connected to chat');
-      return;
-    }
-
     const message: Partial<ChatMessage> = {
       senderId: this.currentUserId,
       senderType: this.currentUserType,
@@ -231,10 +226,22 @@ export class ChatService implements OnDestroy {
       conversationId: this.generateConversationId(recipientId, recipientType)
     };
 
-    this.stompClient.publish({
-      destination: '/app/chat.send',
-      body: JSON.stringify(message)
-    });
+    // Try WebSocket first
+    if (this.stompClient?.active) {
+      this.stompClient.publish({
+        destination: '/app/chat.send',
+        body: JSON.stringify(message)
+      });
+    } else {
+      // Fallback to REST API
+      console.log('WebSocket not connected, using REST API');
+      this.http.post<ChatMessage>(`${this.apiBase}/chat/messages`, message).subscribe({
+        next: (sentMessage) => {
+          this.handleIncomingMessage(sentMessage);
+        },
+        error: (e) => console.error('Failed to send message via REST:', e)
+      });
+    }
   }
 
   /**

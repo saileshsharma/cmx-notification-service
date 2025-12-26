@@ -3711,6 +3711,19 @@ export class AppComponent implements OnInit, OnDestroy {
         this.showNewConversationPicker = false;
         this.chatMessages = [];
         this.chatService.setActiveConversation(result.conversationId);
+
+        // Add conversation to list if not exists (for new conversations)
+        if (!this.chatConversations.find(c => c.conversationId === result.conversationId)) {
+          this.chatConversations.unshift({
+            conversationId: result.conversationId,
+            otherPartyId: surveyor.id,
+            otherPartyName: surveyor.display_name,
+            otherPartyType: 'SURVEYOR',
+            lastMessage: '',
+            lastMessageAt: new Date().toISOString(),
+            unreadCount: 0
+          });
+        }
       },
       error: (e) => {
         console.error('Failed to start conversation:', e);

@@ -114,9 +114,9 @@ class ChatService {
   }
 
   /**
-   * Send a chat message
+   * Send a chat message (with REST fallback)
    */
-  sendMessage(recipientId: number, recipientType: 'DISPATCHER' | 'SURVEYOR', content: string): void {
+  async sendMessage(recipientId: number, recipientType: 'DISPATCHER' | 'SURVEYOR', content: string): Promise<void> {
     const conversationId = this.generateConversationId(recipientId);
 
     const message: Partial<ChatMessage> = {
@@ -130,10 +130,18 @@ class ChatService {
       conversationId,
     };
 
-    this.sendFrame('SEND', {
-      destination: '/app/chat.send',
-      'content-type': 'application/json',
-    }, JSON.stringify(message));
+    // Try WebSocket first
+    if (this.ws && this.ws.readyState === WebSocket.OPEN && this.connected) {
+      this.sendFrame('SEND', {
+        destination: '/app/chat.send',
+        'content-type': 'application/json',
+      }, JSON.stringify(message));
+    } else {
+      // Fallback to REST API
+      console.log('WebSocket not connected, using REST API');
+      const sentMessage = await this.sendMessageRest(recipientId, recipientType, content);
+      this.onMessage?.(sentMessage);
+    }
   }
 
   /**
