@@ -3557,6 +3557,10 @@ export class AppComponent implements OnInit, OnDestroy {
     return this.surveyorActivityService.formatFullDateTime(timestamp);
   }
 
+  getActivityStatCount(activityType: string): number {
+    return this.activityHistoryItems.filter(a => a.activityType === activityType).length;
+  }
+
   getFilteredActivities(): SurveyorActivity[] {
     let activities = this.surveyorActivities;
     if (this.activityFilter !== 'ALL') {
