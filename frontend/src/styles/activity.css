@@ -240,6 +240,16 @@
   color: #999;
 }
 
+.activity-datetime {
+  color: #555;
+  font-weight: 500;
+}
+
+.activity-time-relative {
+  color: #999;
+  margin-left: 4px;
+}
+
 .activity-loading {
   display: flex;
   align-items: center;

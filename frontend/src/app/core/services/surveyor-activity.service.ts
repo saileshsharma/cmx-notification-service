@@ -165,7 +165,7 @@ export class SurveyorActivityService implements OnDestroy {
   }
 
   /**
-   * Load activity log from backend
+   * Load activity log from backend (for modal/history view - does NOT update main subject)
    */
   loadActivities(
     surveyorId?: number,
@@ -174,8 +174,6 @@ export class SurveyorActivityService implements OnDestroy {
     limit: number = 100,
     offset: number = 0
   ): Observable<SurveyorActivity[]> {
-    this.loadingSubject.next(true);
-
     let params = new HttpParams()
       .set('hoursBack', hoursBack.toString())
       .set('limit', limit.toString())
@@ -188,16 +186,7 @@ export class SurveyorActivityService implements OnDestroy {
       params = params.set('activityType', activityType);
     }
 
-    return this.http.get<SurveyorActivity[]>(`${this.apiBase}/activity`, { params }).pipe(
-      tap(activities => {
-        this.activitiesSubject.next(activities);
-        this.loadingSubject.next(false);
-      }),
-      catchError(error => {
-        this.loadingSubject.next(false);
-        throw error;
-      })
-    );
+    return this.http.get<SurveyorActivity[]>(`${this.apiBase}/activity`, { params });
   }
 
   /**
@@ -276,7 +265,7 @@ export class SurveyorActivityService implements OnDestroy {
   }
 
   /**
-   * Format timestamp for display
+   * Format timestamp for display (relative time)
    */
   formatTimestamp(timestamp: string): string {
     const date = new Date(timestamp);
@@ -300,6 +289,21 @@ export class SurveyorActivityService implements OnDestroy {
       day: 'numeric',
       hour: 'numeric',
       minute: '2-digit'
+    });
+  }
+
+  /**
+   * Format timestamp as full date and time
+   */
+  formatFullDateTime(timestamp: string): string {
+    const date = new Date(timestamp);
+    return date.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
     });
   }
 }

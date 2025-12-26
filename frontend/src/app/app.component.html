@@ -230,7 +230,11 @@
           </span>
         </div>
         <div class="activity-meta">
-          <span *ngIf="entry.appointmentTitle" class="appointment-tag">
+          <span class="activity-datetime">{{formatActivityFullDateTime(entry.createdAt)}}</span>
+          <span class="activity-time-relative">({{formatActivityTimestamp(entry.createdAt)}})</span>
+        </div>
+        <div class="activity-meta" *ngIf="entry.appointmentTitle">
+          <span class="appointment-tag">
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
               <line x1="16" y1="2" x2="16" y2="6"></line>
@@ -239,7 +243,6 @@
             </svg>
             {{entry.appointmentTitle}}
           </span>
-          <span class="activity-time">{{formatActivityTimestamp(entry.createdAt)}}</span>
         </div>
       </div>
     </div>
@@ -301,7 +304,11 @@
               </span>
             </div>
             <div class="activity-meta">
-              <span *ngIf="entry.appointmentTitle" class="appointment-tag">
+              <span class="activity-datetime">{{formatActivityFullDateTime(entry.createdAt)}}</span>
+              <span class="activity-time-relative">({{formatActivityTimestamp(entry.createdAt)}})</span>
+            </div>
+            <div class="activity-meta" *ngIf="entry.appointmentTitle">
+              <span class="appointment-tag">
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
                   <line x1="16" y1="2" x2="16" y2="6"></line>
@@ -310,7 +317,6 @@
                 </svg>
                 {{entry.appointmentTitle}}
               </span>
-              <span class="activity-time">{{formatActivityTimestamp(entry.createdAt)}}</span>
             </div>
           </div>
         </div>
