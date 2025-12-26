@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.xl,
     alignItems: 'center',
     justifyContent: 'center',
-    ...shadows.glow,
+    ...shadows.accentGlow,
   },
   title: {
     fontSize: fontSize.xl,

@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, spacing, fontSize, fontWeight, borderRadius, gradients } from '../constants/theme';
+import { colors, spacing, fontSize, fontWeight, borderRadius, gradients, shadows } from '../constants/theme';
 
 interface ProfileScreenProps {
   surveyorName: string | null;
@@ -81,7 +81,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   const renderInfoRow = (icon: keyof typeof Ionicons.glyphMap, label: string, value: string | null) => (
     <View style={styles.infoRow}>
       <View style={styles.infoIconContainer}>
-        <Ionicons name={icon} size={22} color={colors.primary} />
+        <Ionicons name={icon} size={22} color={colors.accent} />
       </View>
       <View style={styles.infoContent}>
         <Text style={styles.infoLabel}>{label}</Text>
@@ -102,13 +102,13 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
       >
         {/* Profile Header */}
         <View style={styles.header}>
-          <LinearGradient colors={gradients.primaryVibrant} style={styles.avatarLarge}>
+          <LinearGradient colors={gradients.accent} style={[styles.avatarLarge, shadows.accentGlow]}>
             <Text style={styles.avatarText}>{getAvatarInitials(surveyorName)}</Text>
           </LinearGradient>
           <Text style={styles.name}>{surveyorName || 'Surveyor'}</Text>
           {surveyorCode && (
             <View style={styles.codeBadge}>
-              <Ionicons name="id-card-outline" size={14} color={colors.primary} />
+              <Ionicons name="id-card-outline" size={14} color={colors.accent} />
               <Text style={styles.codeText}>{surveyorCode}</Text>
             </View>
           )}
@@ -117,115 +117,128 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         {/* Personal Information */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Personal Information</Text>
-          <View style={styles.card}>
-            {renderInfoRow('person-outline', 'Full Name', surveyorName)}
-            {renderInfoRow('mail-outline', 'Email', surveyorEmail)}
-            {renderInfoRow('call-outline', 'Phone', surveyorPhone)}
-            {renderInfoRow('id-card-outline', 'Surveyor Code', surveyorCode)}
+          <View style={[styles.card, shadows.card]}>
+            <LinearGradient colors={[colors.card, colors.cardDark]} style={styles.cardGradient}>
+              {renderInfoRow('person-outline', 'Full Name', surveyorName)}
+              {renderInfoRow('mail-outline', 'Email', surveyorEmail)}
+              {renderInfoRow('call-outline', 'Phone', surveyorPhone)}
+              {renderInfoRow('id-card-outline', 'Surveyor Code', surveyorCode)}
+            </LinearGradient>
           </View>
         </View>
 
         {/* Change Password Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Security</Text>
-          <View style={styles.card}>
-            {!showPasswordForm ? (
-              <TouchableOpacity
-                style={styles.changePasswordButton}
-                onPress={() => setShowPasswordForm(true)}
-              >
-                <View style={styles.buttonContent}>
-                  <Ionicons name="lock-closed-outline" size={22} color={colors.primary} />
-                  <Text style={styles.buttonText}>Change Password</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color={colors.gray[400]} />
-              </TouchableOpacity>
-            ) : (
-              <View style={styles.passwordForm}>
-                <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>Current Password</Text>
-                  <View style={styles.passwordInputWrapper}>
-                    <TextInput
-                      style={styles.input}
-                      value={currentPassword}
-                      onChangeText={setCurrentPassword}
-                      secureTextEntry={!showCurrentPassword}
-                      placeholder="Enter current password"
-                      placeholderTextColor={colors.gray[400]}
-                    />
-                    <TouchableOpacity
-                      style={styles.eyeButton}
-                      onPress={() => setShowCurrentPassword(!showCurrentPassword)}
-                    >
-                      <Ionicons
-                        name={showCurrentPassword ? 'eye-off-outline' : 'eye-outline'}
-                        size={22}
-                        color={colors.gray[500]}
+          <View style={[styles.card, shadows.card]}>
+            <LinearGradient colors={[colors.card, colors.cardDark]} style={styles.cardGradient}>
+              {!showPasswordForm ? (
+                <TouchableOpacity
+                  style={styles.changePasswordButton}
+                  onPress={() => setShowPasswordForm(true)}
+                >
+                  <View style={styles.buttonContent}>
+                    <View style={styles.infoIconContainer}>
+                      <Ionicons name="lock-closed-outline" size={22} color={colors.accent} />
+                    </View>
+                    <Text style={styles.buttonText}>Change Password</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color={colors.text.tertiary} />
+                </TouchableOpacity>
+              ) : (
+                <View style={styles.passwordForm}>
+                  <View style={styles.inputContainer}>
+                    <Text style={styles.inputLabel}>Current Password</Text>
+                    <View style={styles.passwordInputWrapper}>
+                      <TextInput
+                        style={styles.input}
+                        value={currentPassword}
+                        onChangeText={setCurrentPassword}
+                        secureTextEntry={!showCurrentPassword}
+                        placeholder="Enter current password"
+                        placeholderTextColor={colors.text.muted}
                       />
+                      <TouchableOpacity
+                        style={styles.eyeButton}
+                        onPress={() => setShowCurrentPassword(!showCurrentPassword)}
+                      >
+                        <Ionicons
+                          name={showCurrentPassword ? 'eye-off-outline' : 'eye-outline'}
+                          size={22}
+                          color={colors.text.tertiary}
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  <View style={styles.inputContainer}>
+                    <Text style={styles.inputLabel}>New Password</Text>
+                    <View style={styles.passwordInputWrapper}>
+                      <TextInput
+                        style={styles.input}
+                        value={newPassword}
+                        onChangeText={setNewPassword}
+                        secureTextEntry={!showNewPassword}
+                        placeholder="Enter new password"
+                        placeholderTextColor={colors.text.muted}
+                      />
+                      <TouchableOpacity
+                        style={styles.eyeButton}
+                        onPress={() => setShowNewPassword(!showNewPassword)}
+                      >
+                        <Ionicons
+                          name={showNewPassword ? 'eye-off-outline' : 'eye-outline'}
+                          size={22}
+                          color={colors.text.tertiary}
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  <View style={styles.inputContainer}>
+                    <Text style={styles.inputLabel}>Confirm New Password</Text>
+                    <View style={styles.passwordInputWrapper}>
+                      <TextInput
+                        style={styles.input}
+                        value={confirmPassword}
+                        onChangeText={setConfirmPassword}
+                        secureTextEntry={!showNewPassword}
+                        placeholder="Confirm new password"
+                        placeholderTextColor={colors.text.muted}
+                      />
+                    </View>
+                  </View>
+
+                  <View style={styles.buttonRow}>
+                    <TouchableOpacity
+                      style={styles.cancelButton}
+                      onPress={() => {
+                        setShowPasswordForm(false);
+                        setCurrentPassword('');
+                        setNewPassword('');
+                        setConfirmPassword('');
+                      }}
+                    >
+                      <Text style={styles.cancelButtonText}>Cancel</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.saveButton, isChangingPassword && styles.saveButtonDisabled]}
+                      onPress={handlePasswordChange}
+                      disabled={isChangingPassword}
+                    >
+                      <LinearGradient
+                        colors={isChangingPassword ? [colors.gray[600], colors.gray[700]] : gradients.accent}
+                        style={styles.saveButtonGradient}
+                      >
+                        <Text style={styles.saveButtonText}>
+                          {isChangingPassword ? 'Saving...' : 'Save Password'}
+                        </Text>
+                      </LinearGradient>
                     </TouchableOpacity>
                   </View>
                 </View>
-
-                <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>New Password</Text>
-                  <View style={styles.passwordInputWrapper}>
-                    <TextInput
-                      style={styles.input}
-                      value={newPassword}
-                      onChangeText={setNewPassword}
-                      secureTextEntry={!showNewPassword}
-                      placeholder="Enter new password"
-                      placeholderTextColor={colors.gray[400]}
-                    />
-                    <TouchableOpacity
-                      style={styles.eyeButton}
-                      onPress={() => setShowNewPassword(!showNewPassword)}
-                    >
-                      <Ionicons
-                        name={showNewPassword ? 'eye-off-outline' : 'eye-outline'}
-                        size={22}
-                        color={colors.gray[500]}
-                      />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>Confirm New Password</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={confirmPassword}
-                    onChangeText={setConfirmPassword}
-                    secureTextEntry={!showNewPassword}
-                    placeholder="Confirm new password"
-                    placeholderTextColor={colors.gray[400]}
-                  />
-                </View>
-
-                <View style={styles.buttonRow}>
-                  <TouchableOpacity
-                    style={styles.cancelButton}
-                    onPress={() => {
-                      setShowPasswordForm(false);
-                      setCurrentPassword('');
-                      setNewPassword('');
-                      setConfirmPassword('');
-                    }}
-                  >
-                    <Text style={styles.cancelButtonText}>Cancel</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.saveButton, isChangingPassword && styles.saveButtonDisabled]}
-                    onPress={handlePasswordChange}
-                    disabled={isChangingPassword}
-                  >
-                    <Text style={styles.saveButtonText}>
-                      {isChangingPassword ? 'Saving...' : 'Save Password'}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            )}
+              )}
+            </LinearGradient>
           </View>
         </View>
 
@@ -238,7 +251,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.gray[100],
+    backgroundColor: colors.background,
   },
   scrollView: {
     flex: 1,
@@ -253,26 +266,26 @@ const styles = StyleSheet.create({
   avatarLarge: {
     width: 100,
     height: 100,
-    borderRadius: 50,
+    borderRadius: 30,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.md,
   },
   avatarText: {
-    color: colors.white,
+    color: colors.black,
     fontSize: 36,
     fontWeight: fontWeight.bold,
   },
   name: {
     fontSize: fontSize.xxl,
     fontWeight: fontWeight.bold,
-    color: colors.gray[800],
+    color: colors.text.primary,
     marginBottom: spacing.sm,
   },
   codeBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.primary + '15',
+    backgroundColor: colors.accentSoft,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
     borderRadius: borderRadius.full,
@@ -281,7 +294,7 @@ const styles = StyleSheet.create({
   codeText: {
     fontSize: fontSize.sm,
     fontWeight: fontWeight.semibold,
-    color: colors.primary,
+    color: colors.accent,
   },
   section: {
     marginBottom: spacing.xl,
@@ -289,31 +302,30 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: fontSize.lg,
     fontWeight: fontWeight.semibold,
-    color: colors.gray[800],
+    color: colors.text.primary,
     marginBottom: spacing.md,
   },
   card: {
-    backgroundColor: colors.white,
-    borderRadius: borderRadius.lg,
+    borderRadius: borderRadius.card,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+  },
+  cardGradient: {
     padding: spacing.md,
-    shadowColor: colors.gray[400],
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
   },
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: colors.gray[100],
+    borderBottomColor: colors.cardBorder,
   },
   infoIconContainer: {
     width: 40,
     height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.primary + '10',
+    borderRadius: 12,
+    backgroundColor: colors.accentSoft,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing.md,
@@ -323,12 +335,12 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: fontSize.xs,
-    color: colors.gray[500],
+    color: colors.text.muted,
     marginBottom: 2,
   },
   infoValue: {
     fontSize: fontSize.md,
-    color: colors.gray[800],
+    color: colors.text.primary,
     fontWeight: fontWeight.medium,
   },
   changePasswordButton: {
@@ -340,11 +352,10 @@ const styles = StyleSheet.create({
   buttonContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
   },
   buttonText: {
     fontSize: fontSize.md,
-    color: colors.gray[800],
+    color: colors.text.primary,
     fontWeight: fontWeight.medium,
   },
   passwordForm: {
@@ -355,26 +366,23 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     fontSize: fontSize.sm,
-    color: colors.gray[600],
+    color: colors.text.secondary,
     marginBottom: spacing.xs,
     fontWeight: fontWeight.medium,
   },
   input: {
     flex: 1,
-    backgroundColor: colors.gray[50],
-    borderWidth: 1,
-    borderColor: colors.gray[200],
-    borderRadius: borderRadius.md,
+    backgroundColor: 'transparent',
     padding: spacing.md,
     fontSize: fontSize.md,
-    color: colors.gray[800],
+    color: colors.text.primary,
   },
   passwordInputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.gray[50],
+    backgroundColor: colors.backgroundSecondary,
     borderWidth: 1,
-    borderColor: colors.gray[200],
+    borderColor: colors.cardBorder,
     borderRadius: borderRadius.md,
     overflow: 'hidden',
   },
@@ -389,29 +397,32 @@ const styles = StyleSheet.create({
   cancelButton: {
     flex: 1,
     paddingVertical: spacing.md,
-    borderRadius: borderRadius.md,
+    borderRadius: borderRadius.button,
     borderWidth: 1,
-    borderColor: colors.gray[300],
+    borderColor: colors.cardBorder,
     alignItems: 'center',
+    backgroundColor: colors.backgroundSecondary,
   },
   cancelButtonText: {
     fontSize: fontSize.md,
-    color: colors.gray[600],
+    color: colors.text.secondary,
     fontWeight: fontWeight.semibold,
   },
   saveButton: {
     flex: 1,
-    paddingVertical: spacing.md,
-    borderRadius: borderRadius.md,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
+    borderRadius: borderRadius.button,
+    overflow: 'hidden',
   },
   saveButtonDisabled: {
-    backgroundColor: colors.gray[400],
+    opacity: 0.6,
+  },
+  saveButtonGradient: {
+    paddingVertical: spacing.md,
+    alignItems: 'center',
   },
   saveButtonText: {
     fontSize: fontSize.md,
-    color: colors.white,
+    color: colors.black,
     fontWeight: fontWeight.semibold,
   },
   bottomSpacing: {

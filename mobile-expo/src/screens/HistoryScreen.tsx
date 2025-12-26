@@ -5,12 +5,10 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, gradients, spacing, fontSize, fontWeight, borderRadius, shadows } from '../constants/theme';
-import { images } from '../constants/images';
 
 interface InspectionHistoryItem {
   id: number;
@@ -53,7 +51,7 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Header Stats */}
       <View style={styles.statsContainer}>
-        <LinearGradient colors={gradients.ocean} style={styles.statsCard}>
+        <LinearGradient colors={gradients.cyan} style={styles.statsCard}>
           <View style={styles.statsContent}>
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>{inspectionHistory.length}</Text>
@@ -82,7 +80,7 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({
       {inspectionHistory.length === 0 ? (
         <View style={styles.emptyState}>
           <View style={styles.emptyIconContainer}>
-            <Ionicons name="time-outline" size={48} color={colors.gray[300]} />
+            <Ionicons name="time-outline" size={48} color={colors.text.tertiary} />
           </View>
           <Text style={styles.emptyTitle}>No History Yet</Text>
           <Text style={styles.emptySubtitle}>
@@ -90,39 +88,41 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({
           </Text>
         </View>
       ) : (
-        inspectionHistory.map((item, index) => (
+        inspectionHistory.map((item) => (
           <TouchableOpacity
             key={item.id}
-            style={[styles.historyCard, shadows.sm]}
+            style={[styles.historyCard, shadows.card]}
             onPress={() => onViewReport(item.id)}
           >
-            <View style={styles.cardContent}>
-              <View style={styles.cardIcon}>
-                <LinearGradient colors={gradients.purpleVibrant} style={styles.iconGradient}>
-                  <Ionicons name="document-text" size={24} color={colors.white} />
-                </LinearGradient>
-              </View>
-              <View style={styles.cardInfo}>
-                <Text style={styles.vehicleName}>{item.vehicle}</Text>
-                <Text style={styles.dateText}>{formatDate(item.date)}</Text>
-                <View style={styles.metaRow}>
-                  <View style={styles.metaBadge}>
-                    <Ionicons name="camera" size={12} color={colors.gray[500]} />
-                    <Text style={styles.metaText}>{item.photos} photos</Text>
+            <LinearGradient colors={[colors.card, colors.cardDark]} style={styles.cardGradient}>
+              <View style={styles.cardContent}>
+                <View style={styles.cardIcon}>
+                  <LinearGradient colors={gradients.purple} style={styles.iconGradient}>
+                    <Ionicons name="document-text" size={24} color={colors.white} />
+                  </LinearGradient>
+                </View>
+                <View style={styles.cardInfo}>
+                  <Text style={styles.vehicleName}>{item.vehicle}</Text>
+                  <Text style={styles.dateText}>{formatDate(item.date)}</Text>
+                  <View style={styles.metaRow}>
+                    <View style={styles.metaBadge}>
+                      <Ionicons name="camera" size={12} color={colors.text.tertiary} />
+                      <Text style={styles.metaText}>{item.photos} photos</Text>
+                    </View>
+                    <View style={[styles.metaBadge, styles.successBadge]}>
+                      <Ionicons name="checkmark" size={12} color={colors.success} />
+                      <Text style={[styles.metaText, styles.successText]}>Completed</Text>
+                    </View>
                   </View>
-                  <View style={[styles.metaBadge, styles.successBadge]}>
-                    <Ionicons name="checkmark" size={12} color={colors.success} />
-                    <Text style={[styles.metaText, styles.successText]}>Completed</Text>
+                </View>
+                <View style={styles.cardRight}>
+                  <Text style={styles.timeAgo}>{getTimeAgo(item.date)}</Text>
+                  <View style={styles.arrowButton}>
+                    <Ionicons name="chevron-forward" size={18} color={colors.black} />
                   </View>
                 </View>
               </View>
-              <View style={styles.cardRight}>
-                <Text style={styles.timeAgo}>{getTimeAgo(item.date)}</Text>
-                <TouchableOpacity style={styles.viewButton}>
-                  <Ionicons name="chevron-forward" size={20} color={colors.gray[400]} />
-                </TouchableOpacity>
-              </View>
-            </View>
+            </LinearGradient>
           </TouchableOpacity>
         ))
       )}
@@ -136,13 +136,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: spacing.lg,
-    backgroundColor: colors.gray[100],
+    backgroundColor: colors.background,
   },
   statsContainer: {
     marginBottom: spacing.xl,
   },
   statsCard: {
-    borderRadius: borderRadius.lg,
+    borderRadius: borderRadius.card,
     overflow: 'hidden',
     ...shadows.md,
   },
@@ -171,14 +171,18 @@ const styles = StyleSheet.create({
   title: {
     fontSize: fontSize.xl,
     fontWeight: fontWeight.bold,
-    color: colors.gray[800],
+    color: colors.text.primary,
     marginBottom: spacing.lg,
   },
   historyCard: {
-    backgroundColor: colors.white,
-    borderRadius: borderRadius.lg,
+    borderRadius: borderRadius.card,
     marginBottom: spacing.md,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+  },
+  cardGradient: {
+    borderRadius: borderRadius.card,
   },
   cardContent: {
     flexDirection: 'row',
@@ -201,11 +205,11 @@ const styles = StyleSheet.create({
   vehicleName: {
     fontSize: fontSize.md,
     fontWeight: fontWeight.semibold,
-    color: colors.gray[800],
+    color: colors.text.primary,
   },
   dateText: {
     fontSize: fontSize.sm,
-    color: colors.gray[500],
+    color: colors.text.tertiary,
     marginTop: 2,
   },
   metaRow: {
@@ -217,17 +221,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: colors.gray[100],
+    backgroundColor: colors.backgroundSecondary,
     paddingHorizontal: spacing.sm,
     paddingVertical: 4,
     borderRadius: borderRadius.xs,
   },
   metaText: {
     fontSize: fontSize.xs,
-    color: colors.gray[500],
+    color: colors.text.tertiary,
   },
   successBadge: {
-    backgroundColor: '#F0FDF4',
+    backgroundColor: colors.successSoft,
   },
   successText: {
     color: colors.success,
@@ -237,11 +241,16 @@ const styles = StyleSheet.create({
   },
   timeAgo: {
     fontSize: fontSize.xs,
-    color: colors.gray[400],
+    color: colors.text.muted,
     marginBottom: spacing.sm,
   },
-  viewButton: {
-    padding: spacing.xs,
+  arrowButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   emptyState: {
     alignItems: 'center',
@@ -250,8 +259,8 @@ const styles = StyleSheet.create({
   emptyIconContainer: {
     width: 96,
     height: 96,
-    borderRadius: 48,
-    backgroundColor: colors.gray[200],
+    borderRadius: 28,
+    backgroundColor: colors.backgroundSecondary,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.lg,
@@ -259,12 +268,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: fontSize.lg,
     fontWeight: fontWeight.semibold,
-    color: colors.gray[800],
+    color: colors.text.primary,
     marginBottom: spacing.xs,
   },
   emptySubtitle: {
     fontSize: fontSize.md,
-    color: colors.gray[500],
+    color: colors.text.tertiary,
     textAlign: 'center',
   },
   bottomSpacing: {

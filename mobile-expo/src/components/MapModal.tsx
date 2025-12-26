@@ -34,7 +34,7 @@ export const MapModal: React.FC<MapModalProps> = ({
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
       <View style={styles.container}>
         {/* Header */}
-        <LinearGradient colors={gradients.primaryDark} style={styles.header}>
+        <LinearGradient colors={gradients.header} style={styles.header}>
           <TouchableOpacity onPress={onClose} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={colors.white} />
           </TouchableOpacity>

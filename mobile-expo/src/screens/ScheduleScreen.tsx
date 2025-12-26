@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, spacing, fontSize, fontWeight, borderRadius, shadows } from '../constants/theme';
+import { colors, gradients, spacing, fontSize, fontWeight, borderRadius, shadows } from '../constants/theme';
 import { Appointment, AppointmentResponseStatus } from '../types';
 import { AppointmentCard } from '../components/AppointmentCard';
 
@@ -20,15 +20,14 @@ interface CategoryTab {
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
   color: string;
-  gradient: [string, string];
 }
 
 const categories: CategoryTab[] = [
-  { key: 'all', label: 'All', icon: 'layers', color: '#3B82F6', gradient: ['#3B82F6', '#1D4ED8'] },
-  { key: 'pending', label: 'Pending', icon: 'time', color: '#F59E0B', gradient: ['#F59E0B', '#D97706'] },
-  { key: 'accepted', label: 'Accepted', icon: 'checkmark-circle', color: '#10B981', gradient: ['#10B981', '#059669'] },
-  { key: 'completed', label: 'Done', icon: 'checkmark-done-circle', color: '#8B5CF6', gradient: ['#8B5CF6', '#7C3AED'] },
-  { key: 'rejected', label: 'Declined', icon: 'close-circle', color: '#EF4444', gradient: ['#EF4444', '#DC2626'] },
+  { key: 'all', label: 'All', icon: 'layers', color: colors.accent },
+  { key: 'pending', label: 'Pending', icon: 'time', color: colors.warning },
+  { key: 'accepted', label: 'Accepted', icon: 'checkmark-circle', color: colors.success },
+  { key: 'completed', label: 'Done', icon: 'checkmark-done-circle', color: colors.purple },
+  { key: 'rejected', label: 'Declined', icon: 'close-circle', color: colors.danger },
 ];
 
 interface ScheduleScreenProps {
@@ -120,31 +119,33 @@ export const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
               key={category.key}
               onPress={() => setSelectedCategory(category.key)}
               activeOpacity={0.7}
+              style={[
+                styles.categoryTab,
+                isActive && { backgroundColor: category.color, borderColor: category.color }
+              ]}
             >
-              {isActive ? (
-                <LinearGradient
-                  colors={category.gradient}
-                  style={styles.categoryTabActive}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                >
-                  <Ionicons name={category.icon} size={16} color={colors.white} />
-                  <Text style={styles.categoryLabelActive}>{category.label}</Text>
-                  {count > 0 && (
-                    <View style={styles.categoryBadgeActive}>
-                      <Text style={styles.categoryBadgeTextActive}>{count}</Text>
-                    </View>
-                  )}
-                </LinearGradient>
-              ) : (
-                <View style={styles.categoryTab}>
-                  <Ionicons name={category.icon} size={16} color={colors.gray[500]} />
-                  <Text style={styles.categoryLabel}>{category.label}</Text>
-                  {count > 0 && (
-                    <View style={[styles.categoryBadge, { backgroundColor: category.color + '20' }]}>
-                      <Text style={[styles.categoryBadgeText, { color: category.color }]}>{count}</Text>
-                    </View>
-                  )}
+              <Ionicons
+                name={category.icon}
+                size={14}
+                color={isActive ? colors.black : colors.text.tertiary}
+              />
+              <Text style={[
+                styles.categoryLabel,
+                isActive && { color: colors.black, fontWeight: fontWeight.semibold }
+              ]}>
+                {category.label}
+              </Text>
+              {count > 0 && (
+                <View style={[
+                  styles.categoryBadge,
+                  isActive && { backgroundColor: 'rgba(0,0,0,0.2)' }
+                ]}>
+                  <Text style={[
+                    styles.categoryBadgeText,
+                    isActive && { color: colors.black }
+                  ]}>
+                    {count}
+                  </Text>
                 </View>
               )}
             </TouchableOpacity>
@@ -156,12 +157,9 @@ export const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
 
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
-      <LinearGradient
-        colors={currentCategory?.gradient || ['#3B82F6', '#1D4ED8']}
-        style={styles.emptyIconContainer}
-      >
-        <Ionicons name={currentCategory?.icon || 'calendar'} size={40} color={colors.white} />
-      </LinearGradient>
+      <View style={[styles.emptyIconContainer, { backgroundColor: currentCategory?.color + '20' }]}>
+        <Ionicons name={currentCategory?.icon || 'calendar'} size={40} color={currentCategory?.color || colors.accent} />
+      </View>
       <Text style={styles.emptyTitle}>
         {selectedCategory === 'all' ? 'No Appointments Yet' : `No ${currentCategory?.label} Jobs`}
       </Text>
@@ -172,7 +170,7 @@ export const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
         }
       </Text>
       <TouchableOpacity style={styles.emptyAction} onPress={onRefresh}>
-        <Ionicons name="refresh" size={18} color={colors.primary} />
+        <Ionicons name="refresh" size={18} color={colors.accent} />
         <Text style={styles.emptyActionText}>Refresh Schedule</Text>
       </TouchableOpacity>
     </View>
@@ -185,8 +183,8 @@ export const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <View style={styles.sectionTitleRow}>
-            <View style={[styles.sectionIcon, { backgroundColor: currentCategory?.color || colors.primary }]}>
-              <Ionicons name={icon} size={14} color={colors.white} />
+            <View style={[styles.sectionIcon, { backgroundColor: colors.accentSoft }]}>
+              <Ionicons name={icon} size={14} color={colors.accent} />
             </View>
             <Text style={styles.sectionTitle}>{title}</Text>
           </View>
@@ -210,30 +208,30 @@ export const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
 
   return (
     <View style={styles.container}>
-      {/* Header Stats Bar */}
-      <LinearGradient colors={['#0F172A', '#1E293B']} style={styles.statsHeader}>
+      {/* Stats Bar */}
+      <View style={styles.statsHeader}>
         <View style={styles.statsRow}>
           <View style={styles.statBlock}>
-            <Text style={styles.statNumber}>{categoryCounts.pending}</Text>
+            <Text style={[styles.statNumber, { color: colors.warning }]}>{categoryCounts.pending}</Text>
             <Text style={styles.statLabel}>Pending</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statBlock}>
-            <Text style={styles.statNumber}>{categoryCounts.accepted}</Text>
+            <Text style={[styles.statNumber, { color: colors.success }]}>{categoryCounts.accepted}</Text>
             <Text style={styles.statLabel}>Accepted</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statBlock}>
-            <Text style={styles.statNumber}>{categoryCounts.completed}</Text>
+            <Text style={[styles.statNumber, { color: colors.purple }]}>{categoryCounts.completed}</Text>
             <Text style={styles.statLabel}>Completed</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statBlock}>
-            <Text style={styles.statNumber}>{appointments.length}</Text>
+            <Text style={[styles.statNumber, { color: colors.accent }]}>{appointments.length}</Text>
             <Text style={styles.statLabel}>Total</Text>
           </View>
         </View>
-      </LinearGradient>
+      </View>
 
       {renderCategoryTabs()}
 
@@ -244,7 +242,8 @@ export const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
           <RefreshControl
             refreshing={isRefreshing}
             onRefresh={onRefresh}
-            tintColor={colors.primary}
+            tintColor={colors.accent}
+            colors={[colors.accent]}
           />
         }
         showsVerticalScrollIndicator={false}
@@ -267,11 +266,14 @@ export const ScheduleScreen: React.FC<ScheduleScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.background,
   },
   statsHeader: {
-    paddingVertical: spacing.md,
+    backgroundColor: colors.card,
+    paddingVertical: spacing.lg,
     paddingHorizontal: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.cardBorder,
   },
   statsRow: {
     flexDirection: 'row',
@@ -285,23 +287,21 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: fontSize.xxl,
     fontWeight: fontWeight.bold,
-    color: colors.white,
   },
   statLabel: {
     fontSize: fontSize.xs,
-    color: colors.gray[400],
+    color: colors.text.muted,
     marginTop: 2,
   },
   statDivider: {
     width: 1,
     height: 30,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: colors.cardBorder,
   },
   categoryWrapper: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.backgroundSecondary,
     borderBottomWidth: 1,
-    borderBottomColor: colors.gray[200],
-    ...shadows.sm,
+    borderBottomColor: colors.cardBorder,
   },
   categoryContent: {
     paddingHorizontal: spacing.md,
@@ -313,55 +313,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    borderRadius: borderRadius.lg,
-    backgroundColor: colors.gray[50],
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.card,
     marginRight: spacing.sm,
     gap: 6,
-  },
-  categoryTabActive: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: borderRadius.lg,
-    marginRight: spacing.sm,
-    gap: 6,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
   },
   categoryLabel: {
     fontSize: fontSize.sm,
-    color: colors.gray[600],
+    color: colors.text.tertiary,
     fontWeight: fontWeight.medium,
   },
-  categoryLabelActive: {
-    fontSize: fontSize.sm,
-    color: colors.white,
-    fontWeight: fontWeight.semibold,
-  },
   categoryBadge: {
-    minWidth: 20,
-    height: 20,
-    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 6,
-  },
-  categoryBadgeActive: {
-    minWidth: 20,
-    height: 20,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 6,
-    backgroundColor: 'rgba(255,255,255,0.25)',
+    paddingHorizontal: 5,
+    backgroundColor: colors.backgroundTertiary,
   },
   categoryBadgeText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: fontWeight.bold,
-  },
-  categoryBadgeTextActive: {
-    fontSize: 11,
-    fontWeight: fontWeight.bold,
-    color: colors.white,
+    color: colors.text.tertiary,
   },
   scrollContainer: {
     flex: 1,
@@ -384,25 +360,27 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   sectionIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
+    width: 28,
+    height: 28,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
   sectionTitle: {
     fontSize: fontSize.lg,
     fontWeight: fontWeight.semibold,
-    color: colors.gray[800],
+    color: colors.text.primary,
   },
   countBadge: {
-    backgroundColor: colors.gray[100],
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: borderRadius.sm,
+    backgroundColor: colors.card,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.full,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
   },
   countText: {
-    color: colors.gray[600],
+    color: colors.text.tertiary,
     fontSize: fontSize.xs,
     fontWeight: fontWeight.medium,
   },
@@ -413,7 +391,7 @@ const styles = StyleSheet.create({
   emptyIconContainer: {
     width: 80,
     height: 80,
-    borderRadius: 40,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.xl,
@@ -421,12 +399,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: fontSize.xl,
     fontWeight: fontWeight.semibold,
-    color: colors.gray[800],
+    color: colors.text.primary,
     marginBottom: spacing.sm,
   },
   emptySubtitle: {
     fontSize: fontSize.md,
-    color: colors.gray[500],
+    color: colors.text.tertiary,
     textAlign: 'center',
     maxWidth: 260,
     lineHeight: 22,
@@ -437,14 +415,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.xs,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    backgroundColor: colors.primary + '10',
-    borderRadius: borderRadius.lg,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.accentSoft,
+    borderRadius: borderRadius.button,
   },
   emptyActionText: {
     fontSize: fontSize.md,
     fontWeight: fontWeight.medium,
-    color: colors.primary,
+    color: colors.accent,
   },
   bottomSpacing: {
     height: 100,

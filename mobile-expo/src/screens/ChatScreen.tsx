@@ -8,8 +8,6 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  Image,
-  ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -36,7 +34,6 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
   const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
-    // Scroll to bottom when new messages arrive
     setTimeout(() => {
       scrollViewRef.current?.scrollToEnd({ animated: true });
     }, 100);
@@ -79,26 +76,38 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={120}
     >
-      {/* Chat Header */}
-      <View style={[styles.header, shadows.sm]}>
-        <View style={styles.avatarContainer}>
-          <LinearGradient colors={gradients.ocean} style={styles.avatar}>
-            <Ionicons name="headset" size={24} color={colors.white} />
-          </LinearGradient>
-          <View style={[styles.onlineIndicator, !isConnected && styles.offlineIndicator]} />
-        </View>
-        <View style={styles.headerInfo}>
-          <Text style={styles.headerTitle}>Dispatch Center</Text>
-          <View style={styles.statusRow}>
-            <View style={[styles.onlineDot, !isConnected && styles.offlineDot]} />
-            <Text style={[styles.headerSubtitle, !isConnected && styles.offlineText]}>
-              {isConnected ? (typingUser ? `${typingUser} is typing...` : 'Online') : 'Connecting...'}
-            </Text>
+      {/* AI Assistant Header */}
+      <View style={styles.header}>
+        <View style={styles.headerLeft}>
+          <TouchableOpacity style={styles.headerIconButton}>
+            <Ionicons name="star-outline" size={20} color={colors.text.secondary} />
+          </TouchableOpacity>
+
+          {/* AI Assistant Badge */}
+          <View style={styles.aiAssistantBadge}>
+            <View style={styles.aiBadgeIcon}>
+              <Ionicons name="sparkles" size={14} color={colors.black} />
+            </View>
+            <Text style={styles.aiBadgeText}>Assistant AI</Text>
           </View>
         </View>
-        <TouchableOpacity style={styles.headerAction}>
-          <Ionicons name="call" size={22} color={colors.primary} />
-        </TouchableOpacity>
+
+        <View style={styles.headerRight}>
+          <TouchableOpacity style={styles.headerIconButton}>
+            <Ionicons name="chatbubble-ellipses-outline" size={20} color={colors.text.secondary} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.headerIconButton}>
+            <Ionicons name="settings-outline" size={20} color={colors.text.secondary} />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Connection Status Bar */}
+      <View style={styles.statusBar}>
+        <View style={[styles.statusDot, { backgroundColor: isConnected ? colors.success : colors.gray[500] }]} />
+        <Text style={styles.statusText}>
+          {isConnected ? (typingUser ? `${typingUser} is typing...` : 'Dispatch Online') : 'Connecting...'}
+        </Text>
       </View>
 
       {/* Messages */}
@@ -123,15 +132,17 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
                 msg.sender === 'surveyor' ? styles.sentBubble : styles.receivedBubble,
               ]}
             >
+              {msg.sender === 'dispatcher' && (
+                <View style={styles.aiAvatar}>
+                  <Ionicons name="sparkles" size={12} color={colors.accent} />
+                </View>
+              )}
               <View
                 style={[
                   styles.bubbleContent,
                   msg.sender === 'surveyor' ? styles.sentContent : styles.receivedContent,
                 ]}
               >
-                {msg.sender === 'dispatcher' && (
-                  <Text style={styles.senderName}>Dispatch</Text>
-                )}
                 <Text
                   style={[
                     styles.messageText,
@@ -147,23 +158,25 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
                   ]}
                 >
                   {formatTime(msg.timestamp)}
-                  {msg.sender === 'surveyor' && (
-                    <Text> • <Ionicons name="checkmark-done" size={12} color="rgba(255,255,255,0.7)" /></Text>
-                  )}
                 </Text>
               </View>
             </View>
           </View>
         ))}
+
         {/* Typing Indicator */}
         {typingUser && (
           <View style={styles.typingIndicator}>
-            <View style={styles.typingDots}>
-              <View style={[styles.typingDot, styles.typingDot1]} />
-              <View style={[styles.typingDot, styles.typingDot2]} />
-              <View style={[styles.typingDot, styles.typingDot3]} />
+            <View style={styles.aiAvatar}>
+              <Ionicons name="sparkles" size={12} color={colors.accent} />
             </View>
-            <Text style={styles.typingText}>{typingUser} is typing...</Text>
+            <View style={styles.typingBubble}>
+              <View style={styles.typingDots}>
+                <View style={[styles.typingDot, styles.typingDot1]} />
+                <View style={[styles.typingDot, styles.typingDot2]} />
+                <View style={[styles.typingDot, styles.typingDot3]} />
+              </View>
+            </View>
           </View>
         )}
       </ScrollView>
@@ -182,42 +195,61 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
               style={styles.quickAction}
               onPress={() => onMessageChange(action.text)}
             >
-              <Ionicons name={action.icon as any} size={16} color={colors.primary} />
+              <Ionicons name={action.icon as any} size={14} color={colors.accent} />
               <Text style={styles.quickActionText}>{action.text}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
       </View>
 
-      {/* Input */}
-      <View style={[styles.inputContainer, shadows.sm]}>
-        <TouchableOpacity style={styles.attachButton}>
-          <Ionicons name="add-circle" size={28} color={colors.gray[400]} />
-        </TouchableOpacity>
-        <TextInput
-          key="chat-input"
-          style={styles.textInput}
-          placeholder="Type a message..."
-          placeholderTextColor={colors.gray[400]}
-          value={newMessage || ''}
-          onChangeText={onMessageChange}
-          multiline
-          maxLength={500}
-          textAlignVertical="center"
-          blurOnSubmit={false}
-          returnKeyType="default"
-        />
-        <TouchableOpacity
-          style={[styles.sendButton, newMessage.trim() && styles.sendButtonActive]}
-          onPress={onSendMessage}
-          disabled={!newMessage.trim()}
+      {/* Input Bar - Neon Yellow-Green Style from Design 1 */}
+      <View style={styles.inputWrapper}>
+        <LinearGradient
+          colors={newMessage.trim() ? gradients.accent : [colors.card, colors.card]}
+          style={styles.inputContainer}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
         >
-          <Ionicons
-            name="send"
-            size={20}
-            color={newMessage.trim() ? colors.white : colors.gray[400]}
+          <TouchableOpacity style={styles.inputAction}>
+            <Ionicons name="arrow-back" size={20} color={newMessage.trim() ? colors.black : colors.text.tertiary} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.inputAction}>
+            <Ionicons name="folder-outline" size={20} color={newMessage.trim() ? colors.black : colors.text.tertiary} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.inputAction}>
+            <Ionicons name="bookmark-outline" size={20} color={newMessage.trim() ? colors.black : colors.text.tertiary} />
+          </TouchableOpacity>
+
+          <TextInput
+            key="chat-input"
+            style={[styles.textInput, newMessage.trim() && styles.textInputActive]}
+            placeholder="Type a message..."
+            placeholderTextColor={colors.text.muted}
+            value={newMessage || ''}
+            onChangeText={onMessageChange}
+            multiline
+            maxLength={500}
+            textAlignVertical="center"
+            blurOnSubmit={false}
+            returnKeyType="default"
           />
-        </TouchableOpacity>
+
+          <TouchableOpacity style={styles.inputAction}>
+            <Ionicons name="mic-outline" size={20} color={newMessage.trim() ? colors.black : colors.text.tertiary} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.sendButton, newMessage.trim() && styles.sendButtonActive]}
+            onPress={onSendMessage}
+            disabled={!newMessage.trim()}
+          >
+            <Ionicons
+              name="send"
+              size={18}
+              color={newMessage.trim() ? colors.black : colors.text.tertiary}
+            />
+          </TouchableOpacity>
+        </LinearGradient>
       </View>
     </KeyboardAvoidingView>
   );
@@ -226,66 +258,74 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.gray[100],
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.cardBorder,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  headerIconButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: colors.card,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+  },
+  aiAssistantBadge: {
+    flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.white,
-    padding: spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.gray[200],
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.full,
+    gap: spacing.sm,
   },
-  avatarContainer: {
-    position: 'relative',
-  },
-  avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  aiBadgeIcon: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    backgroundColor: colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  onlineIndicator: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 14,
-    height: 14,
-    backgroundColor: colors.success,
-    borderRadius: 7,
-    borderWidth: 2,
-    borderColor: colors.white,
-  },
-  headerInfo: {
-    flex: 1,
-    marginLeft: spacing.md,
-  },
-  headerTitle: {
-    fontSize: fontSize.lg,
+  aiBadgeText: {
+    fontSize: fontSize.sm,
     fontWeight: fontWeight.semibold,
-    color: colors.gray[800],
+    color: colors.black,
   },
-  statusRow: {
+  statusBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 2,
+    justifyContent: 'center',
+    paddingVertical: spacing.sm,
+    gap: spacing.xs,
   },
-  onlineDot: {
+  statusDot: {
     width: 6,
     height: 6,
-    backgroundColor: colors.success,
     borderRadius: 3,
-    marginRight: spacing.xs,
   },
-  headerSubtitle: {
-    fontSize: fontSize.sm,
-    color: colors.success,
-  },
-  headerAction: {
-    padding: spacing.sm,
-    backgroundColor: colors.gray[100],
-    borderRadius: borderRadius.full,
+  statusText: {
+    fontSize: fontSize.xs,
+    color: colors.text.tertiary,
   },
   messagesContainer: {
     flex: 1,
@@ -302,16 +342,19 @@ const styles = StyleSheet.create({
   dateLine: {
     flex: 1,
     height: 1,
-    backgroundColor: colors.gray[300],
+    backgroundColor: colors.cardBorder,
   },
   dateText: {
     paddingHorizontal: spacing.md,
     fontSize: fontSize.xs,
-    color: colors.gray[500],
+    color: colors.text.muted,
   },
   messageBubble: {
-    marginBottom: spacing.sm,
+    marginBottom: spacing.md,
     maxWidth: '80%',
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: spacing.sm,
   },
   sentBubble: {
     alignSelf: 'flex-end',
@@ -319,34 +362,37 @@ const styles = StyleSheet.create({
   receivedBubble: {
     alignSelf: 'flex-start',
   },
+  aiAvatar: {
+    width: 24,
+    height: 24,
+    borderRadius: 8,
+    backgroundColor: colors.accentSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   bubbleContent: {
     padding: spacing.md,
     borderRadius: borderRadius.lg,
   },
   sentContent: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
     borderBottomRightRadius: borderRadius.xs,
   },
   receivedContent: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.card,
     borderBottomLeftRadius: borderRadius.xs,
-    ...shadows.sm,
-  },
-  senderName: {
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.semibold,
-    color: colors.primary,
-    marginBottom: spacing.xs,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
   },
   messageText: {
     fontSize: fontSize.md,
     lineHeight: 22,
   },
   sentText: {
-    color: colors.white,
+    color: colors.black,
   },
   receivedText: {
-    color: colors.gray[800],
+    color: colors.text.primary,
   },
   timeText: {
     fontSize: fontSize.xs,
@@ -354,93 +400,33 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-end',
   },
   sentTime: {
-    color: 'rgba(255,255,255,0.7)',
+    color: 'rgba(0,0,0,0.5)',
   },
   receivedTime: {
-    color: colors.gray[400],
+    color: colors.text.muted,
   },
-  quickActions: {
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    backgroundColor: colors.white,
-    borderTopWidth: 1,
-    borderTopColor: colors.gray[200],
-  },
-  quickAction: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.gray[100],
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: borderRadius.full,
-    marginRight: spacing.sm,
-    gap: spacing.xs,
-  },
-  quickActionText: {
-    fontSize: fontSize.sm,
-    color: colors.primary,
-    fontWeight: fontWeight.medium,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    padding: spacing.md,
-    backgroundColor: colors.white,
-    borderTopWidth: 1,
-    borderTopColor: colors.gray[200],
-    gap: spacing.sm,
-  },
-  attachButton: {
-    padding: spacing.xs,
-  },
-  textInput: {
-    flex: 1,
-    backgroundColor: colors.gray[100],
-    borderRadius: borderRadius.xl,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    fontSize: fontSize.md,
-    maxHeight: 100,
-    color: colors.gray[800],
-  },
-  sendButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.gray[200],
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sendButtonActive: {
-    backgroundColor: colors.primary,
-  },
-  // Offline/connecting styles
-  offlineIndicator: {
-    backgroundColor: colors.gray[400],
-  },
-  offlineDot: {
-    backgroundColor: colors.gray[400],
-  },
-  offlineText: {
-    color: colors.gray[500],
-  },
-  // Typing indicator styles
   typingIndicator: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
+    alignItems: 'flex-end',
+    gap: spacing.sm,
+  },
+  typingBubble: {
+    backgroundColor: colors.card,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
   },
   typingDots: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: spacing.sm,
   },
   typingDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.gray[400],
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.text.tertiary,
     marginHorizontal: 2,
   },
   typingDot1: {
@@ -452,10 +438,67 @@ const styles = StyleSheet.create({
   typingDot3: {
     opacity: 0.8,
   },
-  typingText: {
+  quickActions: {
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: colors.cardBorder,
+  },
+  quickAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.card,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.full,
+    marginRight: spacing.sm,
+    gap: spacing.xs,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+  },
+  quickActionText: {
     fontSize: fontSize.sm,
-    color: colors.gray[500],
-    fontStyle: 'italic',
+    color: colors.text.secondary,
+    fontWeight: fontWeight.medium,
+  },
+  inputWrapper: {
+    padding: spacing.md,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: borderRadius.full,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    gap: spacing.sm,
+  },
+  inputAction: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  textInput: {
+    flex: 1,
+    fontSize: fontSize.md,
+    color: colors.text.primary,
+    maxHeight: 80,
+    paddingVertical: spacing.sm,
+  },
+  textInputActive: {
+    color: colors.black,
+  },
+  sendButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0,0,0,0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sendButtonActive: {
+    backgroundColor: 'rgba(0,0,0,0.2)',
   },
 });
 

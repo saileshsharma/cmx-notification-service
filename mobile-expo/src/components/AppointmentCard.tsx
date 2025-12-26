@@ -1,10 +1,9 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ImageBackground } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, gradients, spacing, fontSize, fontWeight, borderRadius, shadows } from '../constants/theme';
 import { Appointment, AppointmentResponseStatus } from '../types';
-import { images } from '../constants/images';
 
 interface AppointmentCardProps {
   appointment: Appointment;
@@ -31,21 +30,12 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
     return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
   };
 
-  const getStatusGradient = (status: AppointmentResponseStatus): [string, string] => {
-    switch (status) {
-      case 'ACCEPTED': return ['#10B981', '#059669'];
-      case 'REJECTED': return ['#EF4444', '#DC2626'];
-      case 'COMPLETED': return ['#8B5CF6', '#7C3AED'];
-      default: return ['#F59E0B', '#D97706'];
-    }
-  };
-
   const getStatusColor = (status: AppointmentResponseStatus): string => {
     switch (status) {
-      case 'ACCEPTED': return '#10B981';
-      case 'REJECTED': return '#EF4444';
-      case 'COMPLETED': return '#8B5CF6';
-      default: return '#F59E0B';
+      case 'ACCEPTED': return colors.success;
+      case 'REJECTED': return colors.danger;
+      case 'COMPLETED': return colors.purple;
+      default: return colors.warning;
     }
   };
 
@@ -58,52 +48,57 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
     }
   };
 
+  const statusColor = getStatusColor(appointment.response_status);
+
   return (
-    <View style={[styles.container, shadows.md]}>
-      <LinearGradient colors={['#FFFFFF', '#F8FAFC']} style={styles.cardGradient}>
-        {/* Status Strip with Image */}
+    <View style={[styles.container, shadows.card]}>
+      <LinearGradient colors={[colors.card, colors.cardDark]} style={styles.cardGradient}>
+        {/* Vehicle Preview / Status Header */}
         <View style={styles.headerSection}>
-          <ImageBackground
-            source={{ uri: images.carInspection }}
-            style={styles.headerImage}
-            imageStyle={styles.headerImageStyle}
+          <LinearGradient
+            colors={[statusColor + '20', 'transparent']}
+            style={styles.vehiclePreview}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
           >
-            <LinearGradient
-              colors={[...getStatusGradient(appointment.response_status), 'rgba(0,0,0,0.3)']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.headerOverlay}
-            >
-              <View style={styles.statusBadge}>
-                <Ionicons
-                  name={appointment.response_status === 'ACCEPTED' ? 'checkmark-circle' : appointment.response_status === 'REJECTED' ? 'close-circle' : appointment.response_status === 'COMPLETED' ? 'checkmark-done-circle' : 'time'}
-                  size={14}
-                  color={colors.white}
-                />
-                <Text style={styles.statusText}>{getStatusLabel(appointment.response_status)}</Text>
-              </View>
-            </LinearGradient>
-          </ImageBackground>
+            <Ionicons name="car-sport" size={32} color={statusColor} />
+          </LinearGradient>
+
+          <View style={styles.arrowButton}>
+            <Ionicons name="arrow-forward" size={16} color={colors.black} />
+          </View>
         </View>
 
         <View style={styles.cardContent}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle} numberOfLines={1}>
-              {appointment.title || 'Vehicle Inspection'}
+          {/* Status Badge */}
+          <View style={[styles.statusBadge, { backgroundColor: statusColor + '20' }]}>
+            <Ionicons
+              name={
+                appointment.response_status === 'ACCEPTED' ? 'checkmark-circle' :
+                appointment.response_status === 'REJECTED' ? 'close-circle' :
+                appointment.response_status === 'COMPLETED' ? 'checkmark-done-circle' : 'time'
+              }
+              size={12}
+              color={statusColor}
+            />
+            <Text style={[styles.statusText, { color: statusColor }]}>
+              {getStatusLabel(appointment.response_status)}
             </Text>
           </View>
 
+          {/* Title */}
+          <Text style={styles.cardTitle} numberOfLines={1}>
+            {appointment.title || 'Vehicle Inspection'}
+          </Text>
+
+          {/* Date/Time Row */}
           <View style={styles.dateTimeContainer}>
             <View style={styles.dateTimeItem}>
-              <View style={styles.iconBg}>
-                <Ionicons name="calendar-outline" size={14} color={colors.primary} />
-              </View>
+              <Ionicons name="calendar-outline" size={14} color={colors.text.tertiary} />
               <Text style={styles.dateTimeText}>{formatDate(appointment.start_time)}</Text>
             </View>
             <View style={styles.dateTimeItem}>
-              <View style={styles.iconBg}>
-                <Ionicons name="time-outline" size={14} color={colors.primary} />
-              </View>
+              <Ionicons name="time-outline" size={14} color={colors.text.tertiary} />
               <Text style={styles.dateTimeText}>
                 {formatTime(appointment.start_time)} - {formatTime(appointment.end_time)}
               </Text>
@@ -116,9 +111,10 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
             </Text>
           )}
 
+          {/* Actions */}
           <View style={styles.cardActions}>
             <TouchableOpacity style={styles.actionButton} onPress={onNavigate}>
-              <Ionicons name="navigate-outline" size={18} color={colors.primary} />
+              <Ionicons name="navigate-outline" size={16} color={colors.text.primary} />
             </TouchableOpacity>
 
             {appointment.response_status === 'PENDING' && (
@@ -127,14 +123,14 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
                   style={[styles.responseButton, styles.acceptButton]}
                   onPress={onAccept}
                 >
-                  <Ionicons name="checkmark" size={18} color={colors.white} />
-                  <Text style={styles.buttonText}>Accept</Text>
+                  <Ionicons name="checkmark" size={16} color={colors.black} />
+                  <Text style={[styles.buttonText, { color: colors.black }]}>Accept</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.responseButton, styles.rejectButton]}
                   onPress={onReject}
                 >
-                  <Ionicons name="close" size={18} color={colors.white} />
+                  <Ionicons name="close" size={16} color={colors.white} />
                   <Text style={styles.buttonText}>Decline</Text>
                 </TouchableOpacity>
               </>
@@ -145,8 +141,15 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
                 style={[styles.responseButton, styles.startInspectionButton]}
                 onPress={onStartInspection}
               >
-                <Ionicons name="play" size={18} color={colors.white} />
-                <Text style={styles.buttonText}>Start Inspection</Text>
+                <LinearGradient
+                  colors={gradients.accent}
+                  style={styles.startButtonGradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                >
+                  <Ionicons name="play" size={16} color={colors.black} />
+                  <Text style={[styles.buttonText, { color: colors.black }]}>Start</Text>
+                </LinearGradient>
               </TouchableOpacity>
             )}
           </View>
@@ -159,61 +162,63 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
 const styles = StyleSheet.create({
   container: {
     marginBottom: spacing.md,
-    borderRadius: borderRadius.lg,
+    borderRadius: borderRadius.card,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
   },
   cardGradient: {
-    borderRadius: borderRadius.lg,
+    borderRadius: borderRadius.card,
   },
   headerSection: {
-    height: 56,
-    overflow: 'hidden',
+    height: 80,
+    position: 'relative',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  headerImage: {
-    flex: 1,
+  vehiclePreview: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  headerImageStyle: {
-    borderTopLeftRadius: borderRadius.lg,
-    borderTopRightRadius: borderRadius.lg,
+  arrowButton: {
+    position: 'absolute',
+    top: spacing.sm,
+    right: spacing.sm,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  headerOverlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
+  cardContent: {
     padding: spacing.md,
   },
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.sm,
     paddingVertical: 4,
     borderRadius: borderRadius.full,
     gap: 4,
+    marginBottom: spacing.sm,
   },
   statusText: {
-    color: colors.white,
     fontSize: fontSize.xs,
     fontWeight: fontWeight.semibold,
   },
-  cardContent: {
-    padding: spacing.md,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.xs,
-  },
   cardTitle: {
-    fontSize: fontSize.md,
+    fontSize: fontSize.lg,
     fontWeight: fontWeight.semibold,
-    color: colors.gray[800],
-    flex: 1,
+    color: colors.text.primary,
+    marginBottom: spacing.sm,
   },
   dateTimeContainer: {
     flexDirection: 'row',
-    gap: spacing.md,
+    gap: spacing.lg,
     marginBottom: spacing.xs,
   },
   dateTimeItem: {
@@ -221,53 +226,58 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
   },
-  iconBg: {
-    width: 22,
-    height: 22,
-    borderRadius: 6,
-    backgroundColor: '#EFF6FF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   dateTimeText: {
     fontSize: fontSize.xs,
-    color: colors.gray[600],
+    color: colors.text.tertiary,
   },
   cardDescription: {
-    fontSize: fontSize.xs,
-    color: colors.gray[500],
-    lineHeight: 16,
-    marginTop: spacing.xs,
+    fontSize: fontSize.sm,
+    color: colors.text.muted,
+    lineHeight: 18,
+    marginTop: spacing.sm,
+    marginBottom: spacing.sm,
   },
   cardActions: {
     flexDirection: 'row',
     marginTop: spacing.sm,
-    gap: spacing.xs,
+    gap: spacing.sm,
   },
   actionButton: {
-    padding: spacing.sm,
-    backgroundColor: '#EFF6FF',
+    width: 40,
+    height: 40,
+    backgroundColor: colors.backgroundSecondary,
     borderRadius: borderRadius.md,
     borderWidth: 1,
-    borderColor: '#DBEAFE',
+    borderColor: colors.cardBorder,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   responseButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: spacing.sm,
-    borderRadius: borderRadius.md,
+    height: 40,
+    borderRadius: borderRadius.button,
     gap: 4,
+    overflow: 'hidden',
   },
   acceptButton: {
-    backgroundColor: '#10B981',
+    backgroundColor: colors.success,
   },
   rejectButton: {
-    backgroundColor: '#EF4444',
+    backgroundColor: colors.danger,
   },
   startInspectionButton: {
-    backgroundColor: '#0F172A',
+    backgroundColor: 'transparent',
+  },
+  startButtonGradient: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: '100%',
+    gap: 4,
   },
   buttonText: {
     color: colors.white,

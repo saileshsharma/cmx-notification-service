@@ -7,12 +7,10 @@ import {
   StyleSheet,
   RefreshControl,
   Dimensions,
-  ImageBackground,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, gradients, spacing, fontSize, fontWeight, borderRadius, shadows } from '../constants/theme';
-import { images } from '../constants/images';
 import { QuickStatus, TodayStats, Weather } from '../context/AppContext';
 import { Appointment } from '../types';
 import { WeatherCard } from '../components/WeatherCard';
@@ -52,20 +50,22 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   formatTime,
 }) => {
   const quickStatusOptions = [
-    { key: 'on_way' as QuickStatus, icon: 'car-sport', label: 'On My Way', color: colors.primary, gradient: gradients.primary },
+    { key: 'on_way' as QuickStatus, icon: 'car-sport', label: 'On My Way', color: colors.cyan, gradient: gradients.cyan },
     { key: 'arrived' as QuickStatus, icon: 'location', label: 'Arrived', color: colors.success, gradient: gradients.success },
-    { key: 'inspecting' as QuickStatus, icon: 'search', label: 'Inspecting', color: colors.warning, gradient: gradients.warning },
-    { key: 'completed' as QuickStatus, icon: 'checkmark-done-circle', label: 'Completed', color: colors.purple, gradient: gradients.purple },
+    { key: 'inspecting' as QuickStatus, icon: 'search', label: 'Inspecting', color: colors.purple, gradient: gradients.purple },
+    { key: 'completed' as QuickStatus, icon: 'checkmark-done-circle', label: 'Completed', color: colors.accent, gradient: gradients.accent },
   ];
 
   return (
     <ScrollView
       style={styles.container}
+      contentContainerStyle={styles.contentContainer}
       refreshControl={
         <RefreshControl
           refreshing={isRefreshing}
           onRefresh={onRefresh}
-          tintColor={colors.primary}
+          tintColor={colors.accent}
+          colors={[colors.accent]}
         />
       }
       showsVerticalScrollIndicator={false}
@@ -76,98 +76,133 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       {/* Stats Card */}
       <StatsCard stats={todayStats} />
 
-      {/* Next Appointment */}
+      {/* Next Appointment Card - Premium Dark Style */}
       {nextAppointment && (
-        <View style={[styles.nextAppointmentCard, shadows.lg]}>
+        <View style={styles.nextAppointmentSection}>
           <Text style={styles.sectionTitle}>Next Inspection</Text>
-          <ImageBackground
-            source={{ uri: images.carInspection }}
-            style={styles.nextApptBackground}
-            imageStyle={styles.nextApptBackgroundImage}
-          >
+          <View style={[styles.nextAppointmentCard, shadows.card]}>
             <LinearGradient
-              colors={['rgba(0, 102, 255, 0.95)', 'rgba(123, 97, 255, 0.9)']}
+              colors={[colors.card, colors.cardDark]}
               style={styles.nextApptGradient}
             >
+              {/* Vehicle Image Placeholder */}
+              <View style={styles.vehicleImageContainer}>
+                <LinearGradient
+                  colors={['rgba(204, 255, 0, 0.1)', 'rgba(204, 255, 0, 0.05)']}
+                  style={styles.vehicleImagePlaceholder}
+                >
+                  <Ionicons name="car-sport" size={48} color={colors.accent} />
+                </LinearGradient>
+                <View style={styles.arrowButton}>
+                  <Ionicons name="arrow-forward" size={18} color={colors.black} />
+                </View>
+              </View>
+
+              {/* Appointment Info */}
               <View style={styles.nextApptContent}>
                 <View style={styles.nextApptHeader}>
                   <View style={styles.countdownBadge}>
-                    <Ionicons name="time-outline" size={14} color={colors.white} />
+                    <Ionicons name="time-outline" size={12} color={colors.accent} />
                     <Text style={styles.countdownText}>in {getTimeUntil(nextAppointment.start_time)}</Text>
                   </View>
                 </View>
-                <Text style={styles.nextApptTitle}>{nextAppointment.title || 'Vehicle Inspection'}</Text>
-                <Text style={styles.nextApptTime}>
-                  {formatDate(nextAppointment.start_time)} at {formatTime(nextAppointment.start_time)}
+
+                <Text style={styles.vehicleYear}>
+                  {formatDate(nextAppointment.start_time)}
                 </Text>
-                {nextAppointment.description && (
-                  <Text style={styles.nextApptDescription} numberOfLines={2}>
-                    {nextAppointment.description}
-                  </Text>
-                )}
+                <Text style={styles.nextApptTitle}>
+                  {nextAppointment.title || 'Vehicle Inspection'}
+                </Text>
+
+                {/* Vehicle Stats Row */}
+                <View style={styles.vehicleStatsRow}>
+                  <View style={styles.vehicleStat}>
+                    <Ionicons name="car" size={14} color={colors.text.tertiary} />
+                    <Text style={styles.vehicleStatText}>ID: {nextAppointment.id}</Text>
+                  </View>
+                  <View style={styles.vehicleStat}>
+                    <Ionicons name="time" size={14} color={colors.text.tertiary} />
+                    <Text style={styles.vehicleStatText}>{formatTime(nextAppointment.start_time)}</Text>
+                  </View>
+                </View>
+
+                {/* Action Buttons */}
                 <View style={styles.nextApptActions}>
                   <TouchableOpacity
                     style={styles.navButton}
                     onPress={() => onNavigate(nextAppointment)}
+                    activeOpacity={0.7}
                   >
-                    <Ionicons name="navigate" size={18} color={colors.white} />
+                    <Ionicons name="navigate" size={16} color={colors.text.primary} />
                     <Text style={styles.navButtonText}>Navigate</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.startButton}
                     onPress={() => onStartInspection(nextAppointment)}
+                    activeOpacity={0.7}
                   >
-                    <Ionicons name="play" size={18} color={colors.primaryDark} />
-                    <Text style={styles.startButtonText}>Start</Text>
+                    <LinearGradient
+                      colors={gradients.accent}
+                      style={styles.startButtonGradient}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                    >
+                      <Ionicons name="play" size={16} color={colors.black} />
+                      <Text style={styles.startButtonText}>Start</Text>
+                    </LinearGradient>
                   </TouchableOpacity>
                 </View>
               </View>
             </LinearGradient>
-          </ImageBackground>
+          </View>
         </View>
       )}
 
-      {/* Quick Status */}
+      {/* Quick Status - Dark Card Grid */}
       <View style={styles.quickStatusSection}>
         <Text style={styles.sectionTitle}>Quick Update</Text>
         <View style={styles.quickStatusGrid}>
-          {quickStatusOptions.map(status => (
-            <TouchableOpacity
-              key={status.key}
-              style={[
-                styles.quickStatusButton,
-                quickStatus === status.key && {
-                  backgroundColor: status.color + '15',
-                  borderColor: status.color,
-                }
-              ]}
-              onPress={() => onQuickStatus(status.key)}
-            >
-              <View style={[
-                styles.quickStatusIconBg,
-                quickStatus === status.key && { backgroundColor: status.color + '20' }
-              ]}>
-                <Ionicons
-                  name={status.icon as any}
-                  size={24}
-                  color={quickStatus === status.key ? status.color : colors.gray[500]}
-                />
-              </View>
-              <Text style={[
-                styles.quickStatusLabel,
-                quickStatus === status.key && { color: status.color }
-              ]}>
-                {status.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
+          {quickStatusOptions.map(status => {
+            const isActive = quickStatus === status.key;
+            return (
+              <TouchableOpacity
+                key={status.key}
+                style={[
+                  styles.quickStatusButton,
+                  isActive && {
+                    borderColor: status.color,
+                    backgroundColor: status.color + '15',
+                  }
+                ]}
+                onPress={() => onQuickStatus(status.key)}
+                activeOpacity={0.7}
+              >
+                <View style={[
+                  styles.quickStatusIconBg,
+                  isActive && { backgroundColor: status.color + '25' }
+                ]}>
+                  <Ionicons
+                    name={status.icon as any}
+                    size={22}
+                    color={isActive ? status.color : colors.text.tertiary}
+                  />
+                </View>
+                <Text style={[
+                  styles.quickStatusLabel,
+                  isActive && { color: status.color }
+                ]}>
+                  {status.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </View>
 
       {/* SOS Button */}
-      <TouchableOpacity style={styles.sosButton} onPress={onSOS}>
+      <TouchableOpacity style={styles.sosButton} onPress={onSOS} activeOpacity={0.8}>
         <LinearGradient colors={gradients.danger} style={styles.sosGradient}>
-          <Ionicons name="warning" size={24} color={colors.white} />
+          <Ionicons name="warning" size={22} color={colors.white} />
           <Text style={styles.sosText}>Emergency SOS</Text>
         </LinearGradient>
       </TouchableOpacity>
@@ -180,65 +215,97 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: colors.background,
+  },
+  contentContainer: {
     padding: spacing.lg,
-    backgroundColor: colors.gray[100],
   },
   sectionTitle: {
     fontSize: fontSize.lg,
     fontWeight: fontWeight.semibold,
-    color: colors.gray[800],
+    color: colors.text.primary,
     marginBottom: spacing.md,
   },
-  nextAppointmentCard: {
+  nextAppointmentSection: {
     marginBottom: spacing.lg,
   },
-  nextApptBackground: {
-    borderRadius: borderRadius.lg,
+  nextAppointmentCard: {
+    borderRadius: borderRadius.card,
     overflow: 'hidden',
-  },
-  nextApptBackgroundImage: {
-    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
   },
   nextApptGradient: {
-    padding: spacing.xl,
+    padding: spacing.lg,
+  },
+  vehicleImageContainer: {
+    position: 'relative',
+    marginBottom: spacing.lg,
+  },
+  vehicleImagePlaceholder: {
+    height: 140,
+    borderRadius: borderRadius.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  arrowButton: {
+    position: 'absolute',
+    top: spacing.md,
+    right: spacing.md,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.accentGlow,
   },
   nextApptContent: {},
   nextApptHeader: {
     flexDirection: 'row',
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
   countdownBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: colors.accentSoft,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.xs,
     borderRadius: borderRadius.full,
     gap: spacing.xs,
   },
   countdownText: {
-    color: colors.white,
-    fontSize: fontSize.sm,
+    color: colors.accent,
+    fontSize: fontSize.xs,
     fontWeight: fontWeight.semibold,
   },
-  nextApptTitle: {
-    fontSize: fontSize.xl,
-    fontWeight: fontWeight.bold,
-    color: colors.white,
+  vehicleYear: {
+    fontSize: fontSize.sm,
+    color: colors.text.tertiary,
     marginBottom: spacing.xs,
   },
-  nextApptTime: {
-    fontSize: fontSize.md,
-    color: 'rgba(255,255,255,0.8)',
+  nextApptTitle: {
+    fontSize: fontSize.xxl,
+    fontWeight: fontWeight.bold,
+    color: colors.text.primary,
+    marginBottom: spacing.md,
   },
-  nextApptDescription: {
+  vehicleStatsRow: {
+    flexDirection: 'row',
+    gap: spacing.xl,
+    marginBottom: spacing.lg,
+  },
+  vehicleStat: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  vehicleStatText: {
     fontSize: fontSize.sm,
-    color: 'rgba(255,255,255,0.7)',
-    marginTop: spacing.sm,
+    color: colors.text.tertiary,
   },
   nextApptActions: {
     flexDirection: 'row',
-    marginTop: spacing.lg,
     gap: spacing.md,
   },
   navButton: {
@@ -246,28 +313,32 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: colors.backgroundSecondary,
     paddingVertical: spacing.md,
-    borderRadius: borderRadius.md,
+    borderRadius: borderRadius.button,
     gap: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
   },
   navButtonText: {
-    color: colors.white,
+    color: colors.text.primary,
     fontWeight: fontWeight.semibold,
     fontSize: fontSize.md,
   },
   startButton: {
     flex: 1,
+    borderRadius: borderRadius.button,
+    overflow: 'hidden',
+  },
+  startButtonGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.white,
     paddingVertical: spacing.md,
-    borderRadius: borderRadius.md,
     gap: spacing.sm,
   },
   startButtonText: {
-    color: colors.primaryDark,
+    color: colors.black,
     fontWeight: fontWeight.semibold,
     fontSize: fontSize.md,
   },
@@ -281,33 +352,32 @@ const styles = StyleSheet.create({
   },
   quickStatusButton: {
     width: (width - spacing.lg * 2 - spacing.md) / 2,
-    backgroundColor: colors.white,
+    backgroundColor: colors.card,
     padding: spacing.lg,
-    borderRadius: borderRadius.lg,
+    borderRadius: borderRadius.card,
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: 'transparent',
-    ...shadows.sm,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
   },
   quickStatusIconBg: {
     width: 48,
     height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.gray[100],
+    borderRadius: 14,
+    backgroundColor: colors.backgroundSecondary,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.sm,
   },
   quickStatusLabel: {
     fontSize: fontSize.sm,
-    color: colors.gray[600],
+    color: colors.text.tertiary,
     fontWeight: fontWeight.medium,
   },
   sosButton: {
     marginBottom: spacing.xl,
-    borderRadius: borderRadius.lg,
+    borderRadius: borderRadius.button,
     overflow: 'hidden',
-    ...shadows.md,
+    ...shadows.dangerGlow,
   },
   sosGradient: {
     flexDirection: 'row',

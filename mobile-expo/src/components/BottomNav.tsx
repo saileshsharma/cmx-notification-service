@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, TouchableOpacity, Text, StyleSheet, Platform } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, spacing, fontSize, fontWeight } from '../constants/theme';
+import { colors, gradients, spacing, fontSize, fontWeight, borderRadius, shadows } from '../constants/theme';
 import { TabType } from '../context/AppContext';
 
 interface BottomNavProps {
@@ -25,77 +26,110 @@ export const BottomNav: React.FC<BottomNavProps> = ({
 }) => {
   return (
     <View style={styles.bottomNav}>
-      {tabs.map(tab => (
-        <TouchableOpacity
-          key={tab.key}
-          style={styles.navItem}
-          onPress={() => onTabChange(tab.key)}
-        >
-          <View style={styles.iconContainer}>
-            <Ionicons
-              name={(activeTab === tab.key ? tab.icon : `${tab.icon}-outline`) as any}
-              size={24}
-              color={activeTab === tab.key ? colors.primary : colors.gray[500]}
-            />
-            {tab.key === 'chat' && unreadMessages > 0 && (
-              <View style={styles.chatBadge}>
-                <Text style={styles.chatBadgeText}>
-                  {unreadMessages > 9 ? '9+' : unreadMessages}
-                </Text>
+      <LinearGradient
+        colors={gradients.header}
+        style={styles.navGradient}
+      >
+        {tabs.map(tab => {
+          const isActive = activeTab === tab.key;
+          return (
+            <TouchableOpacity
+              key={tab.key}
+              style={styles.navItem}
+              onPress={() => onTabChange(tab.key)}
+              activeOpacity={0.7}
+            >
+              <View style={[
+                styles.iconContainer,
+                isActive && styles.iconContainerActive
+              ]}>
+                <Ionicons
+                  name={(isActive ? tab.icon : `${tab.icon}-outline`) as any}
+                  size={22}
+                  color={isActive ? colors.accent : colors.text.tertiary}
+                />
+                {tab.key === 'chat' && unreadMessages > 0 && (
+                  <View style={styles.chatBadge}>
+                    <Text style={styles.chatBadgeText}>
+                      {unreadMessages > 9 ? '9+' : unreadMessages}
+                    </Text>
+                  </View>
+                )}
               </View>
-            )}
-          </View>
-          <Text style={[styles.navLabel, activeTab === tab.key && styles.navLabelActive]}>
-            {tab.label}
-          </Text>
-        </TouchableOpacity>
-      ))}
+              <Text style={[styles.navLabel, isActive && styles.navLabelActive]}>
+                {tab.label}
+              </Text>
+              {isActive && <View style={styles.activeIndicator} />}
+            </TouchableOpacity>
+          );
+        })}
+      </LinearGradient>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   bottomNav: {
-    flexDirection: 'row',
-    backgroundColor: colors.white,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     borderTopWidth: 1,
-    borderTopColor: colors.gray[100],
-    paddingBottom: Platform.OS === 'ios' ? 24 : 8,
+    borderTopColor: colors.cardBorder,
+    ...shadows.lg,
+  },
+  navGradient: {
+    flexDirection: 'row',
+    paddingBottom: Platform.OS === 'ios' ? 28 : 12,
     paddingTop: spacing.sm,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 8,
     alignItems: 'flex-end',
   },
   navItem: {
     flex: 1,
     alignItems: 'center',
     paddingVertical: spacing.sm,
+    position: 'relative',
   },
   iconContainer: {
     position: 'relative',
+    width: 44,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 10,
+  },
+  iconContainerActive: {
+    backgroundColor: colors.accentSoft,
   },
   navLabel: {
     fontSize: fontSize.xs,
-    color: colors.gray[500],
+    color: colors.text.muted,
     marginTop: 4,
   },
   navLabelActive: {
-    color: colors.primary,
-    fontWeight: fontWeight.semibold,
+    color: colors.accent,
+    fontWeight: fontWeight.medium,
+  },
+  activeIndicator: {
+    position: 'absolute',
+    top: 0,
+    width: 20,
+    height: 2,
+    backgroundColor: colors.accent,
+    borderRadius: 1,
   },
   chatBadge: {
     position: 'absolute',
-    top: -4,
-    right: -8,
+    top: -2,
+    right: 0,
     backgroundColor: colors.danger,
     borderRadius: 8,
     minWidth: 16,
     height: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: colors.backgroundSecondary,
   },
   chatBadgeText: {
     color: colors.white,
