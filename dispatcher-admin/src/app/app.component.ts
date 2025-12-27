@@ -30,7 +30,10 @@ interface FlagCategory {
   icon: string;
   flags: FeatureFlag[];
   expanded: boolean;
+  platform: 'frontend' | 'mobile' | 'shared';
 }
+
+type PlatformTab = 'all' | 'frontend' | 'mobile' | 'shared';
 
 @Component({
   selector: 'app-root',
@@ -69,31 +72,67 @@ interface FlagCategory {
                 <span class="icon">&#8635;</span>
                 Refresh
               </button>
-              <button class="btn btn-primary" (click)="enableAll()" [disabled]="loading">
+              <button class="btn btn-primary" (click)="enableAllVisible()" [disabled]="loading">
                 Enable All
               </button>
-              <button class="btn btn-danger" (click)="disableAll()" [disabled]="loading">
+              <button class="btn btn-danger" (click)="disableAllVisible()" [disabled]="loading">
                 Disable All
               </button>
             </div>
           </div>
 
+          <!-- Platform Tabs -->
+          <div class="platform-tabs">
+            <button
+              class="tab"
+              [class.active]="activeTab === 'all'"
+              (click)="setActiveTab('all')">
+              <span class="tab-icon">&#127760;</span>
+              All Platforms
+              <span class="tab-count">{{ totalFlags }}</span>
+            </button>
+            <button
+              class="tab"
+              [class.active]="activeTab === 'frontend'"
+              (click)="setActiveTab('frontend')">
+              <span class="tab-icon">&#128421;</span>
+              Frontend (Web)
+              <span class="tab-count">{{ getFlagCountByPlatform('frontend') }}</span>
+            </button>
+            <button
+              class="tab"
+              [class.active]="activeTab === 'mobile'"
+              (click)="setActiveTab('mobile')">
+              <span class="tab-icon">&#128241;</span>
+              Mobile App
+              <span class="tab-count">{{ getFlagCountByPlatform('mobile') }}</span>
+            </button>
+            <button
+              class="tab"
+              [class.active]="activeTab === 'shared'"
+              (click)="setActiveTab('shared')">
+              <span class="tab-icon">&#128279;</span>
+              Shared/Backend
+              <span class="tab-count">{{ getFlagCountByPlatform('shared') }}</span>
+            </button>
+          </div>
+
           <!-- Stats Bar -->
           <div class="stats-bar">
             <div class="stat">
-              <span class="stat-value">{{ totalFlags }}</span>
-              <span class="stat-label">Total Flags</span>
+              <span class="stat-value">{{ getVisibleFlagsCount() }}</span>
+              <span class="stat-label">{{ activeTab === 'all' ? 'Total' : activeTab }} Flags</span>
             </div>
             <div class="stat enabled">
-              <span class="stat-value">{{ enabledCount }}</span>
+              <span class="stat-value">{{ getVisibleEnabledCount() }}</span>
               <span class="stat-label">Enabled</span>
             </div>
             <div class="stat disabled">
-              <span class="stat-value">{{ disabledCount }}</span>
+              <span class="stat-value">{{ getVisibleDisabledCount() }}</span>
               <span class="stat-label">Disabled</span>
             </div>
             <div class="stat">
-              <span class="stat-value">{{ categories.length }}</span>
+              <span class="stat-value">{{ filteredCategories.length }}</span>
               <span class="stat-label">Categories</span>
             </div>
           </div>
@@ -127,6 +166,7 @@ interface FlagCategory {
               <div class="category-header" (click)="category.expanded = !category.expanded">
                 <span class="category-icon">{{ category.icon }}</span>
                 <span class="category-name">{{ category.name }}</span>
+                <span class="platform-badge" [class]="category.platform">{{ category.platform }}</span>
                 <span class="category-count">
                   {{ getEnabledCount(category) }}/{{ category.flags.length }}
                 </span>
@@ -166,6 +206,44 @@ interface FlagCategory {
           <div class="empty-state" *ngIf="!loading && !error && filteredCategories.length === 0">
             <p>No feature flags found matching "{{ searchQuery }}"</p>
           </div>
+
+          <!-- Testing Guide -->
+          <div class="testing-guide" *ngIf="!loading && !error">
+            <h3>&#128218; Testing Guide</h3>
+            <div class="guide-content">
+              <div class="guide-section">
+                <h4>Frontend (Web) Testing</h4>
+                <ul>
+                  <li><strong>Dark Mode:</strong> Toggle and check theme changes in the web app</li>
+                  <li><strong>UI flags:</strong> Check navigation, animations, compact mode</li>
+                  <li><strong>Chat features:</strong> Test attachments, typing indicators, read receipts</li>
+                  <li><strong>Reports:</strong> Test PDF/Excel export functionality</li>
+                </ul>
+                <a href="https://cmx-notification-fe-production.up.railway.app" target="_blank" class="test-link">
+                  Open Frontend App &#8599;
+                </a>
+              </div>
+              <div class="guide-section">
+                <h4>Mobile App Testing</h4>
+                <ul>
+                  <li><strong>Biometric Auth:</strong> Test Face ID/Touch ID login</li>
+                  <li><strong>Offline Mode:</strong> Turn off network and test data access</li>
+                  <li><strong>Push Notifications:</strong> Send test notification</li>
+                  <li><strong>Location:</strong> Test GPS tracking and geofencing</li>
+                </ul>
+                <p class="note">Use Expo Go app or build to test on device</p>
+              </div>
+              <div class="guide-section">
+                <h4>API Testing (curl)</h4>
+                <code class="code-block">
+# Check flag status<br>
+curl {{apiBase}}/feature-flags/dark-mode<br><br>
+# Toggle a flag<br>
+curl -X POST {{apiBase}}/feature-flags/1/toggle
+                </code>
+              </div>
+            </div>
+          </div>
         </div>
       </main>
 
@@ -203,6 +281,16 @@ interface FlagCategory {
     .btn-danger { background: #dc3545; color: white; }
     .btn-danger:hover:not(:disabled) { background: #c82333; }
     .icon { font-size: 16px; }
+
+    /* Platform Tabs */
+    .platform-tabs { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+    .tab { display: flex; align-items: center; gap: 8px; padding: 12px 20px; border: 2px solid #e8e8e8; border-radius: 12px; background: white; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s; color: #666; }
+    .tab:hover { border-color: #667eea; color: #667eea; }
+    .tab.active { border-color: #667eea; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+    .tab-icon { font-size: 18px; }
+    .tab-count { background: rgba(0,0,0,0.1); padding: 2px 8px; border-radius: 10px; font-size: 12px; }
+    .tab.active .tab-count { background: rgba(255,255,255,0.2); }
+
     .stats-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
     .stat { background: white; border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
     .stat-value { display: block; font-size: 32px; font-weight: 700; color: #1a1a2e; }
@@ -223,6 +311,10 @@ interface FlagCategory {
     .category-header:hover { background: #f8f9fa; }
     .category-icon { font-size: 20px; }
     .category-name { font-weight: 600; font-size: 16px; color: #1a1a2e; }
+    .platform-badge { font-size: 10px; padding: 3px 8px; border-radius: 4px; font-weight: 600; text-transform: uppercase; }
+    .platform-badge.frontend { background: #e3f2fd; color: #1565c0; }
+    .platform-badge.mobile { background: #f3e5f5; color: #7b1fa2; }
+    .platform-badge.shared { background: #e8f5e9; color: #2e7d32; }
     .category-count { margin-left: auto; background: #e8e8e8; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; color: #666; }
     .expand-icon { font-size: 10px; color: #999; }
     .category-content { border-top: 1px solid #e8e8e8; }
@@ -244,9 +336,32 @@ interface FlagCategory {
     input:checked + .toggle-slider { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
     input:checked + .toggle-slider:before { transform: translateX(24px); }
     input:disabled + .toggle-slider { opacity: 0.5; cursor: not-allowed; }
+
+    /* Testing Guide */
+    .testing-guide { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); padding: 24px; margin-top: 32px; }
+    .testing-guide h3 { font-size: 18px; color: #1a1a2e; margin-bottom: 16px; }
+    .guide-content { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; }
+    .guide-section { padding: 16px; background: #f8f9fa; border-radius: 8px; }
+    .guide-section h4 { font-size: 14px; color: #1a1a2e; margin-bottom: 12px; }
+    .guide-section ul { list-style: none; padding: 0; margin: 0 0 12px 0; }
+    .guide-section li { font-size: 13px; color: #666; padding: 4px 0; }
+    .guide-section li strong { color: #333; }
+    .test-link { display: inline-block; padding: 8px 16px; background: #667eea; color: white; text-decoration: none; border-radius: 6px; font-size: 13px; font-weight: 500; }
+    .test-link:hover { background: #5a6fd6; }
+    .note { font-size: 12px; color: #888; font-style: italic; }
+    .code-block { display: block; background: #1a1a2e; color: #a5d6a7; padding: 12px; border-radius: 6px; font-size: 12px; font-family: 'Monaco', 'Menlo', monospace; white-space: pre-wrap; word-break: break-all; }
+
     .admin-footer { background: #1a1a2e; color: rgba(255, 255, 255, 0.7); padding: 16px 24px; text-align: center; font-size: 13px; }
     .separator { margin: 0 12px; opacity: 0.5; }
-    @media (max-width: 768px) { .page-header { flex-direction: column; gap: 16px; } .header-buttons { width: 100%; flex-wrap: wrap; } .stats-bar { grid-template-columns: repeat(2, 1fr); } .flag-item { flex-direction: column; align-items: flex-start; gap: 12px; } .flag-actions { align-self: flex-end; } }
+    @media (max-width: 768px) {
+      .page-header { flex-direction: column; gap: 16px; }
+      .header-buttons { width: 100%; flex-wrap: wrap; }
+      .stats-bar { grid-template-columns: repeat(2, 1fr); }
+      .flag-item { flex-direction: column; align-items: flex-start; gap: 12px; }
+      .flag-actions { align-self: flex-end; }
+      .platform-tabs { flex-direction: column; }
+      .tab { justify-content: center; }
+    }
   `]
 })
 export class AppComponent implements OnInit, OnDestroy {
@@ -256,27 +371,35 @@ export class AppComponent implements OnInit, OnDestroy {
   searchQuery = '';
   loading = false;
   error: string | null = null;
+  activeTab: PlatformTab = 'all';
+  apiBase = API_BASE;
 
   private subscription: Subscription | null = null;
 
-  private categoryDefs = [
-    { prefix: 'appointments', name: 'Appointments', icon: '\u{1F4C5}' },
-    { prefix: 'surveyor', name: 'Surveyor Features', icon: '\u{1F477}' },
-    { prefix: 'notifications', name: 'Notifications', icon: '\u{1F514}' },
-    { prefix: 'chat', name: 'Chat', icon: '\u{1F4AC}' },
-    { prefix: 'reports', name: 'Reports', icon: '\u{1F4CA}' },
-    { prefix: 'location', name: 'Location', icon: '\u{1F4CD}' },
-    { prefix: 'media', name: 'Photos/Media', icon: '\u{1F4F7}' },
-    { prefix: 'signature', name: 'Signatures', icon: '\u{270D}' },
-    { prefix: 'ui', name: 'UI/UX', icon: '\u{1F3A8}' },
-    { prefix: 'mobile', name: 'Mobile', icon: '\u{1F4F1}' },
-    { prefix: 'perf', name: 'Performance', icon: '\u{26A1}' },
-    { prefix: 'security', name: 'Security', icon: '\u{1F512}' },
-    { prefix: 'api', name: 'API/Backend', icon: '\u{1F5A5}' },
-    { prefix: 'integration', name: 'Integrations', icon: '\u{1F517}' },
-    { prefix: 'experimental', name: 'Experimental', icon: '\u{1F9EA}' },
-    { prefix: 'debug', name: 'Debug', icon: '\u{1F41E}' },
-    { prefix: 'maintenance', name: 'Maintenance', icon: '\u{1F527}' },
+  // Category definitions with platform assignment
+  private categoryDefs: Array<{prefix: string; name: string; icon: string; platform: 'frontend' | 'mobile' | 'shared'}> = [
+    // Frontend-specific
+    { prefix: 'ui', name: 'UI/UX', icon: '\u{1F3A8}', platform: 'frontend' },
+    { prefix: 'reports', name: 'Reports', icon: '\u{1F4CA}', platform: 'frontend' },
+
+    // Mobile-specific
+    { prefix: 'mobile', name: 'Mobile Features', icon: '\u{1F4F1}', platform: 'mobile' },
+    { prefix: 'location', name: 'Location/GPS', icon: '\u{1F4CD}', platform: 'mobile' },
+    { prefix: 'media', name: 'Photos/Media', icon: '\u{1F4F7}', platform: 'mobile' },
+    { prefix: 'signature', name: 'Signatures', icon: '\u{270D}', platform: 'mobile' },
+
+    // Shared (both platforms)
+    { prefix: 'appointments', name: 'Appointments', icon: '\u{1F4C5}', platform: 'shared' },
+    { prefix: 'surveyor', name: 'Surveyor Features', icon: '\u{1F477}', platform: 'shared' },
+    { prefix: 'notifications', name: 'Notifications', icon: '\u{1F514}', platform: 'shared' },
+    { prefix: 'chat', name: 'Chat', icon: '\u{1F4AC}', platform: 'shared' },
+    { prefix: 'perf', name: 'Performance', icon: '\u{26A1}', platform: 'shared' },
+    { prefix: 'security', name: 'Security', icon: '\u{1F512}', platform: 'shared' },
+    { prefix: 'api', name: 'API/Backend', icon: '\u{1F5A5}', platform: 'shared' },
+    { prefix: 'integration', name: 'Integrations', icon: '\u{1F517}', platform: 'shared' },
+    { prefix: 'experimental', name: 'Experimental', icon: '\u{1F9EA}', platform: 'shared' },
+    { prefix: 'debug', name: 'Debug', icon: '\u{1F41E}', platform: 'shared' },
+    { prefix: 'maintenance', name: 'Maintenance', icon: '\u{1F527}', platform: 'shared' },
   ];
 
   constructor(private http: HttpClient) {}
@@ -299,6 +422,29 @@ export class AppComponent implements OnInit, OnDestroy {
 
   get disabledCount(): number {
     return this.flags.filter(f => !f.enabled).length;
+  }
+
+  setActiveTab(tab: PlatformTab): void {
+    this.activeTab = tab;
+    this.filterFlags();
+  }
+
+  getFlagCountByPlatform(platform: 'frontend' | 'mobile' | 'shared'): number {
+    return this.categories
+      .filter(c => c.platform === platform)
+      .reduce((sum, c) => sum + c.flags.length, 0);
+  }
+
+  getVisibleFlagsCount(): number {
+    return this.filteredCategories.reduce((sum, c) => sum + c.flags.length, 0);
+  }
+
+  getVisibleEnabledCount(): number {
+    return this.filteredCategories.reduce((sum, c) => sum + c.flags.filter(f => f.enabled).length, 0);
+  }
+
+  getVisibleDisabledCount(): number {
+    return this.filteredCategories.reduce((sum, c) => sum + c.flags.filter(f => !f.enabled).length, 0);
   }
 
   loadFlags(): void {
@@ -342,7 +488,8 @@ export class AppComponent implements OnInit, OnDestroy {
         prefix: 'other',
         icon: '\u{1F4E6}',
         flags: otherFlags,
-        expanded: true
+        expanded: true,
+        platform: 'shared'
       });
     }
 
@@ -350,20 +497,28 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   filterFlags(): void {
-    if (!this.searchQuery.trim()) {
-      this.filteredCategories = this.categories;
-      return;
+    let filtered = this.categories;
+
+    // Filter by platform tab
+    if (this.activeTab !== 'all') {
+      filtered = filtered.filter(c => c.platform === this.activeTab);
     }
-    const query = this.searchQuery.toLowerCase();
-    this.filteredCategories = this.categories
-      .map(category => ({
-        ...category,
-        flags: category.flags.filter(f =>
-          f.name.toLowerCase().includes(query) ||
-          f.description.toLowerCase().includes(query)
-        )
-      }))
-      .filter(category => category.flags.length > 0);
+
+    // Filter by search query
+    if (this.searchQuery.trim()) {
+      const query = this.searchQuery.toLowerCase();
+      filtered = filtered
+        .map(category => ({
+          ...category,
+          flags: category.flags.filter(f =>
+            f.name.toLowerCase().includes(query) ||
+            f.description.toLowerCase().includes(query)
+          )
+        }))
+        .filter(category => category.flags.length > 0);
+    }
+
+    this.filteredCategories = filtered;
   }
 
   getEnabledCount(category: FlagCategory): number {
@@ -392,9 +547,10 @@ export class AppComponent implements OnInit, OnDestroy {
     });
   }
 
-  enableAll(): void {
+  enableAllVisible(): void {
     this.loading = true;
-    const disabledFlags = this.flags.filter(f => !f.enabled);
+    const visibleFlags = this.filteredCategories.flatMap(c => c.flags);
+    const disabledFlags = visibleFlags.filter(f => !f.enabled);
     let completed = 0;
     if (disabledFlags.length === 0) {
       this.loading = false;
@@ -419,9 +575,10 @@ export class AppComponent implements OnInit, OnDestroy {
     });
   }
 
-  disableAll(): void {
+  disableAllVisible(): void {
     this.loading = true;
-    const enabledFlags = this.flags.filter(f => f.enabled);
+    const visibleFlags = this.filteredCategories.flatMap(c => c.flags);
+    const enabledFlags = visibleFlags.filter(f => f.enabled);
     let completed = 0;
     if (enabledFlags.length === 0) {
       this.loading = false;
