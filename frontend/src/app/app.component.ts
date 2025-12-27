@@ -403,6 +403,13 @@ export class AppComponent implements OnInit, OnDestroy {
     // Subscribe to flag updates
     this.featureFlagSubscription = this.featureFlagService.flags$.subscribe(flags => {
       this.featureFlags = flags;
+      // Update calendar drag-drop based on feature flag
+      const dragDropEnabled = this.featureFlagService.isEnabled('drag-drop-scheduling', true);
+      this.calendarOptions = {
+        ...this.calendarOptions,
+        editable: dragDropEnabled,
+        eventResizableFromStart: dragDropEnabled
+      };
     });
     // Load initial flags
     this.featureFlagService.initialize().subscribe();
