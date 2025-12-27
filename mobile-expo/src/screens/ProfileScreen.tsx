@@ -12,7 +12,14 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 import { colors, spacing, fontSize, fontWeight, borderRadius, gradients, shadows } from '../constants/theme';
+
+// Get app version from expo config
+const APP_VERSION = Constants.expoConfig?.version || '1.0.0';
+const BUILD_NUMBER = Platform.OS === 'ios'
+  ? Constants.expoConfig?.ios?.buildNumber || '1'
+  : Constants.expoConfig?.android?.versionCode?.toString() || '1';
 
 interface ProfileScreenProps {
   surveyorName: string | null;
@@ -280,6 +287,42 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           </View>
         </View>
 
+        {/* About Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>About</Text>
+          <View style={[styles.card, shadows.card]}>
+            <LinearGradient colors={[colors.card, colors.cardDark]} style={styles.cardGradient}>
+              <View style={styles.aboutRow}>
+                <View style={styles.infoIconContainer}>
+                  <Ionicons name="information-circle-outline" size={22} color={colors.accent} />
+                </View>
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>App Version</Text>
+                  <Text style={styles.infoValue}>{APP_VERSION} (Build {BUILD_NUMBER})</Text>
+                </View>
+              </View>
+              <View style={styles.aboutRow}>
+                <View style={styles.infoIconContainer}>
+                  <Ionicons name="phone-portrait-outline" size={22} color={colors.accent} />
+                </View>
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>Platform</Text>
+                  <Text style={styles.infoValue}>{Platform.OS === 'ios' ? 'iOS' : 'Android'} {Platform.Version}</Text>
+                </View>
+              </View>
+              <View style={[styles.aboutRow, styles.lastRow]}>
+                <View style={styles.infoIconContainer}>
+                  <Ionicons name="business-outline" size={22} color={colors.accent} />
+                </View>
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>App Name</Text>
+                  <Text style={styles.infoValue}>{Constants.expoConfig?.name || 'FleetInspect Pro'}</Text>
+                </View>
+              </View>
+            </LinearGradient>
+          </View>
+        </View>
+
         {/* Logout Button */}
         {onLogout && (
           <View style={styles.section}>
@@ -533,6 +576,16 @@ const styles = StyleSheet.create({
     fontSize: fontSize.lg,
     fontWeight: fontWeight.bold,
     color: colors.white,
+  },
+  aboutRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.cardBorder,
+  },
+  lastRow: {
+    borderBottomWidth: 0,
   },
   bottomSpacing: {
     height: 100,
