@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, gradients, spacing, fontSize, fontWeight, borderRadius, shadows } from '../constants/theme';
 import { ChatMessage } from '../context/AppContext';
 
@@ -32,6 +33,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
   typingUser = null,
 }) => {
   const scrollViewRef = useRef<ScrollView>(null);
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     setTimeout(() => {
@@ -74,7 +76,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={120}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
       {/* Chat Header */}
       <View style={styles.header}>
@@ -195,7 +197,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
       </View>
 
       {/* Input Bar */}
-      <View style={styles.inputWrapper}>
+      <View style={[styles.inputWrapper, { paddingBottom: Math.max(insets.bottom, spacing.lg) }]}>
         <View style={styles.inputContainer}>
           <TouchableOpacity style={styles.inputAction}>
             <Ionicons name="attach" size={22} color={colors.text.tertiary} />
@@ -449,7 +451,6 @@ const styles = StyleSheet.create({
   },
   inputWrapper: {
     padding: spacing.md,
-    paddingBottom: spacing.lg,
   },
   inputContainer: {
     flexDirection: 'row',

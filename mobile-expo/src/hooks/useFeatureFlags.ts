@@ -1,0 +1,196 @@
+import { useState, useEffect, useCallback } from 'react';
+import { API_BASE_URL } from '../config/api';
+
+export interface FeatureFlags {
+  [key: string]: boolean;
+}
+
+export interface VariantResponse {
+  name: string;
+  enabled: boolean;
+  variantName: string;
+  payload?: string;
+  payloadType?: string;
+}
+
+// Default feature flags to load on initialization
+const DEFAULT_FLAGS = [
+  'new-dashboard',
+  'chat-v2',
+  'real-time-tracking',
+  'dark-mode',
+  'offline-mode',
+  'biometric-auth',
+  'push-notifications-v2',
+];
+
+let flagsCache: FeatureFlags = {};
+let isInitialized = false;
+
+/**
+ * Hook for accessing feature flags in React Native components.
+ *
+ * Usage:
+ * const { isEnabled, getVariant, refresh } = useFeatureFlags(userId);
+ *
+ * if (isEnabled('new-chat-feature')) {
+ *   // Show new chat UI
+ * }
+ */
+export function useFeatureFlags(userId?: string) {
+  const [flags, setFlags] = useState<FeatureFlags>(flagsCache);
+  const [loading, setLoading] = useState(!isInitialized);
+  const [error, setError] = useState<string | null>(null);
+
+  // Load flags on mount
+  useEffect(() => {
+    if (!isInitialized) {
+      loadFlags(DEFAULT_FLAGS, userId)
+        .then(loadedFlags => {
+          flagsCache = { ...flagsCache, ...loadedFlags };
+          setFlags(flagsCache);
+          isInitialized = true;
+          setLoading(false);
+        })
+        .catch(err => {
+          console.warn('Failed to load feature flags:', err);
+          setError(err.message);
+          setLoading(false);
+        });
+    }
+  }, [userId]);
+
+  // Reload flags when userId changes
+  useEffect(() => {
+    if (isInitialized && userId) {
+      loadFlags(Object.keys(flagsCache), userId)
+        .then(loadedFlags => {
+          flagsCache = loadedFlags;
+          setFlags(flagsCache);
+        })
+        .catch(console.warn);
+    }
+  }, [userId]);
+
+  /**
+   * Check if a feature is enabled.
+   */
+  const isEnabled = useCallback((flagName: string, defaultValue = false): boolean => {
+    if (flags[flagName] !== undefined) {
+      return flags[flagName];
+    }
+    // Flag not in cache, return default
+    return defaultValue;
+  }, [flags]);
+
+  /**
+   * Check if a feature is enabled (async version that fetches if not cached).
+   */
+  const isEnabledAsync = useCallback(async (flagName: string): Promise<boolean> => {
+    if (flags[flagName] !== undefined) {
+      return flags[flagName];
+    }
+
+    try {
+      let url = `${API_BASE_URL}/feature-flags/${flagName}`;
+      if (userId) {
+        url += `?userId=${encodeURIComponent(userId)}`;
+      }
+
+      const response = await fetch(url);
+      const data = await response.json();
+
+      // Update cache
+      flagsCache[flagName] = data.enabled;
+      setFlags({ ...flagsCache });
+
+      return data.enabled;
+    } catch (err) {
+      console.warn(`Failed to fetch flag ${flagName}:`, err);
+      return false;
+    }
+  }, [flags, userId]);
+
+  /**
+   * Get variant for A/B testing.
+   */
+  const getVariant = useCallback(async (flagName: string): Promise<VariantResponse> => {
+    try {
+      let url = `${API_BASE_URL}/feature-flags/${flagName}/variant`;
+      if (userId) {
+        url += `?userId=${encodeURIComponent(userId)}`;
+      }
+
+      const response = await fetch(url);
+      return await response.json();
+    } catch (err) {
+      console.warn(`Failed to fetch variant for ${flagName}:`, err);
+      return {
+        name: flagName,
+        enabled: false,
+        variantName: 'disabled',
+      };
+    }
+  }, [userId]);
+
+  /**
+   * Force refresh all cached flags.
+   */
+  const refresh = useCallback(async (): Promise<void> => {
+    const flagNames = Object.keys(flagsCache);
+    if (flagNames.length === 0) return;
+
+    try {
+      const loadedFlags = await loadFlags(flagNames, userId);
+      flagsCache = loadedFlags;
+      setFlags(flagsCache);
+    } catch (err) {
+      console.warn('Failed to refresh flags:', err);
+    }
+  }, [userId]);
+
+  return {
+    flags,
+    loading,
+    error,
+    isEnabled,
+    isEnabledAsync,
+    getVariant,
+    refresh,
+  };
+}
+
+/**
+ * Load multiple flags at once (batch request).
+ */
+async function loadFlags(flagNames: string[], userId?: string): Promise<FeatureFlags> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/feature-flags/batch`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        flags: flagNames,
+        userId: userId || null,
+      }),
+    });
+
+    const data = await response.json();
+    return data.flags || {};
+  } catch (err) {
+    console.warn('Failed to load feature flags:', err);
+    // Return empty flags on error
+    const defaults: FeatureFlags = {};
+    flagNames.forEach(name => defaults[name] = false);
+    return defaults;
+  }
+}
+
+/**
+ * Clear all cached flags (call on logout).
+ */
+export function clearFeatureFlagsCache(): void {
+  flagsCache = {};
+  isInitialized = false;
+}
