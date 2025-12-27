@@ -17,6 +17,9 @@ RUN npm run build
 # Production stage - use nginx to serve
 FROM nginx:alpine
 
+# Install gettext for envsubst
+RUN apk add --no-cache gettext
+
 # Copy custom nginx config template
 COPY nginx.conf /etc/nginx/nginx.conf.template
 
@@ -27,4 +30,4 @@ COPY --from=build /app/dist/dispatcher-admin/browser /usr/share/nginx/html
 ENV PORT=80
 
 # Use envsubst to replace ${PORT} in nginx config, then start nginx
-CMD ["/bin/sh", "-c", "envsubst '${PORT}' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf && nginx -g 'daemon off;'"]
+CMD ["/bin/sh", "-c", "envsubst '\\$PORT' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf && nginx -g 'daemon off;'"]
