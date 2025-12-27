@@ -34,16 +34,10 @@
         <span class="health-text">{{ systemHealth().status | titlecase }}</span>
       </div>
 
-      <button class="nav-btn" (click)="toggleDarkMode()" [title]="darkMode() ? 'Light Mode' : 'Dark Mode'">
-        @if (!darkMode()) {
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-          </svg>
-        } @else {
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-          </svg>
-        }
+      <button class="nav-btn" (click)="showOverview.set(!showOverview())" [class.active]="showOverview()" title="Feature Overview">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/>
+        </svg>
       </button>
 
       <button class="nav-btn" (click)="showAuditLog.set(!showAuditLog())" [class.active]="showAuditLog()" title="Audit Log">
@@ -366,6 +360,133 @@
         </div>
       }
     </main>
+
+    <!-- Feature Overview Panel -->
+    @if (showOverview()) {
+      <aside class="overview-panel">
+        <div class="panel-header">
+          <h3>Feature Overview</h3>
+          <button class="close-btn" (click)="showOverview.set(false)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="panel-content">
+          <!-- Summary Stats -->
+          <div class="overview-stats">
+            <div class="overview-stat">
+              <span class="stat-number">{{ flagService.totalCount() }}</span>
+              <span class="stat-label">Total Flags</span>
+            </div>
+            <div class="overview-stat enabled">
+              <span class="stat-number">{{ flagService.enabledCount() }}</span>
+              <span class="stat-label">Enabled</span>
+            </div>
+            <div class="overview-stat disabled">
+              <span class="stat-number">{{ flagService.disabledCount() }}</span>
+              <span class="stat-label">Disabled</span>
+            </div>
+          </div>
+
+          <!-- Business Features Section -->
+          <div class="overview-section">
+            <div class="section-header business">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+              </svg>
+              <h4>Business Features</h4>
+              <span class="section-count">{{ getBusinessFlags().length }} flags</span>
+            </div>
+            <div class="overview-flags">
+              @for (flag of getBusinessFlags(); track flag.id) {
+                <div class="overview-flag-item" [class.enabled]="flag.enabled" [class.disabled]="!flag.enabled">
+                  <div class="flag-info">
+                    <span class="flag-name">{{ getFlagDisplayName(flag.name) }}</span>
+                    <span class="flag-category">{{ getFlagCategoryName(flag.name) }}</span>
+                  </div>
+                  <div class="flag-status" [class.on]="flag.enabled" [class.off]="!flag.enabled">
+                    {{ flag.enabled ? 'ON' : 'OFF' }}
+                  </div>
+                </div>
+              }
+              @if (getBusinessFlags().length === 0) {
+                <div class="empty-section">No business feature flags</div>
+              }
+            </div>
+          </div>
+
+          <!-- Technical Features Section -->
+          <div class="overview-section">
+            <div class="section-header technical">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+              </svg>
+              <h4>Technical Features</h4>
+              <span class="section-count">{{ getTechnicalFlags().length }} flags</span>
+            </div>
+            <div class="overview-flags">
+              @for (flag of getTechnicalFlags(); track flag.id) {
+                <div class="overview-flag-item" [class.enabled]="flag.enabled" [class.disabled]="!flag.enabled">
+                  <div class="flag-info">
+                    <span class="flag-name">{{ getFlagDisplayName(flag.name) }}</span>
+                    <span class="flag-category">{{ getFlagCategoryName(flag.name) }}</span>
+                  </div>
+                  <div class="flag-status" [class.on]="flag.enabled" [class.off]="!flag.enabled">
+                    {{ flag.enabled ? 'ON' : 'OFF' }}
+                  </div>
+                </div>
+              }
+              @if (getTechnicalFlags().length === 0) {
+                <div class="empty-section">No technical feature flags</div>
+              }
+            </div>
+          </div>
+
+          <!-- Rollout Progress -->
+          <div class="overview-section">
+            <div class="section-header">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/>
+              </svg>
+              <h4>Rollout Progress</h4>
+            </div>
+            <div class="rollout-summary">
+              <div class="rollout-bar-large">
+                <div class="rollout-fill-large" [style.width.%]="getEnabledPercentage()"></div>
+              </div>
+              <div class="rollout-labels">
+                <span>{{ getEnabledPercentage() | number:'1.0-0' }}% Features Enabled</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Platform Breakdown -->
+          <div class="overview-section">
+            <div class="section-header">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/>
+              </svg>
+              <h4>Platform Breakdown</h4>
+            </div>
+            <div class="platform-breakdown">
+              @for (platform of getPlatformBreakdown(); track platform.name) {
+                <div class="platform-item">
+                  <div class="platform-info">
+                    <span class="platform-name">{{ platform.name }}</span>
+                    <span class="platform-stats">{{ platform.enabled }}/{{ platform.total }} enabled</span>
+                  </div>
+                  <div class="platform-bar">
+                    <div class="platform-fill" [style.width.%]="platform.total > 0 ? (platform.enabled / platform.total) * 100 : 0"></div>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      </aside>
+    }
 
     <!-- Audit Log Panel -->
     @if (showAuditLog()) {

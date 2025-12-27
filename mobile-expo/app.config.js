@@ -92,9 +92,9 @@ module.exports = {
         {
           organization: process.env.SENTRY_ORG || "your-org",
           project: process.env.SENTRY_PROJECT || "fleetinspect-pro",
-          // Source maps upload is enabled by default in EAS builds
-          // Set to false to disable automatic upload
-          // uploadSourceMaps: true
+          // Disable source map upload until SENTRY_AUTH_TOKEN is configured in EAS secrets
+          // To enable: run `eas secret:create --name SENTRY_AUTH_TOKEN --value <your-token>`
+          uploadSourceMaps: false
         }
       ]
     ],

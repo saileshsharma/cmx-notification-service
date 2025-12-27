@@ -63,11 +63,21 @@ export class DashboardComponent implements OnInit, OnDestroy {
   viewMode = signal<ViewMode>('grid');
   sortBy = signal<SortBy>('name');
   quickFilter = signal<string | null>(null);
-  darkMode = signal(false);
+  darkMode = signal(false); // Keep for styling, but no toggle in UI
   sidebarCollapsed = signal(false);
   showAuditLog = signal(false);
   showCreateModal = signal(false);
+  showOverview = signal(false);
   selectedFlag = signal<FeatureFlagUI | null>(null);
+
+  // Business vs Technical flag classification
+  private readonly businessCategories = [
+    'appointments', 'surveyor', 'reports', 'chat', 'notifications',
+    'integration', 'media', 'signature', 'location'
+  ];
+  private readonly technicalCategories = [
+    'ui', 'perf', 'security', 'api', 'debug', 'experimental', 'maintenance', 'mobile'
+  ];
 
   // New flag form
   newFlag = signal<CreateFlagRequest>({
@@ -134,7 +144,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private healthCheckSub?: Subscription;
 
   ngOnInit(): void {
-    this.loadDarkModePreference();
     this.loadFlags();
     this.startHealthCheck();
   }
@@ -345,16 +354,118 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return then.toLocaleDateString();
   }
 
-  // ==================== Dark Mode ====================
+  // ==================== Feature Overview ====================
 
-  toggleDarkMode(): void {
-    this.darkMode.update(v => !v);
-    localStorage.setItem('darkMode', String(this.darkMode()));
+  /**
+   * Get business-related feature flags
+   */
+  getBusinessFlags(): FeatureFlagUI[] {
+    const flags = this.flagService.flags();
+    return flags.filter(f => {
+      const category = this.getFlagCategory(f.name);
+      return this.businessCategories.includes(category);
+    });
   }
 
-  loadDarkModePreference(): void {
-    const saved = localStorage.getItem('darkMode');
-    this.darkMode.set(saved === 'true');
+  /**
+   * Get technical/infrastructure feature flags
+   */
+  getTechnicalFlags(): FeatureFlagUI[] {
+    const flags = this.flagService.flags();
+    return flags.filter(f => {
+      const category = this.getFlagCategory(f.name);
+      return this.technicalCategories.includes(category) || !this.businessCategories.includes(category);
+    });
+  }
+
+  /**
+   * Get the category prefix from a flag name
+   */
+  private getFlagCategory(name: string): string {
+    // Check if it has a prefix
+    if (name.includes('.')) {
+      return name.split('.')[0];
+    }
+    // Match based on keywords
+    const lowName = name.toLowerCase();
+    if (lowName.includes('appointment') || lowName.includes('calendar') || lowName.includes('scheduling')) return 'appointments';
+    if (lowName.includes('surveyor') || lowName.includes('workload') || lowName.includes('territory')) return 'surveyor';
+    if (lowName.includes('report') || lowName.includes('export') || lowName.includes('analytics')) return 'reports';
+    if (lowName.includes('chat') || lowName.includes('message')) return 'chat';
+    if (lowName.includes('notification') || lowName.includes('push') || lowName.includes('sms') || lowName.includes('email')) return 'notifications';
+    if (lowName.includes('integration') || lowName.includes('google') || lowName.includes('slack')) return 'integration';
+    if (lowName.includes('photo') || lowName.includes('image') || lowName.includes('camera')) return 'media';
+    if (lowName.includes('signature')) return 'signature';
+    if (lowName.includes('location') || lowName.includes('tracking') || lowName.includes('gps') || lowName.includes('eta')) return 'location';
+    if (lowName.includes('dark') || lowName.includes('theme') || lowName.includes('animation') || lowName.includes('skeleton')) return 'ui';
+    if (lowName.includes('cache') || lowName.includes('lazy') || lowName.includes('optimization') || lowName.includes('perf')) return 'perf';
+    if (lowName.includes('auth') || lowName.includes('session') || lowName.includes('security') || lowName.includes('audit')) return 'security';
+    if (lowName.includes('debug') || lowName.includes('log')) return 'debug';
+    if (lowName.includes('ai') || lowName.includes('experimental') || lowName.includes('voice-command')) return 'experimental';
+    return 'other';
+  }
+
+  /**
+   * Get human-readable category name for a flag
+   */
+  getFlagCategoryName(name: string): string {
+    const category = this.getFlagCategory(name);
+    const categoryMap: Record<string, string> = {
+      'appointments': 'Appointments',
+      'surveyor': 'Surveyor',
+      'reports': 'Reports',
+      'chat': 'Chat',
+      'notifications': 'Notifications',
+      'integration': 'Integrations',
+      'media': 'Media',
+      'signature': 'Signatures',
+      'location': 'Location',
+      'ui': 'UI/UX',
+      'perf': 'Performance',
+      'security': 'Security',
+      'api': 'API',
+      'debug': 'Debug',
+      'experimental': 'Experimental',
+      'maintenance': 'Maintenance',
+      'mobile': 'Mobile',
+      'other': 'Other'
+    };
+    return categoryMap[category] || 'Other';
+  }
+
+  /**
+   * Get percentage of enabled flags
+   */
+  getEnabledPercentage(): number {
+    const total = this.flagService.totalCount();
+    if (total === 0) return 0;
+    return (this.flagService.enabledCount() / total) * 100;
+  }
+
+  /**
+   * Get platform breakdown data
+   */
+  getPlatformBreakdown(): { name: string; total: number; enabled: number }[] {
+    const categories = this.flagService.categories();
+    const platforms: Record<string, { total: number; enabled: number }> = {
+      'Frontend': { total: 0, enabled: 0 },
+      'Mobile': { total: 0, enabled: 0 },
+      'Shared': { total: 0, enabled: 0 }
+    };
+
+    categories.forEach(cat => {
+      const platformName = cat.platform.charAt(0).toUpperCase() + cat.platform.slice(1);
+      if (platforms[platformName]) {
+        platforms[platformName].total += cat.flags.length;
+        platforms[platformName].enabled += cat.flags.filter(f => f.enabled).length;
+      }
+    });
+
+    return Object.entries(platforms).map(([name, data]) => ({
+      name,
+      total: data.total,
+      enabled: data.enabled
+    }));
   }
 
   // ==================== Modals ====================
