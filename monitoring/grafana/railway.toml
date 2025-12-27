@@ -1,6 +1,7 @@
 [build]
 builder = "dockerfile"
 dockerfilePath = "Dockerfile"
+watchPatterns = ["monitoring/grafana/**"]
 
 [deploy]
 healthcheckPath = "/api/health"

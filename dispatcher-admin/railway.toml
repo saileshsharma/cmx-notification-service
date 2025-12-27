@@ -1,6 +1,7 @@
 [build]
 builder = "dockerfile"
 dockerfilePath = "Dockerfile"
+watchPatterns = ["dispatcher-admin/**"]
 
 [deploy]
 healthcheckPath = "/"
