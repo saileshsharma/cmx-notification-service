@@ -86,22 +86,31 @@ export function useAuth(): UseAuthReturn {
   // This handles the case where the token is obtained after auto-login
   useEffect(() => {
     const registerTokenIfNeeded = async () => {
-      if (state.surveyorId && state.expoPushToken && state.isRegistered) {
-        logger.info('[Auth] Registering push token for logged-in user');
+      logger.debug('[Auth] Token registration check:', {
+        surveyorId: state.surveyorId,
+        hasToken: !!state.expoPushToken,
+        tokenLength: state.expoPushToken?.length || 0,
+        isRegistered: state.isRegistered,
+      });
+
+      if (state.surveyorId && state.expoPushToken) {
+        logger.info('[Auth] Registering push token for surveyor:', state.surveyorId);
+        logger.info('[Auth] Token (first 30 chars):', state.expoPushToken.substring(0, 30) + '...');
+        logger.info('[Auth] Platform:', Platform.OS);
         try {
-          await apiService.registerDevice({
+          const result = await apiService.registerDevice({
             surveyorId: state.surveyorId,
             token: state.expoPushToken,
             platform: Platform.OS === 'ios' ? 'IOS' : 'ANDROID',
           });
-          logger.info('[Auth] Push token registered successfully');
+          logger.info('[Auth] Push token registered successfully:', result);
         } catch (error) {
-          logger.warn('[Auth] Failed to register push token:', error);
+          logger.error('[Auth] Failed to register push token:', error);
         }
       }
     };
     registerTokenIfNeeded();
-  }, [state.surveyorId, state.expoPushToken, state.isRegistered]);
+  }, [state.surveyorId, state.expoPushToken]);
 
   const checkBiometricSupport = async () => {
     try {
@@ -253,6 +262,24 @@ export function useAuth(): UseAuthReturn {
         });
 
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+        // Explicitly register push token after successful login
+        if (state.expoPushToken) {
+          logger.info('[Login] Registering push token immediately after login...');
+          logger.info('[Login] Token (first 30 chars):', state.expoPushToken.substring(0, 30) + '...');
+          try {
+            const deviceResult = await apiService.registerDevice({
+              surveyorId: response.surveyor!.id,
+              token: state.expoPushToken,
+              platform: Platform.OS === 'ios' ? 'IOS' : 'ANDROID',
+            });
+            logger.info('[Login] Push token registered successfully:', deviceResult);
+          } catch (tokenError) {
+            logger.error('[Login] Failed to register push token:', tokenError);
+          }
+        } else {
+          logger.warn('[Login] No push token available at login time - will be registered when token is obtained');
+        }
 
         // Prompt biometric setup on first login
         if (isFirstLogin && state.biometricSupported && !state.biometricEnabled) {

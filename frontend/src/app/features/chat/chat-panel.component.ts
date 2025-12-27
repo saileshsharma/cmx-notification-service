@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy, ChangeDetectorRef, OnInit, OnDestroy, inject, ViewChild, ElementRef, AfterViewChecked } from '@angular/core';
+import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy, ChangeDetectorRef, OnInit, OnDestroy, OnChanges, SimpleChanges, inject, ViewChild, ElementRef, AfterViewChecked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subject } from 'rxjs';
@@ -462,7 +462,7 @@ import { ChatService, ChatMessage, ChatConversation, TypingIndicator } from '../
     }
   `]
 })
-export class ChatPanelComponent implements AfterViewChecked {
+export class ChatPanelComponent implements AfterViewChecked, OnChanges {
   @ViewChild('messagesContainer') messagesContainer?: ElementRef;
 
   @Input() isOpen = false;
@@ -507,9 +507,9 @@ export class ChatPanelComponent implements AfterViewChecked {
     }
   }
 
-  ngOnChanges(): void {
-    // Scroll to bottom when new messages arrive
-    if (this.messages.length > 0) {
+  ngOnChanges(changes: SimpleChanges): void {
+    // Scroll to bottom when messages change or conversation opens
+    if (changes['messages'] || changes['activeConversationId']) {
       this.shouldScrollToBottom = true;
     }
   }
@@ -517,7 +517,13 @@ export class ChatPanelComponent implements AfterViewChecked {
   private scrollToBottom(): void {
     if (this.messagesContainer) {
       const container = this.messagesContainer.nativeElement;
-      container.scrollTop = container.scrollHeight;
+      // Use setTimeout to ensure DOM is fully rendered
+      setTimeout(() => {
+        container.scrollTo({
+          top: container.scrollHeight,
+          behavior: 'smooth'
+        });
+      }, 50);
     }
   }
 

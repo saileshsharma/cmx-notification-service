@@ -46,11 +46,24 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
   const voiceMessagesEnabled = featureFlags.isEnabled(FLAGS.VOICE_MESSAGES);
   const readReceiptsEnabled = featureFlags.isEnabled(FLAGS.READ_RECEIPTS);
 
+  // Auto-scroll to bottom when messages change
+  const scrollToBottom = (animated: boolean = true) => {
+    scrollViewRef.current?.scrollToEnd({ animated });
+  };
+
+  // Scroll on initial load and when messages array changes
   useEffect(() => {
-    setTimeout(() => {
-      scrollViewRef.current?.scrollToEnd({ animated: true });
-    }, 100);
-  }, [messages.length]);
+    // Use a small delay to ensure content is rendered
+    const timer = setTimeout(() => {
+      scrollToBottom(true);
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [messages]);
+
+  // Handle content size changes - this triggers when new messages are added
+  const handleContentSizeChange = () => {
+    scrollToBottom(true);
+  };
 
   // Safe date helper - ensures we have a valid Date object
   const ensureDate = (date: Date | string | undefined): Date => {
@@ -138,6 +151,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
         style={styles.messagesContainer}
         contentContainerStyle={styles.messagesContent}
         showsVerticalScrollIndicator={false}
+        onContentSizeChange={handleContentSizeChange}
       >
         {messages.map((msg, index) => (
           <View key={msg.id}>
