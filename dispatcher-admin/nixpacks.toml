@@ -1,0 +1,8 @@
+[phases.setup]
+nixPkgs = ["nodejs_20"]
+
+[phases.build]
+cmds = ["npm ci", "npm run build", "npm install -g serve"]
+
+[start]
+cmd = "serve -s dist/cmx-surveyor-calendar-ui/browser -l $PORT"

@@ -50,14 +50,77 @@ export class FeatureFlagService {
   initialize(userId?: number): Observable<FeatureFlags> {
     this.userId = userId || null;
     return this.loadFlags([
-      // Add your feature flags here
-      'dark-mode',
+      // Appointments
+      'bulk-create-appointments',
+      'recurring-appointments',
+      'drag-drop-scheduling',
+      'auto-assign-surveyor',
+      'conflict-detection',
+      'eta-tracking',
+
+      // Surveyor Features
+      'availability-calendar',
+      'territory-management',
+      'skills-matrix',
+      'performance-metrics',
+      'workload-balancing',
+
+      // Notifications
+      'push-notifications',
+      'sms-notifications',
+      'email-notifications',
+      'in-app-notifications',
+      'quiet-hours',
+
+      // Chat
       'chat-v2',
+      'chat-attachments',
+      'voice-messages',
+      'read-receipts',
+      'typing-indicators',
+      'group-chat',
+
+      // Reports
+      'pdf-export',
+      'excel-export',
+      'scheduled-reports',
+      'custom-report-templates',
+      'analytics-dashboard',
+
+      // Location
       'real-time-tracking',
-      'offline-mode',
-      'biometric-auth',
-      'bulk-assignment',
-      'export-reports',
+      'geofencing',
+      'route-optimization',
+      'traffic-integration',
+
+      // UI/UX
+      'dark-mode',
+      'new-navigation',
+      'compact-mode',
+      'animations-enabled',
+      'skeleton-loading',
+
+      // Performance
+      'lazy-loading',
+      'image-optimization',
+      'request-batching',
+      'cache-first',
+
+      // Security
+      'session-timeout-warning',
+      'audit-log-viewer',
+      'two-factor-auth',
+
+      // Integrations
+      'google-maps-integration',
+      'google-calendar-sync',
+      'outlook-calendar-sync',
+      'slack-integration',
+      'webhook-notifications',
+
+      // Experimental
+      'ai-suggestions',
+      'voice-commands',
     ]);
   }
 

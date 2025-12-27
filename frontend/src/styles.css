@@ -5432,6 +5432,15 @@ textarea.invalid:focus {
 }
 
 /* ============================================
+   ADMIN VIEW CONTAINER
+   ============================================ */
+.admin-view-container {
+  flex: 1;
+  background: #f8f9fa;
+  overflow-y: auto;
+}
+
+/* ============================================
    DARK MODE SUPPORT (if user prefers)
    ============================================ */
 @media (prefers-color-scheme: dark) {

@@ -69,13 +69,11 @@
             referencedColumnNames="id"
             onDelete="CASCADE"/>
 
-        <addForeignKeyConstraint
-            baseTableName="feature_flag_overrides"
-            baseColumnNames="surveyor_id"
-            constraintName="fk_override_surveyor"
-            referencedTableName="surveyors"
-            referencedColumnNames="id"
-            onDelete="CASCADE"/>
+        <!-- Note: Foreign key to surveyors omitted - surveyor_id is just a reference ID
+             This allows feature flags to work independently of surveyors table existence -->
+        <createIndex tableName="feature_flag_overrides" indexName="idx_override_surveyor_id">
+            <column name="surveyor_id"/>
+        </createIndex>
 
         <createIndex tableName="feature_flag_overrides" indexName="idx_override_flag_surveyor">
             <column name="flag_id"/>

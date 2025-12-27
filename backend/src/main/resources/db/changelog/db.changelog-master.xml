@@ -25,5 +25,7 @@
     <include file="db/changelog/changes/018-chat-messages.xml"/>
     <include file="db/changelog/changes/019-performance-indexes.xml"/>
     <include file="db/changelog/changes/020-feature-flags.xml"/>
+    <include file="db/changelog/changes/021-comprehensive-feature-flags.xml"/>
+    <include file="db/changelog/changes/022-enable-all-flags.xml"/>
 
 </databaseChangeLog>

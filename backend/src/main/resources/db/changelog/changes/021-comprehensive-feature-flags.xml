@@ -1,0 +1,539 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="021-1" author="system">
+        <comment>Add comprehensive business feature flags</comment>
+
+        <!-- ==================== APPOINTMENTS ==================== -->
+        <insert tableName="feature_flags">
+            <column name="name" value="appointments.bulk-create"/>
+            <column name="description" value="Allow creating multiple appointments at once"/>
+            <column name="enabled" valueBoolean="false"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="appointments.recurring"/>
+            <column name="description" value="Enable recurring/repeating appointments"/>
+            <column name="enabled" valueBoolean="false"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="appointments.drag-drop"/>
+            <column name="description" value="Enable drag-and-drop rescheduling on calendar"/>
+            <column name="enabled" valueBoolean="true"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="appointments.auto-assign"/>
+            <column name="description" value="Auto-assign appointments based on availability and location"/>
+            <column name="enabled" valueBoolean="false"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="50"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="appointments.conflict-detection"/>
+            <column name="description" value="Warn when scheduling overlapping appointments"/>
+            <column name="enabled" valueBoolean="true"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="appointments.eta-tracking"/>
+            <column name="description" value="Show estimated arrival time for surveyors"/>
+            <column name="enabled" valueBoolean="true"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+
+        <!-- ==================== SURVEYOR FEATURES ==================== -->
+        <insert tableName="feature_flags">
+            <column name="name" value="surveyor.availability-calendar"/>
+            <column name="description" value="Allow surveyors to set their availability"/>
+            <column name="enabled" valueBoolean="false"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="surveyor.territory-management"/>
+            <column name="description" value="Define geographic territories for surveyors"/>
+            <column name="enabled" valueBoolean="false"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="surveyor.skills-matrix"/>
+            <column name="description" value="Track surveyor skills and certifications"/>
+            <column name="enabled" valueBoolean="false"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="surveyor.performance-metrics"/>
+            <column name="description" value="Show performance dashboard for surveyors"/>
+            <column name="enabled" valueBoolean="false"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="surveyor.workload-balancing"/>
+            <column name="description" value="Automatically balance workload across surveyors"/>
+            <column name="enabled" valueBoolean="false"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+
+        <!-- ==================== NOTIFICATIONS ==================== -->
+        <insert tableName="feature_flags">
+            <column name="name" value="notifications.push"/>
+            <column name="description" value="Enable push notifications"/>
+            <column name="enabled" valueBoolean="true"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="notifications.sms"/>
+            <column name="description" value="Enable SMS notifications"/>
+            <column name="enabled" valueBoolean="true"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="notifications.email"/>
+            <column name="description" value="Enable email notifications"/>
+            <column name="enabled" valueBoolean="true"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="notifications.in-app"/>
+            <column name="description" value="Enable in-app notification center"/>
+            <column name="enabled" valueBoolean="true"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="notifications.quiet-hours"/>
+            <column name="description" value="Respect quiet hours for notifications"/>
+            <column name="enabled" valueBoolean="false"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+
+        <!-- ==================== CHAT ==================== -->
+        <insert tableName="feature_flags">
+            <column name="name" value="chat.attachments"/>
+            <column name="description" value="Allow file attachments in chat"/>
+            <column name="enabled" valueBoolean="true"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="chat.voice-messages"/>
+            <column name="description" value="Allow voice messages in chat"/>
+            <column name="enabled" valueBoolean="false"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="chat.read-receipts"/>
+            <column name="description" value="Show message read receipts"/>
+            <column name="enabled" valueBoolean="true"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="chat.typing-indicators"/>
+            <column name="description" value="Show when someone is typing"/>
+            <column name="enabled" valueBoolean="true"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="chat.group-chat"/>
+            <column name="description" value="Enable group chat functionality"/>
+            <column name="enabled" valueBoolean="false"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+
+        <!-- ==================== REPORTS ==================== -->
+        <insert tableName="feature_flags">
+            <column name="name" value="reports.pdf-export"/>
+            <column name="description" value="Enable PDF report export"/>
+            <column name="enabled" valueBoolean="true"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="reports.excel-export"/>
+            <column name="description" value="Enable Excel report export"/>
+            <column name="enabled" valueBoolean="true"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="reports.scheduled"/>
+            <column name="description" value="Enable scheduled automatic reports"/>
+            <column name="enabled" valueBoolean="false"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="reports.custom-templates"/>
+            <column name="description" value="Allow custom report templates"/>
+            <column name="enabled" valueBoolean="false"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="reports.analytics-dashboard"/>
+            <column name="description" value="Show analytics dashboard with charts"/>
+            <column name="enabled" valueBoolean="false"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="50"/>
+        </insert>
+
+        <!-- ==================== LOCATION ==================== -->
+        <insert tableName="feature_flags">
+            <column name="name" value="location.live-tracking"/>
+            <column name="description" value="Enable live GPS tracking of surveyors"/>
+            <column name="enabled" valueBoolean="true"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="location.geofencing"/>
+            <column name="description" value="Enable geofencing for auto check-in/out"/>
+            <column name="enabled" valueBoolean="false"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="location.route-optimization"/>
+            <column name="description" value="Suggest optimized routes for multiple appointments"/>
+            <column name="enabled" valueBoolean="false"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="location.traffic-integration"/>
+            <column name="description" value="Factor in real-time traffic for ETA"/>
+            <column name="enabled" valueBoolean="false"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+
+        <!-- ==================== PHOTOS/MEDIA ==================== -->
+        <insert tableName="feature_flags">
+            <column name="name" value="media.photo-capture"/>
+            <column name="description" value="Allow photo capture in mobile app"/>
+            <column name="enabled" valueBoolean="true"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="media.photo-annotation"/>
+            <column name="description" value="Allow drawing/annotations on photos"/>
+            <column name="enabled" valueBoolean="false"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="media.video-capture"/>
+            <column name="description" value="Allow video capture in mobile app"/>
+            <column name="enabled" valueBoolean="false"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="media.document-scan"/>
+            <column name="description" value="Enable document scanning with OCR"/>
+            <column name="enabled" valueBoolean="false"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+
+        <!-- ==================== SIGNATURES ==================== -->
+        <insert tableName="feature_flags">
+            <column name="name" value="signature.capture"/>
+            <column name="description" value="Allow digital signature capture"/>
+            <column name="enabled" valueBoolean="true"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="signature.required"/>
+            <column name="description" value="Require signature for appointment completion"/>
+            <column name="enabled" valueBoolean="false"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+    </changeSet>
+
+    <changeSet id="021-2" author="system">
+        <comment>Add comprehensive technical feature flags</comment>
+
+        <!-- ==================== UI/UX ==================== -->
+        <insert tableName="feature_flags">
+            <column name="name" value="ui.new-navigation"/>
+            <column name="description" value="Enable new navigation design"/>
+            <column name="enabled" valueBoolean="false"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="10"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="ui.compact-mode"/>
+            <column name="description" value="Enable compact/dense UI mode"/>
+            <column name="enabled" valueBoolean="false"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="ui.animations"/>
+            <column name="description" value="Enable UI animations and transitions"/>
+            <column name="enabled" valueBoolean="true"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="ui.skeleton-loading"/>
+            <column name="description" value="Show skeleton loaders instead of spinners"/>
+            <column name="enabled" valueBoolean="true"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+
+        <!-- ==================== MOBILE SPECIFIC ==================== -->
+        <insert tableName="feature_flags">
+            <column name="name" value="mobile.biometric-login"/>
+            <column name="description" value="Enable Face ID/Touch ID/Fingerprint login"/>
+            <column name="enabled" valueBoolean="true"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="mobile.offline-mode"/>
+            <column name="description" value="Enable offline data access and sync"/>
+            <column name="enabled" valueBoolean="true"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="mobile.background-sync"/>
+            <column name="description" value="Sync data in background"/>
+            <column name="enabled" valueBoolean="true"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="mobile.haptic-feedback"/>
+            <column name="description" value="Enable haptic/vibration feedback"/>
+            <column name="enabled" valueBoolean="true"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="mobile.pull-to-refresh"/>
+            <column name="description" value="Enable pull-to-refresh gesture"/>
+            <column name="enabled" valueBoolean="true"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="mobile.swipe-actions"/>
+            <column name="description" value="Enable swipe actions on list items"/>
+            <column name="enabled" valueBoolean="true"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+
+        <!-- ==================== PERFORMANCE ==================== -->
+        <insert tableName="feature_flags">
+            <column name="name" value="perf.lazy-loading"/>
+            <column name="description" value="Enable lazy loading of components"/>
+            <column name="enabled" valueBoolean="true"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="perf.image-optimization"/>
+            <column name="description" value="Enable automatic image compression"/>
+            <column name="enabled" valueBoolean="true"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="perf.request-batching"/>
+            <column name="description" value="Batch multiple API requests"/>
+            <column name="enabled" valueBoolean="false"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="perf.cache-first"/>
+            <column name="description" value="Show cached data first, then refresh"/>
+            <column name="enabled" valueBoolean="true"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+
+        <!-- ==================== SECURITY ==================== -->
+        <insert tableName="feature_flags">
+            <column name="name" value="security.session-timeout"/>
+            <column name="description" value="Enable automatic session timeout"/>
+            <column name="enabled" valueBoolean="true"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="security.pin-lock"/>
+            <column name="description" value="Enable PIN lock for mobile app"/>
+            <column name="enabled" valueBoolean="false"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="security.audit-log"/>
+            <column name="description" value="Enable detailed audit logging"/>
+            <column name="enabled" valueBoolean="true"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="security.2fa"/>
+            <column name="description" value="Enable two-factor authentication"/>
+            <column name="enabled" valueBoolean="false"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+
+        <!-- ==================== API/BACKEND ==================== -->
+        <insert tableName="feature_flags">
+            <column name="name" value="api.rate-limiting"/>
+            <column name="description" value="Enable API rate limiting"/>
+            <column name="enabled" valueBoolean="true"/>
+            <column name="environment" value="production"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="api.circuit-breaker"/>
+            <column name="description" value="Enable circuit breaker for external services"/>
+            <column name="enabled" valueBoolean="true"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="api.request-logging"/>
+            <column name="description" value="Log all API requests for debugging"/>
+            <column name="enabled" valueBoolean="false"/>
+            <column name="environment" value="development"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="api.compression"/>
+            <column name="description" value="Enable response compression"/>
+            <column name="enabled" valueBoolean="true"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+
+        <!-- ==================== INTEGRATIONS ==================== -->
+        <insert tableName="feature_flags">
+            <column name="name" value="integration.google-maps"/>
+            <column name="description" value="Enable Google Maps integration"/>
+            <column name="enabled" valueBoolean="true"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="integration.google-calendar"/>
+            <column name="description" value="Enable Google Calendar sync"/>
+            <column name="enabled" valueBoolean="false"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="integration.outlook"/>
+            <column name="description" value="Enable Outlook Calendar sync"/>
+            <column name="enabled" valueBoolean="false"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="integration.slack"/>
+            <column name="description" value="Enable Slack notifications"/>
+            <column name="enabled" valueBoolean="false"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="integration.webhooks"/>
+            <column name="description" value="Enable outgoing webhooks for events"/>
+            <column name="enabled" valueBoolean="false"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+
+        <!-- ==================== EXPERIMENTAL ==================== -->
+        <insert tableName="feature_flags">
+            <column name="name" value="experimental.ai-suggestions"/>
+            <column name="description" value="AI-powered scheduling suggestions"/>
+            <column name="enabled" valueBoolean="false"/>
+            <column name="environment" value="development"/>
+            <column name="rollout_percentage" valueNumeric="10"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="experimental.voice-commands"/>
+            <column name="description" value="Voice command support in mobile app"/>
+            <column name="enabled" valueBoolean="false"/>
+            <column name="environment" value="development"/>
+            <column name="rollout_percentage" valueNumeric="5"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="experimental.ar-navigation"/>
+            <column name="description" value="AR navigation to appointment locations"/>
+            <column name="enabled" valueBoolean="false"/>
+            <column name="environment" value="development"/>
+            <column name="rollout_percentage" valueNumeric="0"/>
+        </insert>
+
+        <!-- ==================== DEBUG/MAINTENANCE ==================== -->
+        <insert tableName="feature_flags">
+            <column name="name" value="debug.verbose-logging"/>
+            <column name="description" value="Enable verbose debug logging"/>
+            <column name="enabled" valueBoolean="false"/>
+            <column name="environment" value="development"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="debug.performance-overlay"/>
+            <column name="description" value="Show performance metrics overlay"/>
+            <column name="enabled" valueBoolean="false"/>
+            <column name="environment" value="development"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="maintenance.read-only"/>
+            <column name="description" value="Put system in read-only maintenance mode"/>
+            <column name="enabled" valueBoolean="false"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="maintenance.banner"/>
+            <column name="description" value="Show maintenance warning banner"/>
+            <column name="enabled" valueBoolean="false"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+            <column name="variant_payload" value="{&quot;message&quot;: &quot;Scheduled maintenance tonight at 10 PM&quot;}"/>
+        </insert>
+    </changeSet>
+
+</databaseChangeLog>
