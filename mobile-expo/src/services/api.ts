@@ -15,7 +15,10 @@ import {
   SurveyorStatus,
   UpdateResponse,
   LoginRequest,
-  LoginResponse
+  LoginResponse,
+  InspectionReport,
+  InspectionReportSummary,
+  InspectionStats,
 } from '../types';
 
 class ApiService {
@@ -233,6 +236,102 @@ class ApiService {
     }
 
     return response.data || { success: true };
+  }
+
+  // ==================== Inspection APIs ====================
+
+  async submitInspection(request: {
+    surveyorId: number;
+    appointmentId: number;
+    vehicleTitle?: string;
+    notes?: string;
+    photoUrls?: string[];
+    signatureUrl?: string;
+    completedSteps?: string[];
+    totalSteps?: number;
+    lat?: number;
+    lng?: number;
+  }): Promise<{
+    success: boolean;
+    message?: string;
+    reportId?: number;
+    photoCount?: number;
+    hasSignature?: boolean;
+    submittedAt?: string;
+  }> {
+    const response = await apiClient.post<{
+      success: boolean;
+      message?: string;
+      reportId?: number;
+      photoCount?: number;
+      hasSignature?: boolean;
+      submittedAt?: string;
+    }>('/mobile/inspections', request, {
+      timeout: API_TIMEOUTS.upload, // Use upload timeout since it may contain large payloads
+    });
+
+    if (!response.ok) {
+      logger.error('[API] Failed to submit inspection', { error: response.error });
+      return { success: false, message: response.error || 'Failed to submit inspection' };
+    }
+
+    return response.data || { success: false, message: 'No response data' };
+  }
+
+  async getInspection(reportId: number): Promise<InspectionReport | null> {
+    const response = await apiClient.get<InspectionReport>(`/mobile/inspections/${reportId}`);
+
+    if (!response.ok) {
+      logger.warn('[API] Failed to get inspection', { reportId, error: response.error });
+      return null;
+    }
+
+    return response.data || null;
+  }
+
+  async getInspectionByAppointment(appointmentId: number): Promise<InspectionReport | null> {
+    const response = await apiClient.get<InspectionReport>(
+      `/mobile/inspections/appointment/${appointmentId}`
+    );
+
+    if (!response.ok) {
+      // 404 is expected if no report exists yet
+      return null;
+    }
+
+    return response.data || null;
+  }
+
+  async getSurveyorInspections(
+    surveyorId: number,
+    limit: number = 50,
+    offset: number = 0
+  ): Promise<InspectionReportSummary[]> {
+    const response = await apiClient.get<InspectionReportSummary[]>(
+      `/mobile/inspections/surveyor/${surveyorId}?limit=${limit}&offset=${offset}`
+    );
+
+    if (!response.ok) {
+      logger.error('[API] Failed to get surveyor inspections', { error: response.error });
+      return [];
+    }
+
+    return response.data || [];
+  }
+
+  async getInspectionStats(surveyorId?: number): Promise<InspectionStats> {
+    const url = surveyorId
+      ? `/mobile/inspections/stats?surveyorId=${surveyorId}`
+      : '/mobile/inspections/stats';
+
+    const response = await apiClient.get<InspectionStats>(url);
+
+    if (!response.ok) {
+      logger.warn('[API] Failed to get inspection stats', { error: response.error });
+      return { pendingReview: 0, approved: 0, rejected: 0, today: 0, thisWeek: 0 };
+    }
+
+    return response.data || { pendingReview: 0, approved: 0, rejected: 0, today: 0, thisWeek: 0 };
   }
 
   // ==================== Profile APIs ====================

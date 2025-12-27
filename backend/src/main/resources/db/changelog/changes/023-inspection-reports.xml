@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Inspection Reports - stores completed inspection data including photos -->
+    <changeSet id="023-1" author="system">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="inspection_report"/>
+            </not>
+        </preConditions>
+        <createTable tableName="inspection_report">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="surveyor_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="appointment_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="vehicle_title" type="VARCHAR(255)"/>
+            <column name="notes" type="TEXT"/>
+            <column name="photo_urls" type="TEXT">
+                <!-- JSON array of photo URLs -->
+            </column>
+            <column name="signature_url" type="VARCHAR(512)"/>
+            <column name="completed_steps" type="TEXT">
+                <!-- JSON array of completed step IDs -->
+            </column>
+            <column name="total_steps" type="INTEGER"/>
+            <column name="latitude" type="DECIMAL(9,6)"/>
+            <column name="longitude" type="DECIMAL(9,6)"/>
+            <column name="status" type="VARCHAR(32)" defaultValue="SUBMITTED">
+                <constraints nullable="false"/>
+            </column>
+            <column name="submitted_at" type="TIMESTAMP WITH TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP WITH TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="023-2" author="system">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <foreignKeyConstraintExists foreignKeyName="fk_inspection_surveyor"/>
+            </not>
+        </preConditions>
+        <addForeignKeyConstraint
+            baseTableName="inspection_report"
+            baseColumnNames="surveyor_id"
+            referencedTableName="surveyor"
+            referencedColumnNames="id"
+            constraintName="fk_inspection_surveyor"/>
+    </changeSet>
+
+    <changeSet id="023-3" author="system">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_inspection_surveyor_id"/>
+            </not>
+        </preConditions>
+        <createIndex tableName="inspection_report" indexName="idx_inspection_surveyor_id">
+            <column name="surveyor_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="023-4" author="system">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_inspection_appointment_id"/>
+            </not>
+        </preConditions>
+        <createIndex tableName="inspection_report" indexName="idx_inspection_appointment_id">
+            <column name="appointment_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="023-5" author="system">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_inspection_submitted_at"/>
+            </not>
+        </preConditions>
+        <createIndex tableName="inspection_report" indexName="idx_inspection_submitted_at">
+            <column name="submitted_at"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="023-6" author="system">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_inspection_status"/>
+            </not>
+        </preConditions>
+        <createIndex tableName="inspection_report" indexName="idx_inspection_status">
+            <column name="status"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

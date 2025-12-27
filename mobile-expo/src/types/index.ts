@@ -139,3 +139,45 @@ export interface TypingIndicator {
   userName: string;
   isTyping: boolean;
 }
+
+// Inspection Report types
+export type InspectionStatus = 'SUBMITTED' | 'UNDER_REVIEW' | 'APPROVED' | 'REJECTED' | 'ARCHIVED';
+
+export interface InspectionReport {
+  id: number;
+  surveyorId: number;
+  appointmentId: number;
+  vehicleTitle?: string;
+  notes?: string;
+  photoUrls: string[];
+  signatureUrl?: string;
+  completedSteps: string[];
+  totalSteps: number;
+  latitude?: number;
+  longitude?: number;
+  status: InspectionStatus;
+  submittedAt: string;
+  updatedAt: string;
+  surveyorName?: string;
+  surveyorCode?: string;
+}
+
+export interface InspectionReportSummary {
+  id: number;
+  surveyorId: number;
+  appointmentId: number;
+  vehicleTitle?: string;
+  photoCount: number;
+  hasSignature: boolean;
+  status: InspectionStatus;
+  submittedAt: string;
+}
+
+export interface InspectionStats {
+  totalInspections?: number;
+  pendingReview: number;
+  approved: number;
+  rejected: number;
+  today: number;
+  thisWeek: number;
+}

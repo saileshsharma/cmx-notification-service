@@ -140,10 +140,22 @@ class ChatService {
           readyState: this.ws?.readyState,
           surveyorId,
         };
-        logger.error('[Chat] WebSocket error', errorInfo);
-        captureException(new Error(`WebSocket error: ${event.type}`), {
-          extra: errorInfo,
-        });
+
+        // readyState 3 = CLOSED - this is expected when app goes to background
+        // or during normal reconnection cycles. Don't report to Sentry.
+        const isClosed = this.ws?.readyState === WebSocket.CLOSED;
+        const isReconnecting = this.connectionState === 'reconnecting';
+
+        if (isClosed || isReconnecting) {
+          // Expected error during background/reconnect - just log as warning
+          logger.warn('[Chat] WebSocket error (expected during reconnect)', errorInfo);
+        } else {
+          // Unexpected error - log and report to Sentry
+          logger.error('[Chat] WebSocket error', errorInfo);
+          captureException(new Error(`WebSocket error: ${event.type}`), {
+            extra: errorInfo,
+          });
+        }
       };
 
       this.ws.onclose = (event) => {

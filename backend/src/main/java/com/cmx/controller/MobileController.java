@@ -4,6 +4,7 @@ import com.cmx.dto.DeviceTokenDto.DeviceTokenRequest;
 import com.cmx.dto.NotificationDto.NotificationAuditEntry;
 import com.cmx.service.AvailabilityService;
 import com.cmx.service.DeviceTokenService;
+import com.cmx.service.InspectionService;
 import com.cmx.service.NotificationAuditService;
 import com.cmx.service.NotificationService;
 import com.cmx.service.SurveyorService;
@@ -32,6 +33,7 @@ public class MobileController {
     private final SurveyorService surveyorService;
     private final NotificationService notificationService;
     private final SurveyorActivityService activityService;
+    private final InspectionService inspectionService;
     private final com.cmx.repository.SurveyorRepository surveyorRepository;
 
     public MobileController(DeviceTokenService deviceTokenService,
@@ -40,6 +42,7 @@ public class MobileController {
                             SurveyorService surveyorService,
                             NotificationService notificationService,
                             SurveyorActivityService activityService,
+                            InspectionService inspectionService,
                             com.cmx.repository.SurveyorRepository surveyorRepository) {
         this.deviceTokenService = deviceTokenService;
         this.auditService = auditService;
@@ -47,6 +50,7 @@ public class MobileController {
         this.surveyorService = surveyorService;
         this.notificationService = notificationService;
         this.activityService = activityService;
+        this.inspectionService = inspectionService;
         this.surveyorRepository = surveyorRepository;
     }
 
@@ -444,5 +448,91 @@ public class MobileController {
             "success", true,
             "message", "Password changed successfully"
         ));
+    }
+
+    // ==================== Inspection Reports ====================
+
+    @Operation(
+        summary = "Submit inspection report",
+        description = "Submits a completed inspection report with photos, notes, and signature"
+    )
+    @ApiResponse(responseCode = "200", description = "Inspection report submitted successfully")
+    @ApiResponse(responseCode = "400", description = "Invalid request or duplicate submission")
+    @PostMapping("/inspections")
+    @SuppressWarnings("unchecked")
+    public ResponseEntity<Map<String, Object>> submitInspection(@RequestBody Map<String, Object> request) {
+        Long surveyorId = ((Number) request.get("surveyorId")).longValue();
+        Long appointmentId = ((Number) request.get("appointmentId")).longValue();
+        String vehicleTitle = (String) request.get("vehicleTitle");
+        String notes = (String) request.get("notes");
+        List<String> photoUrls = (List<String>) request.get("photoUrls");
+        String signatureUrl = (String) request.get("signatureUrl");
+        List<String> completedSteps = (List<String>) request.get("completedSteps");
+        Integer totalSteps = request.get("totalSteps") != null ? ((Number) request.get("totalSteps")).intValue() : null;
+        Double lat = request.get("lat") != null ? ((Number) request.get("lat")).doubleValue() : null;
+        Double lng = request.get("lng") != null ? ((Number) request.get("lng")).doubleValue() : null;
+
+        Map<String, Object> result = inspectionService.submitInspection(
+            surveyorId, appointmentId, vehicleTitle, notes,
+            photoUrls, signatureUrl, completedSteps, totalSteps, lat, lng
+        );
+
+        if ((boolean) result.get("success")) {
+            return ResponseEntity.ok(result);
+        } else {
+            return ResponseEntity.badRequest().body(result);
+        }
+    }
+
+    @Operation(
+        summary = "Get inspection report",
+        description = "Retrieves a specific inspection report by ID"
+    )
+    @ApiResponse(responseCode = "200", description = "Inspection report retrieved successfully")
+    @ApiResponse(responseCode = "404", description = "Report not found")
+    @GetMapping("/inspections/{reportId}")
+    public ResponseEntity<Map<String, Object>> getInspection(
+            @Parameter(description = "Report ID") @PathVariable("reportId") Long reportId) {
+        return inspectionService.getInspectionById(reportId)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @Operation(
+        summary = "Get inspection by appointment",
+        description = "Retrieves the inspection report for a specific appointment"
+    )
+    @ApiResponse(responseCode = "200", description = "Inspection report retrieved successfully")
+    @ApiResponse(responseCode = "404", description = "Report not found")
+    @GetMapping("/inspections/appointment/{appointmentId}")
+    public ResponseEntity<Map<String, Object>> getInspectionByAppointment(
+            @Parameter(description = "Appointment ID") @PathVariable("appointmentId") Long appointmentId) {
+        return inspectionService.getInspectionByAppointment(appointmentId)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @Operation(
+        summary = "Get surveyor inspections",
+        description = "Retrieves all inspection reports for a specific surveyor"
+    )
+    @ApiResponse(responseCode = "200", description = "Inspections retrieved successfully")
+    @GetMapping("/inspections/surveyor/{surveyorId}")
+    public ResponseEntity<List<Map<String, Object>>> getSurveyorInspections(
+            @Parameter(description = "Surveyor ID") @PathVariable("surveyorId") Long surveyorId,
+            @Parameter(description = "Maximum number of records") @RequestParam(value = "limit", defaultValue = "50") int limit,
+            @Parameter(description = "Offset for pagination") @RequestParam(value = "offset", defaultValue = "0") int offset) {
+        return ResponseEntity.ok(inspectionService.getInspectionsBySurveyor(surveyorId, limit, offset));
+    }
+
+    @Operation(
+        summary = "Get inspection statistics",
+        description = "Retrieves inspection statistics, optionally filtered by surveyor"
+    )
+    @ApiResponse(responseCode = "200", description = "Statistics retrieved successfully")
+    @GetMapping("/inspections/stats")
+    public ResponseEntity<Map<String, Object>> getInspectionStats(
+            @Parameter(description = "Surveyor ID (optional)") @RequestParam(value = "surveyorId", required = false) Long surveyorId) {
+        return ResponseEntity.ok(inspectionService.getStatistics(surveyorId));
     }
 }

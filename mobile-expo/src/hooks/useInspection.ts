@@ -6,8 +6,10 @@ import { useState, useCallback } from 'react';
 import { Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
+import * as Location from 'expo-location';
 import { imageUploadService, UploadProgress } from '../services/imageUpload';
 import { storageService } from '../services/storage';
+import { apiService } from '../services/api';
 import { Appointment } from '../types';
 import { logger } from '../utils/logger';
 
@@ -180,8 +182,43 @@ export function useInspection(): UseInspectionReturn {
                   logger.warn('Some uploads failed:', uploadResult.errors);
                 }
 
+                const currentAppointment = activeJob || selectedAppointment!;
+
+                // Get current location for the report
+                let lat: number | undefined;
+                let lng: number | undefined;
+                try {
+                  const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+                  lat = location.coords.latitude;
+                  lng = location.coords.longitude;
+                } catch (locError) {
+                  logger.warn('Could not get location for inspection:', locError);
+                }
+
+                // Submit to backend API
+                const completedStepIds = inspectionSteps.filter(s => s.completed).map(s => s.id);
+                const apiResult = await apiService.submitInspection({
+                  surveyorId: currentAppointment.surveyor_id,
+                  appointmentId: currentAppointment.id,
+                  vehicleTitle: currentAppointment.title || 'Vehicle Inspection',
+                  notes: inspectionNotes,
+                  photoUrls: uploadResult.photoUrls,
+                  signatureUrl: uploadResult.signatureUrl,
+                  completedSteps: completedStepIds,
+                  totalSteps: inspectionSteps.length,
+                  lat,
+                  lng,
+                });
+
+                if (!apiResult.success) {
+                  logger.warn('Backend submission failed:', apiResult.message);
+                  // Continue anyway - photos are uploaded, just log the error
+                } else {
+                  logger.info('Inspection submitted to backend:', apiResult.reportId);
+                }
+
                 const job: CompletedJob = {
-                  appointment: activeJob || selectedAppointment!,
+                  appointment: currentAppointment,
                   photos: uploadResult.photoUrls.length > 0 ? uploadResult.photoUrls : [...capturedPhotos],
                   notes: inspectionNotes,
                   signature: !!uploadResult.signatureUrl || !!signatureData,
@@ -191,7 +228,7 @@ export function useInspection(): UseInspectionReturn {
                 setCompletedJob(job);
                 setJobState('completed');
 
-                // Add to history
+                // Add to local history
                 const historyEntry = {
                   id: Date.now(),
                   date: new Date().toISOString(),
@@ -200,6 +237,7 @@ export function useInspection(): UseInspectionReturn {
                   photos: capturedPhotos.length,
                   photoUrls: uploadResult.photoUrls,
                   signatureUrl: uploadResult.signatureUrl,
+                  reportId: apiResult.reportId, // Store backend report ID
                 };
                 storageService.addInspectionHistory(historyEntry);
 
@@ -218,7 +256,7 @@ export function useInspection(): UseInspectionReturn {
         ]
       );
     });
-  }, [capturedPhotos, signatureData, inspectionNotes, activeJob, selectedAppointment, getRequiredIncomplete]);
+  }, [capturedPhotos, signatureData, inspectionNotes, inspectionSteps, activeJob, selectedAppointment, getRequiredIncomplete]);
 
   const resetInspection = useCallback(() => {
     setInspectionSteps(DEFAULT_INSPECTION_STEPS);

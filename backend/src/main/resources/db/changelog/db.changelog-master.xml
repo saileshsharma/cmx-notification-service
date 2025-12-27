@@ -27,5 +27,6 @@
     <include file="db/changelog/changes/020-feature-flags.xml"/>
     <include file="db/changelog/changes/021-comprehensive-feature-flags.xml"/>
     <include file="db/changelog/changes/022-enable-all-flags.xml"/>
+    <include file="db/changelog/changes/023-inspection-reports.xml"/>
 
 </databaseChangeLog>
