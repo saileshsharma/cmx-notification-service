@@ -13,7 +13,7 @@ interface AppointmentCardProps {
   onStartInspection?: () => void;
 }
 
-export const AppointmentCard: React.FC<AppointmentCardProps> = ({
+export const AppointmentCard: React.FC<AppointmentCardProps> = React.memo(({
   appointment,
   onNavigate,
   onAccept,
@@ -157,7 +157,7 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
       </LinearGradient>
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {

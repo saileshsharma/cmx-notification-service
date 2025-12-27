@@ -52,6 +52,7 @@ module.exports = {
     },
     plugins: [
       "expo-splash-screen",
+      "expo-secure-store",
       [
         "expo-notifications",
         {
@@ -85,6 +86,16 @@ module.exports = {
         {
           faceIDPermission: "Allow FleetInspect Pro to use Face ID for secure authentication"
         }
+      ],
+      [
+        "@sentry/react-native/expo",
+        {
+          organization: process.env.SENTRY_ORG || "your-org",
+          project: process.env.SENTRY_PROJECT || "fleetinspect-pro",
+          // Source maps upload is enabled by default in EAS builds
+          // Set to false to disable automatic upload
+          // uploadSourceMaps: true
+        }
       ]
     ],
     owner: "saileshsharma",
@@ -94,7 +105,15 @@ module.exports = {
     extra: {
       eas: {
         projectId: "8d1c3e80-23aa-4771-8c88-c8c63dc78f4a"
-      }
+      },
+      // Environment variables passed to the app
+      EXPO_PUBLIC_API_BASE_URL: process.env.EXPO_PUBLIC_API_BASE_URL,
+      EXPO_PUBLIC_QSTASH_TOKEN: process.env.EXPO_PUBLIC_QSTASH_TOKEN,
+      EXPO_PUBLIC_QSTASH_DESTINATION_URL: process.env.EXPO_PUBLIC_QSTASH_DESTINATION_URL,
+      EXPO_PUBLIC_IMGBB_API_KEY: process.env.EXPO_PUBLIC_IMGBB_API_KEY,
+      EXPO_PUBLIC_SENTRY_DSN: process.env.EXPO_PUBLIC_SENTRY_DSN,
+      EXPO_PUBLIC_ENABLE_OFFLINE_MODE: process.env.EXPO_PUBLIC_ENABLE_OFFLINE_MODE,
+      EXPO_PUBLIC_ENABLE_BACKGROUND_SYNC: process.env.EXPO_PUBLIC_ENABLE_BACKGROUND_SYNC,
     }
   }
 };

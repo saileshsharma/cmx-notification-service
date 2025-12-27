@@ -1,0 +1,19 @@
+{
+  "tokens": {
+    "EXPO_PUBLIC_QSTASH_TOKEN": "eyJVc2VySUQiOiI5ODQ4N2Q1Mi0zNmNlLTRiNDEtOGNlOC1jZGEzMTg0Y2QyYWYiLCJQYXNzd29yZCI6ImQ4M2I0MWQ1NjAzZTQzOTM4N2JjYmE5ODU3NmVjYWZjIn0=",
+    "EXPO_PUBLIC_IMGBB_API_KEY": "161367c11daceedc07aaaedb8bd57efa"
+  },
+  "secrets": {
+    "EXPO_PUBLIC_SENTRY_DSN": "https://d2edb8ff5c6011b1fe83ba4e90ab7048@o4510604756516864.ingest.de.sentry.io/4510604764053584",
+    "SENTRY_ORG": "chubb-ts",
+    "SENTRY_PROJECT": "fleetinspect-pro",
+    "SENTRY_AUTH_TOKEN": "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"
+  },
+  "_sources": {
+    "EXPO_PUBLIC_QSTASH_TOKEN": "https://console.upstash.com/qstash",
+    "EXPO_PUBLIC_IMGBB_API_KEY": "https://api.imgbb.com/",
+    "EXPO_PUBLIC_SENTRY_DSN": "https://sentry.io -> Project Settings -> Client Keys",
+    "SENTRY_ORG": "Your Sentry organization slug",
+    "SENTRY_PROJECT": "Your Sentry project name"
+  }
+}

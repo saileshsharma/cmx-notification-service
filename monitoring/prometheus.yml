@@ -1,0 +1,45 @@
+# Prometheus Configuration for FleetInspect Pro
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+# Alertmanager configuration (optional)
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []
+
+# Rule files (optional)
+rule_files: []
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Spring Boot Backend Metrics
+  - job_name: 'fleetinspect-backend'
+    metrics_path: '/actuator/prometheus'
+    scrape_interval: 10s
+    static_configs:
+      - targets: ['host.docker.internal:8080']
+        labels:
+          application: 'fleetinspect-backend'
+          environment: 'development'
+
+  # Production Backend (Railway)
+  - job_name: 'fleetinspect-backend-prod'
+    metrics_path: '/actuator/prometheus'
+    scrape_interval: 30s
+    scheme: https
+    static_configs:
+      - targets: ['your-railway-app.railway.app']
+        labels:
+          application: 'fleetinspect-backend'
+          environment: 'production'
+    # Uncomment if authentication is required
+    # basic_auth:
+    #   username: 'admin'
+    #   password: 'your-password'

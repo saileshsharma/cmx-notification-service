@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="019-1" author="system">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists tableName="surveyor_availability" indexName="idx_availability_surveyor_time"/>
+            </not>
+        </preConditions>
+        <comment>Add performance indexes for frequently queried columns</comment>
+
+        <!-- Surveyor Availability indexes -->
+        <createIndex tableName="surveyor_availability" indexName="idx_availability_surveyor_time">
+            <column name="surveyor_id"/>
+            <column name="start_time"/>
+            <column name="end_time"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="019-1b" author="system">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists tableName="surveyor_availability" indexName="idx_availability_state"/>
+            </not>
+        </preConditions>
+        <createIndex tableName="surveyor_availability" indexName="idx_availability_state">
+            <column name="state"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="019-1c" author="system">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists tableName="surveyor_availability" indexName="idx_availability_start_time"/>
+            </not>
+        </preConditions>
+        <createIndex tableName="surveyor_availability" indexName="idx_availability_start_time">
+            <column name="start_time"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="019-2" author="system">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists tableName="surveyor" indexName="idx_surveyor_email"/>
+            </not>
+        </preConditions>
+        <comment>Add indexes for surveyor queries</comment>
+        <createIndex tableName="surveyor" indexName="idx_surveyor_email">
+            <column name="email"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="019-2b" author="system">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists tableName="surveyor" indexName="idx_surveyor_type"/>
+            </not>
+        </preConditions>
+        <createIndex tableName="surveyor" indexName="idx_surveyor_type">
+            <column name="surveyor_type"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="019-2c" author="system">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists tableName="surveyor" indexName="idx_surveyor_status"/>
+            </not>
+        </preConditions>
+        <createIndex tableName="surveyor" indexName="idx_surveyor_status">
+            <column name="current_status"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="019-3" author="system">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists tableName="device_token" indexName="idx_device_token_surveyor"/>
+            </not>
+        </preConditions>
+        <comment>Add indexes for device tokens</comment>
+        <createIndex tableName="device_token" indexName="idx_device_token_surveyor">
+            <column name="surveyor_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="019-4" author="system">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="notification_audit_log"/>
+                <not>
+                    <indexExists tableName="notification_audit_log" indexName="idx_notification_surveyor_time"/>
+                </not>
+            </and>
+        </preConditions>
+        <comment>Add indexes for notification audit log</comment>
+        <createIndex tableName="notification_audit_log" indexName="idx_notification_surveyor_time">
+            <column name="surveyor_id"/>
+            <column name="sent_at" descending="true"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- Note: chat_message indexes are already created in 018-chat-messages.xml -->
+    <!-- Note: surveyor_activity_log indexes are already created in 016-surveyor-activity-log.xml -->
+
+</databaseChangeLog>

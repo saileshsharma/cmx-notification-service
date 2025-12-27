@@ -18,7 +18,7 @@ const formatTime = (timestamp: number): string => {
   });
 };
 
-const NotificationListItem: React.FC<{ item: NotificationItem }> = ({ item }) => (
+const NotificationListItem: React.FC<{ item: NotificationItem }> = React.memo(({ item }) => (
   <View style={styles.notificationItem}>
     <View
       style={[
@@ -32,7 +32,7 @@ const NotificationListItem: React.FC<{ item: NotificationItem }> = ({ item }) =>
       <Text style={styles.notificationTime}>{formatTime(item.timestamp)}</Text>
     </View>
   </View>
-);
+));
 
 export const NotificationList: React.FC<Props> = ({ notifications }) => {
   if (notifications.length === 0) {

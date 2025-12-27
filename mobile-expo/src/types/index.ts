@@ -80,7 +80,7 @@ export interface LocationStatusUpdate {
 
 export interface UpdateResponse {
   success: boolean;
-  message: string;
+  message?: string;
 }
 
 // Login types

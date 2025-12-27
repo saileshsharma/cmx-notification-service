@@ -1,616 +1,480 @@
-# Surveyor Calendar - Backend API
+# FleetInspect Pro - Backend API
 
-Spring Boot REST API for managing surveyor appointments, real-time location tracking, and push notifications.
+Spring Boot REST API for managing surveyor appointments, real-time location tracking, multi-channel notifications, and chat messaging.
+
+## Production Status: LIVE
+
+| Resource | URL |
+|----------|-----|
+| **API Base** | https://cmx-notification-be-production.up.railway.app |
+| **Swagger UI** | https://cmx-notification-be-production.up.railway.app/swagger-ui/index.html |
+| **OpenAPI Spec** | https://cmx-notification-be-production.up.railway.app/v3/api-docs |
+| **Health Check** | https://cmx-notification-be-production.up.railway.app/actuator/health |
+| **Metrics** | https://cmx-notification-be-production.up.railway.app/actuator/prometheus |
+
+---
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                         SPRING BOOT BACKEND                                  │
-│                                                                              │
-│  ┌──────────────────────────────────────────────────────────────────────┐   │
-│  │                         CONTROLLERS                                   │   │
-│  │  ┌────────────┐  ┌────────────┐  ┌────────────┐  ┌────────────┐     │   │
-│  │  │ Appointment│  │  Surveyor  │  │  Location  │  │   QStash   │     │   │
-│  │  │ Controller │  │ Controller │  │  Stream    │  │  Webhook   │     │   │
-│  │  │            │  │            │  │ Controller │  │ Controller │     │   │
-│  │  │ CRUD Ops   │  │ List/CRUD  │  │ SSE Stream │  │ Location   │     │   │
-│  │  │ Assign     │  │ Status     │  │ Trails     │  │ Updates    │     │   │
-│  │  └────────────┘  └────────────┘  └────────────┘  └────────────┘     │   │
-│  └──────────────────────────────────────────────────────────────────────┘   │
-│                                                                              │
-│  ┌──────────────────────────────────────────────────────────────────────┐   │
-│  │                          SERVICES                                     │   │
-│  │  ┌────────────┐  ┌────────────┐  ┌────────────┐  ┌────────────┐     │   │
-│  │  │ Appointment│  │  Surveyor  │  │  Location  │  │   Push     │     │   │
-│  │  │  Service   │  │  Service   │  │  Broadcast │  │ Notification│    │   │
-│  │  │            │  │            │  │  Service   │  │  Service   │     │   │
-│  │  └────────────┘  └────────────┘  └────────────┘  └────────────┘     │   │
-│  └──────────────────────────────────────────────────────────────────────┘   │
-│                                                                              │
-│  ┌──────────────────────────────────────────────────────────────────────┐   │
-│  │                        REPOSITORIES                                   │   │
-│  │  ┌────────────┐  ┌────────────┐  ┌────────────┐  ┌────────────┐     │   │
-│  │  │ Appointment│  │  Surveyor  │  │Availability│  │  Device    │     │   │
-│  │  │ Repository │  │ Repository │  │ Repository │  │   Token    │     │   │
-│  │  └────────────┘  └────────────┘  └────────────┘  └────────────┘     │   │
-│  └──────────────────────────────────────────────────────────────────────┘   │
-│                                                                              │
-│  ┌──────────────────────────────────────────────────────────────────────┐   │
-│  │                     DATABASE (PostgreSQL)                             │   │
-│  │  ┌────────────┐  ┌────────────┐  ┌────────────┐  ┌────────────┐     │   │
-│  │  │appointments│  │  surveyor  │  │availability│  │device_token│     │   │
-│  │  └────────────┘  └────────────┘  └────────────┘  └────────────┘     │   │
-│  └──────────────────────────────────────────────────────────────────────┘   │
-│                                                                              │
-└─────────────────────────────────────────────────────────────────────────────┘
-         ▲                    ▲                    │
-         │                    │                    ▼
-    ┌────────────┐      ┌────────────┐      ┌────────────┐
-    │   Mobile   │      │   QStash   │      │  Firebase  │
-    │    App     │      │  (Upstash) │      │    FCM     │
-    └────────────┘      └────────────┘      └────────────┘
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                              SPRING BOOT BACKEND                                      │
+│                                                                                       │
+│  ┌─────────────────────────────────────────────────────────────────────────────────┐ │
+│  │                              PRESENTATION LAYER                                  │ │
+│  │                                                                                  │ │
+│  │  REST Controllers                    WebSocket                    SSE            │ │
+│  │  ┌──────────────────────────────┐   ┌─────────────────┐   ┌─────────────────┐  │ │
+│  │  │ SurveyorController           │   │ ChatController  │   │ LocationStream  │  │ │
+│  │  │ AvailabilityController       │   │ • /app/chat.*   │   │ Controller      │  │ │
+│  │  │ MobileController             │   │ • STOMP/SockJS  │   │ • /api/disp/    │  │ │
+│  │  │ DispatchController           │   └─────────────────┘   │   stream        │  │ │
+│  │  │ NotificationController       │                         └─────────────────┘  │ │
+│  │  │ SurveyorActivityController   │                                               │ │
+│  │  │ QStashWebhookController      │                                               │ │
+│  │  └──────────────────────────────┘                                               │ │
+│  └─────────────────────────────────────────────────────────────────────────────────┘ │
+│                                           │                                           │
+│  ┌─────────────────────────────────────────────────────────────────────────────────┐ │
+│  │                              SERVICE LAYER                                       │ │
+│  │                                                                                  │ │
+│  │  ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐ ┌───────────────┐ │ │
+│  │  │ SurveyorService │ │AvailabilitySvc  │ │NotificationSvc  │ │  ChatService  │ │ │
+│  │  │                 │ │                 │ │                 │ │               │ │ │
+│  │  │ • List/Filter   │ │ • CRUD blocks   │ │ • Push (FCM)    │ │ • Send/Store  │ │ │
+│  │  │ • Update loc    │ │ • Date ranges   │ │ • Email (Mgun)  │ │ • Broadcast   │ │ │
+│  │  │ • Update status │ │ • Conflicts     │ │ • SMS (Twilio)  │ │ • Read rcpt   │ │ │
+│  │  └─────────────────┘ └─────────────────┘ └─────────────────┘ └───────────────┘ │ │
+│  │                                                                                  │ │
+│  │  ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐ ┌───────────────┐ │ │
+│  │  │DispatchService  │ │ActivityService  │ │DeviceTokenSvc   │ │ AuditService  │ │ │
+│  │  │                 │ │                 │ │                 │ │               │ │ │
+│  │  │ • Create offers │ │ • Log activity  │ │ • Register tkn  │ │ • Log notifs  │ │ │
+│  │  │ • Accept/Reject │ │ • SSE broadcast │ │ • Platform mgmt │ │ • Stats/hist  │ │ │
+│  │  │ • Expiration    │ │ • Query history │ │ • Cleanup       │ │ • Delivery    │ │ │
+│  │  └─────────────────┘ └─────────────────┘ └─────────────────┘ └───────────────┘ │ │
+│  └─────────────────────────────────────────────────────────────────────────────────┘ │
+│                                           │                                           │
+│  ┌─────────────────────────────────────────────────────────────────────────────────┐ │
+│  │                              RESILIENCE LAYER                                    │ │
+│  │                                                                                  │ │
+│  │  Resilience4j                     Spring Retry              Caffeine Cache      │ │
+│  │  ┌─────────────────────────┐     ┌─────────────────┐     ┌─────────────────┐   │ │
+│  │  │ Circuit Breakers        │     │ @Retryable      │     │ availabilityCache│  │ │
+│  │  │ • emailService          │     │ • 3 attempts    │     │ surveyorsCache   │  │ │
+│  │  │ • smsService            │     │ • Exp backoff   │     │ 500 entries      │  │ │
+│  │  │ • pushService           │     │ • 1s, 2s, 4s    │     │ 5-min TTL        │  │ │
+│  │  └─────────────────────────┘     └─────────────────┘     └─────────────────┘   │ │
+│  │                                                                                  │ │
+│  │  Rate Limiters (Resilience4j)                                                   │ │
+│  │  ┌─────────────────────────────────────────────────────────────────────────┐   │ │
+│  │  │ loginApi: 10/min │ mobileApi: 60/sec │ chatApi: 120/sec │ readApi: 200/s│   │ │
+│  │  └─────────────────────────────────────────────────────────────────────────┘   │ │
+│  └─────────────────────────────────────────────────────────────────────────────────┘ │
+│                                           │                                           │
+│  ┌─────────────────────────────────────────────────────────────────────────────────┐ │
+│  │                              DATA LAYER                                          │ │
+│  │                                                                                  │ │
+│  │  Spring Data JPA Repositories                                                    │ │
+│  │  ┌───────────────┐ ┌───────────────┐ ┌───────────────┐ ┌───────────────┐       │ │
+│  │  │SurveyorRepo   │ │AvailabilityRpo│ │DeviceTokenRepo│ │NotifLogRepo   │       │ │
+│  │  │ChatMessageRepo│ │DispatchOfferRp│ │ActivityLogRepo│ │JobAssignRepo  │       │ │
+│  │  └───────────────┘ └───────────────┘ └───────────────┘ └───────────────┘       │ │
+│  │                                                                                  │ │
+│  │  PostgreSQL (Railway) - Managed via Liquibase migrations                        │ │
+│  └─────────────────────────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────────────────────┘
+                              │                     │
+              ┌───────────────┼─────────────────────┼───────────────┐
+              ▼               ▼                     ▼               ▼
+        ┌───────────┐  ┌───────────┐        ┌───────────┐   ┌───────────┐
+        │ Firebase  │  │  Mailgun  │        │  Twilio   │   │  QStash   │
+        │   FCM     │  │  (Email)  │        │   (SMS)   │   │ (Webhook) │
+        └───────────┘  └───────────┘        └───────────┘   └───────────┘
 ```
 
-## Features
+---
 
-- **Appointment Management** - CRUD operations for vehicle inspection appointments
-- **Surveyor Management** - Track surveyors, their status, and availability
-- **Real-time Location** - SSE streaming of surveyor positions
-- **Location Trails** - Historical movement data
-- **Push Notifications** - Firebase Cloud Messaging integration
-- **QStash Webhooks** - Reliable message delivery from mobile apps
-- **Authentication** - Email-based surveyor login
-- **Swagger/OpenAPI** - Auto-generated API documentation
+## Technology Stack
 
-## Tech Stack
+| Component | Technology | Version |
+|-----------|------------|---------|
+| Framework | Spring Boot | 3.3.x |
+| Language | Java | 21 |
+| Database | PostgreSQL | 14+ |
+| Migrations | Liquibase | 4.x |
+| Caching | Caffeine | 3.x |
+| Resilience | Resilience4j | 2.x |
+| Security | Spring Security | 6.x |
+| WebSocket | Spring WebSocket + STOMP | - |
+| API Docs | SpringDoc OpenAPI | 2.x |
+| Push Notifications | Firebase Admin SDK | 9.x |
+| Email | Mailgun (HTTP API) | - |
+| SMS | Twilio SDK | 9.x |
+| Build | Maven | 3.9+ |
 
-| Component | Technology |
-|-----------|------------|
-| Framework | Spring Boot 3.3 |
-| Language | Java 17 |
-| Database | PostgreSQL / H2 (dev) |
-| Migrations | Liquibase |
-| Real-time | Server-Sent Events (SSE) |
-| Push Notifications | Firebase Admin SDK |
-| SMS Notifications | Twilio |
-| Email Notifications | Mailgun |
-| Message Queue | Upstash QStash |
-| API Docs | SpringDoc OpenAPI |
-| Caching | Caffeine |
-| Retry | Spring Retry |
-| Security | Spring Security |
-| Build | Maven |
+---
 
 ## Project Structure
 
 ```
 backend/
-├── src/
-│   ├── main/
-│   │   ├── java/com/cmx/
-│   │   │   ├── controller/
-│   │   │   │   ├── AppointmentController.java
-│   │   │   │   ├── SurveyorController.java
-│   │   │   │   ├── LocationStreamController.java
-│   │   │   │   ├── QStashWebhookController.java
-│   │   │   │   └── AuthController.java
-│   │   │   ├── service/
-│   │   │   │   ├── AppointmentService.java
-│   │   │   │   ├── SurveyorService.java
-│   │   │   │   ├── LocationBroadcastService.java
-│   │   │   │   ├── AvailabilityService.java
-│   │   │   │   └── PushNotificationService.java
-│   │   │   ├── repository/
-│   │   │   ├── model/
-│   │   │   ├── dto/
-│   │   │   ├── exception/
-│   │   │   └── Application.java
-│   │   └── resources/
-│   │       ├── application.properties
-│   │       ├── application-prod.properties
-│   │       └── db/changelog/
-│   └── test/
-├── pom.xml
-└── Dockerfile
+├── src/main/java/com/cmx/
+│   ├── Application.java                    # Spring Boot entry point
+│   │
+│   ├── controller/                         # REST endpoints
+│   │   ├── SurveyorController.java        # GET /api/surveyors
+│   │   ├── AvailabilityController.java    # CRUD /api/availability
+│   │   ├── MobileController.java          # /api/mobile/* (login, location, status)
+│   │   ├── ChatController.java            # /api/chat/* + WebSocket handlers
+│   │   ├── DispatchController.java        # /api/fnol/*/offers, /api/offers/*/accept
+│   │   ├── NotificationController.java    # /api/notifications/*, /api/dev/*
+│   │   ├── SurveyorActivityController.java # /api/activity, /api/dispatcher/stream
+│   │   ├── LocationStreamController.java  # SSE /api/locations/stream
+│   │   └── QStashWebhookController.java   # /api/webhook/qstash/location
+│   │
+│   ├── service/                           # Business logic
+│   │   ├── SurveyorService.java          # Surveyor CRUD, location/status updates
+│   │   ├── AvailabilityService.java      # Appointment/calendar management
+│   │   ├── NotificationService.java      # Multi-channel notification dispatch
+│   │   ├── ChatService.java              # Message storage and WebSocket broadcast
+│   │   ├── DispatchService.java          # Job offer lifecycle management
+│   │   ├── SurveyorActivityService.java  # Activity logging and SSE broadcast
+│   │   ├── DeviceTokenService.java       # Push token registration
+│   │   ├── NotificationAuditService.java # Notification history and stats
+│   │   └── LocationBroadcastService.java # SSE location streaming
+│   │
+│   ├── repository/                        # Spring Data JPA repositories
+│   │   ├── SurveyorRepository.java
+│   │   ├── AvailabilityRepository.java
+│   │   ├── DeviceTokenRepository.java
+│   │   ├── NotificationLogRepository.java
+│   │   ├── ChatMessageRepository.java
+│   │   ├── DispatchOfferRepository.java
+│   │   └── SurveyorActivityRepository.java
+│   │
+│   ├── model/                             # JPA entities
+│   │   ├── Surveyor.java
+│   │   ├── SurveyorAvailability.java
+│   │   ├── DeviceToken.java
+│   │   ├── NotificationLog.java
+│   │   ├── ChatMessage.java
+│   │   ├── DispatchOffer.java
+│   │   └── SurveyorActivityLog.java
+│   │
+│   ├── dto/                               # Data transfer objects
+│   │   ├── AvailabilityDto.java
+│   │   ├── ChatMessageDto.java
+│   │   ├── DispatchDto.java
+│   │   ├── DeviceTokenDto.java
+│   │   └── NotificationDto.java
+│   │
+│   ├── config/                            # Configuration classes
+│   │   ├── DataSourceConfig.java         # DATABASE_URL auto-conversion
+│   │   ├── WebSocketConfig.java          # STOMP/SockJS setup
+│   │   ├── SecurityConfig.java           # Spring Security rules
+│   │   ├── CacheConfig.java              # Caffeine cache setup
+│   │   ├── FirebaseConfig.java           # FCM initialization
+│   │   └── OpenApiConfig.java            # Swagger configuration
+│   │
+│   └── exception/                         # Exception handling
+│       └── GlobalExceptionHandler.java
+│
+├── src/main/resources/
+│   ├── application.properties             # Main configuration
+│   ├── db/changelog/                      # Liquibase migrations
+│   │   ├── db.changelog-master.xml
+│   │   ├── 001-initial-schema.xml
+│   │   ├── 002-add-chat-tables.xml
+│   │   ├── 003-add-activity-log.xml
+│   │   └── ...
+│   └── templates/                         # Email templates (Thymeleaf)
+│
+└── pom.xml                                # Maven dependencies
 ```
 
-## Getting Started
+---
 
-### Prerequisites
+## Database Schema
 
-- Java 17+
-- Maven 3.8+
-- PostgreSQL 14+
-- Firebase project (for push notifications)
+```
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                              DATABASE SCHEMA (PostgreSQL)                            │
+└─────────────────────────────────────────────────────────────────────────────────────┘
 
-### Database Setup
-
-```bash
-# Create database
-createdb surveyor_calendar
-
-# Or using psql
-psql -U postgres -c "CREATE DATABASE surveyor_calendar;"
+┌─────────────────────────┐      ┌─────────────────────────┐
+│        surveyor         │      │  surveyor_availability  │
+├─────────────────────────┤      ├─────────────────────────┤
+│ id (PK)                 │      │ id (PK)                 │
+│ code (VARCHAR)          │◄─────│ surveyor_id (FK)        │
+│ display_name            │      │ start_time (TIMESTAMP)  │
+│ email                   │      │ end_time (TIMESTAMP)    │
+│ phone                   │      │ state (VARCHAR)         │
+│ surveyor_type           │      │ title                   │
+│ current_status          │      │ description             │
+│ current_lat (DOUBLE)    │      │ source (MOBILE/WEB)     │
+│ current_lng (DOUBLE)    │      │ response_status         │
+│ last_location_update    │      │ responded_at            │
+│ home_lat, home_lng      │      │ created_at, updated_at  │
+│ password (VARCHAR)      │      └─────────────────────────┘
+│ status (ACTIVE/INACTIVE)│
+└─────────────────────────┘
+           │
+           │ 1:N
+           ▼
+┌─────────────────────────┐      ┌─────────────────────────┐
+│      device_token       │      │    notification_log     │
+├─────────────────────────┤      ├─────────────────────────┤
+│ id (PK)                 │      │ id (PK)                 │
+│ surveyor_id (FK)        │      │ surveyor_id (FK)        │
+│ token (VARCHAR)         │      │ channel (PUSH/EMAIL/SMS)│
+│ platform (IOS/ANDROID)  │      │ event_type              │
+│ created_at              │      │ title, body             │
+│ updated_at              │      │ status (SENT/FAILED)    │
+└─────────────────────────┘      │ error_message           │
+                                 │ recipient               │
+┌─────────────────────────┐      │ external_id             │
+│   surveyor_activity_log │      │ created_at              │
+├─────────────────────────┤      └─────────────────────────┘
+│ id (PK)                 │
+│ surveyor_id (FK)        │      ┌─────────────────────────┐
+│ activity_type           │      │     chat_message        │
+│ previous_value          │      ├─────────────────────────┤
+│ new_value               │      │ id (PK)                 │
+│ appointment_id          │      │ conversation_id         │
+│ latitude, longitude     │      │ sender_id               │
+│ notes                   │      │ sender_type             │
+│ created_at              │      │ recipient_id            │
+└─────────────────────────┘      │ recipient_type          │
+                                 │ content (TEXT)          │
+┌─────────────────────────┐      │ read_at                 │
+│     dispatch_offer      │      │ created_at              │
+├─────────────────────────┤      └─────────────────────────┘
+│ id (PK)                 │
+│ fnol_id (VARCHAR)       │
+│ offer_group (VARCHAR)   │
+│ surveyor_id (FK)        │
+│ status                  │
+│ expires_at              │
+│ responded_at            │
+│ created_at              │
+└─────────────────────────┘
 ```
 
-### Configuration
+---
 
-Edit `src/main/resources/application.properties`:
+## API Reference
 
-```properties
-# Database
-spring.datasource.url=jdbc:postgresql://localhost:5432/surveyor_calendar
-spring.datasource.username=postgres
-spring.datasource.password=your_password
-
-# Server
-server.port=8080
-
-# QStash (for mobile location updates)
-qstash.current-signing-key=your_qstash_signing_key
-qstash.next-signing-key=your_qstash_next_signing_key
-
-# Firebase (for push notifications)
-firebase.credentials.path=/path/to/firebase-service-account.json
-```
-
-### Environment Variables
-
-```bash
-# Database
-export DATABASE_URL=jdbc:postgresql://localhost:5432/surveyor_calendar
-export DATABASE_USERNAME=postgres
-export DATABASE_PASSWORD=your_password
-
-# QStash (for mobile location updates)
-export QSTASH_CURRENT_SIGNING_KEY=your_key
-export QSTASH_NEXT_SIGNING_KEY=your_next_key
-
-# Firebase Push Notifications
-export FIREBASE_CREDENTIALS_PATH=/path/to/firebase-creds.json
-# Or use JSON directly for cloud deployments:
-export FIREBASE_CREDENTIALS_JSON='{"type":"service_account",...}'
-
-# Twilio SMS
-export TWILIO_ACCOUNT_SID=your_account_sid
-export TWILIO_AUTH_TOKEN=your_auth_token
-export TWILIO_PHONE_NUMBER=+1234567890
-
-# Mailgun Email
-export MAILGUN_API_KEY=your_api_key
-export MAILGUN_DOMAIN=your_domain.mailgun.org
-
-# Security (set to true in production)
-export SECURITY_ENABLED=false
-export SECURITY_ADMIN_USERNAME=admin
-export SECURITY_ADMIN_PASSWORD=secure_password
-```
-
-## Running
-
-### Development
-
-```bash
-# Using Maven
-./mvnw spring-boot:run
-
-# Or with specific profile
-./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
-
-# Server starts at http://localhost:8080
-```
-
-### With Docker
-
-```bash
-# Build JAR
-./mvnw clean package -DskipTests
-
-# Build Docker image
-docker build -t surveyor-backend .
-
-# Run container
-docker run -p 8080:8080 \
-  -e DATABASE_URL=jdbc:postgresql://host.docker.internal:5432/surveyor_calendar \
-  -e DATABASE_USERNAME=postgres \
-  -e DATABASE_PASSWORD=password \
-  surveyor-backend
-```
-
-## Building
-
-### Development Build
-
-```bash
-./mvnw clean compile
-```
-
-### Production Build
-
-```bash
-# Build JAR (skipping tests)
-./mvnw clean package -DskipTests
-
-# Output: target/surveyor-calendar-api-0.1.0.jar
-
-# Run the JAR
-java -jar target/surveyor-calendar-api-0.1.0.jar
-```
-
-### Build with Tests
-
-```bash
-./mvnw clean package
-```
-
-## Deployment
-
-### Docker Compose
-
-```yaml
-# docker-compose.yml
-version: '3.8'
-services:
-  api:
-    build: ./backend
-    ports:
-      - "8080:8080"
-    environment:
-      - DATABASE_URL=jdbc:postgresql://db:5432/surveyor_calendar
-      - DATABASE_USERNAME=postgres
-      - DATABASE_PASSWORD=postgres
-    depends_on:
-      - db
-
-  db:
-    image: postgres:14
-    environment:
-      POSTGRES_DB: surveyor_calendar
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-volumes:
-  postgres_data:
-```
-
-```bash
-docker-compose up -d
-```
-
-### Railway / Render / Heroku
-
-```bash
-# Procfile
-web: java -jar target/surveyor-calendar-api-0.1.0.jar --server.port=$PORT
-```
-
-### AWS ECS / Kubernetes
-
-Use the Dockerfile and deploy to your container orchestration platform.
-
-## CI/CD with GitHub Actions
-
-### Workflow File
-
-Create `.github/workflows/backend.yml`:
-
-```yaml
-name: Backend CI/CD
-
-on:
-  push:
-    branches: [main]
-    paths:
-      - 'backend/**'
-  pull_request:
-    branches: [main]
-    paths:
-      - 'backend/**'
-
-defaults:
-  run:
-    working-directory: backend
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-
-    services:
-      postgres:
-        image: postgres:14
-        env:
-          POSTGRES_DB: test_db
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-          cache: maven
-
-      - name: Build with Maven
-        run: mvn clean package -DskipTests
-
-      - name: Run Tests
-        run: mvn test
-        env:
-          DATABASE_URL: jdbc:postgresql://localhost:5432/test_db
-          DATABASE_USERNAME: postgres
-          DATABASE_PASSWORD: postgres
-
-      - name: Upload JAR artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: backend-jar
-          path: backend/target/*.jar
-
-  docker:
-    needs: build
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/download-artifact@v4
-        with:
-          name: backend-jar
-          path: backend/target/
-
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./backend
-          push: true
-          tags: |
-            ${{ secrets.DOCKER_USERNAME }}/surveyor-backend:latest
-            ${{ secrets.DOCKER_USERNAME }}/surveyor-backend:${{ github.sha }}
-
-  deploy:
-    needs: docker
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-
-    steps:
-      - name: Deploy to Railway
-        run: |
-          curl -X POST ${{ secrets.RAILWAY_WEBHOOK_URL }}
-```
-
-### Required GitHub Secrets
-
-| Secret | Description |
-|--------|-------------|
-| `DOCKER_USERNAME` | Docker Hub username |
-| `DOCKER_PASSWORD` | Docker Hub password/token |
-| `RAILWAY_WEBHOOK_URL` | Railway deploy webhook (if using Railway) |
-| `DATABASE_URL` | Production database URL |
-
-## API Documentation
-
-### Swagger UI
-
-Access at: `http://localhost:8080/swagger-ui.html`
-
-### OpenAPI JSON
-
-Access at: `http://localhost:8080/v3/api-docs`
-
-## API Endpoints
-
-### Authentication
+### Surveyor Management
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/api/auth/login` | Surveyor login |
+| GET | `/api/surveyors` | List all surveyors with optional filters |
+| GET | `/api/surveyors?type=INTERNAL` | Filter by surveyor type |
+| GET | `/api/surveyors?currentStatus=AVAILABLE` | Filter by status |
 
-### Appointments
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/appointments` | List all appointments |
-| GET | `/api/appointments/{id}` | Get appointment by ID |
-| POST | `/api/appointments` | Create appointment |
-| PUT | `/api/appointments/{id}` | Update appointment |
-| DELETE | `/api/appointments/{id}` | Delete appointment |
-| POST | `/api/appointments/{id}/respond` | Accept/reject appointment |
-| GET | `/api/appointments/surveyor/{id}` | Get surveyor's appointments |
-
-### Surveyors
+### Availability/Appointments
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/surveyors` | List all surveyors |
-| GET | `/api/surveyors/{id}` | Get surveyor details |
-| PUT | `/api/surveyors/{id}/location` | Update location |
-| PUT | `/api/surveyors/{id}/status` | Update status |
-
-### Location Stream (SSE)
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/locations/stream` | Subscribe to location updates |
-| GET | `/api/locations/trails` | Get all location trails |
-| GET | `/api/locations/trails/{id}` | Get surveyor's trail |
-| GET | `/api/locations/stream/status` | Get stream status |
-
-### Webhooks
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/webhook/qstash/location` | Receive location from QStash |
-| GET | `/api/webhook/qstash/health` | Health check |
-
-### Notifications
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/notifications/send` | Send push notification |
-| GET | `/api/notifications/stats` | Get notification stats |
+| GET | `/api/availability` | List appointments with date range |
+| GET | `/api/availability?from=...&to=...&surveyorId=1` | Filter by date and surveyor |
+| POST | `/api/mobile/availability` | Create/update availability blocks |
+| PUT | `/api/availability/{id}` | Update existing appointment |
+| DELETE | `/api/availability/{id}` | Delete appointment |
 
 ### Mobile APIs
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/api/mobile/login` | Surveyor login (auto-registers device token) |
+| POST | `/api/mobile/login` | Surveyor login + auto device registration |
 | POST | `/api/mobile/device-token` | Register push notification token |
-| DELETE | `/api/mobile/device-token` | Unregister push notification token |
+| DELETE | `/api/mobile/device-token` | Unregister device token |
 | GET | `/api/mobile/notifications` | Get notification history |
 | GET | `/api/mobile/appointments/{surveyorId}` | Get surveyor appointments |
 | POST | `/api/mobile/appointments/{id}/respond` | Accept/reject appointment |
-| POST | `/api/mobile/location` | Update surveyor location |
-| POST | `/api/mobile/status` | Update surveyor status (AVAILABLE/BUSY/OFFLINE) |
+| POST | `/api/mobile/location` | Update GPS location |
+| POST | `/api/mobile/status` | Update status (AVAILABLE/BUSY/OFFLINE) |
 | POST | `/api/mobile/job-update` | Update job progress (ON_WAY/ARRIVED/INSPECTING/COMPLETED) |
 | POST | `/api/mobile/location-status` | Update location and status together |
 | GET | `/api/mobile/surveyor/{id}` | Get surveyor details |
-| POST | `/api/mobile/change-password` | Change surveyor password |
+| POST | `/api/mobile/change-password` | Change password |
 
-### Dispatcher Real-time APIs
+### Chat
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/dispatcher/stream` | SSE stream for surveyor activity events |
-| GET | `/api/dispatcher/status` | Get SSE connection status |
+| GET | `/api/chat/messages/{conversationId}` | Get message history |
+| POST | `/api/chat/messages` | Send message (REST alternative) |
+| GET | `/api/chat/conversations/surveyor/{id}` | Get surveyor's conversations |
+| GET | `/api/chat/conversations/dispatcher/{id}` | Get dispatcher's conversations |
+| POST | `/api/chat/conversations/start` | Start new conversation |
+| GET | `/api/chat/unread?userId=X&userType=Y` | Get unread count |
+| **WebSocket** | `/app/chat.send` | Send message via WebSocket |
+| **WebSocket** | `/app/chat.typing` | Send typing indicator |
+| **WebSocket** | `/topic/chat/{recipientId}` | Subscribe to messages |
+
+### Dispatch
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/fnol/{fnolId}/offers` | Create job offers for candidates |
+| POST | `/api/offers/{offerGroup}/accept` | Accept offer |
+| POST | `/api/jobs/{jobId}/complete` | Complete job |
+
+### Activity & Real-time
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
 | GET | `/api/activity` | Get activity log with filters |
-| GET | `/api/activity/recent` | Get recent activity (last N hours) |
-| GET | `/api/activity/appointment/{id}` | Get activity for specific appointment |
+| GET | `/api/activity/recent?hours=2` | Get recent activity |
+| GET | `/api/dispatcher/stream` | SSE stream for live activity updates |
+| GET | `/api/dispatcher/status` | SSE connection status |
 
-## Available Maven Commands
+### Notifications
 
-| Command | Description |
-|---------|-------------|
-| `./mvnw spring-boot:run` | Run development server |
-| `./mvnw clean compile` | Compile the project |
-| `./mvnw clean package` | Build JAR file |
-| `./mvnw clean package -DskipTests` | Build without tests |
-| `./mvnw test` | Run tests |
-| `./mvnw clean install` | Build and install to local repo |
-| `./mvnw liquibase:diff` | Generate DB migration diff |
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/notifications/history` | Get notification audit log |
+| GET | `/api/notifications/stats` | Get notification statistics |
+| GET | `/api/dev/notification-status` | Get service status (Push/Email/SMS) |
+| POST | `/api/dev/test-notification/{surveyorId}` | Send test notification |
+| GET | `/api/dev/device-tokens/{surveyorId}` | Get registered device tokens |
 
-## Database Migrations
+### Webhooks
 
-Migrations are managed with Liquibase in `src/main/resources/db/changelog/`.
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/webhook/qstash/location` | Receive location updates from QStash |
+| GET | `/api/webhook/qstash/health` | Webhook health check |
 
-```bash
-# Generate new migration
-./mvnw liquibase:diff
+### Health & Monitoring
 
-# Rollback last change
-./mvnw liquibase:rollback -Dliquibase.rollbackCount=1
-```
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/actuator/health` | Health check |
+| GET | `/actuator/prometheus` | Prometheus metrics |
+| GET | `/swagger-ui/index.html` | Swagger UI |
+| GET | `/v3/api-docs` | OpenAPI JSON |
 
-## Database Schema
+---
 
-For comprehensive database documentation including ERD and DDL, see:
-- **[Database Schema Documentation](../docs/DATABASE_SCHEMA.md)** - Complete table definitions, relationships, and DDL
+## Configuration
 
-### Tables Overview
-
-| Table | Purpose |
-|-------|---------|
-| `surveyor` | Surveyor profiles, credentials, and current location/status |
-| `surveyor_availability` | Appointments/calendar slots assigned to surveyors |
-| `device_token` | Mobile push notification tokens (FCM/APNs) |
-| `notification_log` | Audit log for all notifications (Push/Email/SMS) |
-| `dispatch_offer` | Job offers sent to multiple surveyors with expiration |
-| `job_assignment` | Confirmed job assignments after offer acceptance |
-| `surveyor_activity_log` | Real-time activity tracking for dispatcher dashboard |
-
-## Caching
-
-The application uses Caffeine for high-performance caching:
-
-```java
-// Cache configuration (CacheConfig.java)
-- Maximum 500 entries
-- 5-minute TTL (Time To Live)
-- Statistics recording enabled
-
-// Available caches:
-- availabilityCache: Surveyor availability data
-- surveyorsCache: Surveyor list data
-- surveyorDetailsCache: Individual surveyor details
-```
-
-## Retry Logic
-
-Spring Retry provides resilient notification delivery:
-
-```java
-// Retry configuration for external services
-- Max attempts: 3
-- Backoff: Exponential (1s, 2s, 4s)
-- Applies to: Email (Mailgun), SMS (Twilio)
-```
-
-## Security
-
-Spring Security provides authentication and authorization:
+### application.properties
 
 ```properties
-# Development mode (default) - all endpoints accessible
-security.enabled=false
+# Server
+server.port=8080
 
-# Production mode - requires authentication
-security.enabled=true
-security.admin.username=admin
-security.admin.password=secure_password
+# Database (auto-converted from Railway's DATABASE_URL)
+# DataSourceConfig.java handles postgresql:// → jdbc:postgresql:// conversion
+
+# Email (Mailgun)
+email.enabled=true
+email.from=${EMAIL_FROM:noreply@example.com}
+mailgun.api.key=${MAILGUN_API_KEY:}
+mailgun.domain=${MAILGUN_DOMAIN:}
+
+# SMS (Twilio)
+sms.enabled=true
+twilio.account.sid=${TWILIO_ACCOUNT_SID:}
+twilio.auth.token=${TWILIO_AUTH_TOKEN:}
+twilio.phone.number=${TWILIO_PHONE_NUMBER:}
+
+# Firebase Push
+firebase.credentials.json=${FIREBASE_CREDENTIALS_JSON:}
+
+# QStash Webhooks
+qstash.current-signing-key=${QSTASH_CURRENT_SIGNING_KEY:}
+qstash.next-signing-key=${QSTASH_NEXT_SIGNING_KEY:}
+
+# Security
+security.enabled=${SECURITY_ENABLED:false}
+
+# Rate Limiting
+resilience4j.ratelimiter.instances.loginApi.limitForPeriod=10
+resilience4j.ratelimiter.instances.mobileApi.limitForPeriod=60
+resilience4j.ratelimiter.instances.chatApi.limitForPeriod=120
 ```
 
-When security is enabled:
-- Public endpoints: `/actuator/health`, `/swagger-ui/**`, `/api/mobile/**`
-- Protected endpoints: All other `/api/**` routes require Basic Auth
-- Users: admin (ADMIN, USER roles), dispatcher (USER role)
+---
 
-## Troubleshooting
+## Railway Environment Variables
 
-### Database Connection Issues
+All these are currently configured in Railway:
+
+| Variable | Status | Value/Notes |
+|----------|--------|-------------|
+| `DATABASE_URL` | ✅ Auto | PostgreSQL addon (auto-converted) |
+| `TWILIO_ACCOUNT_SID` | ✅ Set | ACb3ca474e0911c21d0a555605c132fd1d |
+| `TWILIO_AUTH_TOKEN` | ✅ Set | (secret) |
+| `TWILIO_PHONE_NUMBER` | ✅ Set | +19377452900 |
+| `MAILGUN_API_KEY` | ✅ Set | (secret) |
+| `MAILGUN_DOMAIN` | ✅ Set | sandboxb7a00d52da994b4d8ac33650a1e57e3b.mailgun.org |
+| `EMAIL_FROM` | ✅ Set | Mailgun Sandbox |
+| `FIREBASE_CREDENTIALS_JSON` | ✅ Set | (minified JSON) |
+| `QSTASH_CURRENT_SIGNING_KEY` | ✅ Set | sig_5uDhZ2qNkcNSy2sjRd9mWAzefpaw |
+| `QSTASH_NEXT_SIGNING_KEY` | ✅ Set | sig_5SnXVe2d3vPS6wEdjsD9U8rsVQj9 |
+| `H2_CONSOLE_ENABLED` | ✅ Set | false |
+
+### Known Limitations
+
+1. **Mailgun**: Using sandbox domain - only verified recipients
+2. **Twilio**: India (+91) region not enabled
+
+---
+
+## Running Locally
+
+### Prerequisites
+- Java 21+
+- Maven 3.9+
+- PostgreSQL 14+ (optional - H2 works for dev)
+
+### Development Mode (H2 Database)
 
 ```bash
-# Check PostgreSQL is running
-pg_isready -h localhost -p 5432
+cd backend
+mvn spring-boot:run -Dspring-boot.run.profiles=dev
 
-# Test connection
-psql -h localhost -U postgres -d surveyor_calendar
+# API: http://localhost:8080
+# Swagger: http://localhost:8080/swagger-ui/index.html
+# H2 Console: http://localhost:8080/h2-console
 ```
 
-### Port Already in Use
+### With PostgreSQL
 
 ```bash
-# Find process using port 8080
-lsof -i :8080
-
-# Kill process
-kill -9 <PID>
+export DATABASE_URL=postgresql://user:pass@localhost:5432/fleetinspect
+mvn spring-boot:run
 ```
 
-### Build Failures
+### Production Build
 
 ```bash
-# Clean and rebuild
-./mvnw clean install -U
+mvn clean package -DskipTests
+java -jar target/surveyor-calendar-api-*.jar
 ```
+
+---
+
+## Testing
+
+### API Health Check
+```bash
+curl https://cmx-notification-be-production.up.railway.app/actuator/health
+# {"status":"UP"}
+```
+
+### Test Notification
+```bash
+curl -X POST https://cmx-notification-be-production.up.railway.app/api/dev/test-notification/71 \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Test","message":"Hello from API"}'
+```
+
+---
 
 ## License
 

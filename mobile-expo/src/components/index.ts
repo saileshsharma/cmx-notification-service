@@ -1,10 +1,16 @@
+// UI Components
 export { Header } from './Header';
 export { BottomNav } from './BottomNav';
 export { AppointmentCard } from './AppointmentCard';
 export { WeatherCard } from './WeatherCard';
 export { StatsCard } from './StatsCard';
+
+// Modals
 export { MapModal } from './MapModal';
 export { CompletionModal } from './CompletionModal';
 export { SignatureModal } from './SignatureModal';
 export { NotificationPanel } from './NotificationPanel';
 export { UploadingOverlay } from './UploadingOverlay';
+
+// Error Handling
+export { ErrorBoundary } from './ErrorBoundary';

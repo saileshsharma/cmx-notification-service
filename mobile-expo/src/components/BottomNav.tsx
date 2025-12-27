@@ -19,7 +19,7 @@ const tabs: { key: TabType; icon: string; label: string }[] = [
   { key: 'chat', icon: 'chatbubbles', label: 'Chat' },
 ];
 
-export const BottomNav: React.FC<BottomNavProps> = ({
+export const BottomNav: React.FC<BottomNavProps> = React.memo(({
   activeTab,
   onTabChange,
   unreadMessages = 0,
@@ -66,7 +66,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
       </LinearGradient>
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   bottomNav: {

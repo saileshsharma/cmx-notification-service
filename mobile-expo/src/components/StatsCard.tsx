@@ -11,7 +11,7 @@ interface StatsCardProps {
   stats: TodayStats;
 }
 
-export const StatsCard: React.FC<StatsCardProps> = ({ stats }) => {
+export const StatsCard: React.FC<StatsCardProps> = React.memo(({ stats }) => {
   const completedPercentage = stats.completed / (stats.completed + stats.pending) * 100 || 0;
 
   const statItems = [
@@ -72,7 +72,7 @@ export const StatsCard: React.FC<StatsCardProps> = ({ stats }) => {
       </View>
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {

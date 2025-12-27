@@ -7,5 +7,6 @@
       "@/*": ["src/*"]
     }
   },
-  "include": ["**/*.ts", "**/*.tsx", "src/**/*"]
+  "include": ["**/*.ts", "**/*.tsx", "src/**/*"],
+  "exclude": ["node_modules", "App.original.tsx", "App.refactored.tsx"]
 }

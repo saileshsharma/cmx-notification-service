@@ -1,716 +1,520 @@
-# CMX Surveyor Calendar
+# FleetInspect Pro
 
-A full-stack application for managing surveyor schedules, appointments, and availability. Built with Angular 17 (frontend), Spring Boot 3 (backend), and React Native/Expo (mobile).
+A comprehensive enterprise-grade surveyor management and dispatch platform for vehicle inspection services. Built with Angular 17 (frontend), Spring Boot 3 (backend), and React Native/Expo (mobile).
+
+## Production Status: LIVE
+
+| Component | Status | URL/Location |
+|-----------|--------|--------------|
+| Backend API | ✅ Live | https://cmx-notification-be-production.up.railway.app |
+| Swagger UI | ✅ Live | https://cmx-notification-be-production.up.railway.app/swagger-ui/index.html |
+| Frontend Web | ✅ Ready | Deploy `frontend/dist` to any static host |
+| Mobile iOS | ✅ Built | `.ipa` available on EAS |
+| Mobile Android | ✅ Built | `.aab` available on EAS |
 
 ---
 
 ## System Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              CMX SURVEYOR CALENDAR                               │
-│                              System Architecture                                 │
-└─────────────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                           FLEETINSPECT PRO - SYSTEM ARCHITECTURE                     │
+└─────────────────────────────────────────────────────────────────────────────────────┘
 
-                                    ┌──────────────┐
-                                    │   RAILWAY    │
-                                    │   (Cloud)    │
-                                    └──────────────┘
-                                           │
-           ┌───────────────────────────────┼───────────────────────────────┐
-           │                               │                               │
-           ▼                               ▼                               ▼
-┌─────────────────────┐      ┌─────────────────────┐      ┌─────────────────────┐
-│   FRONTEND (FE)     │      │   BACKEND (BE)      │      │   MOBILE APP        │
-│   Angular 17        │      │   Spring Boot 3     │      │   React Native/Expo │
-│                     │      │                     │      │                     │
-│ ┌─────────────────┐ │      │ ┌─────────────────┐ │      │ ┌─────────────────┐ │
-│ │ Calendar View   │ │      │ │ REST API        │ │      │ │ Surveyor Login  │ │
-│ │ Timeline View   │ │      │ │ Controllers     │ │      │ │ Appointments    │ │
-│ │ Heatmap View    │ │      │ │                 │ │      │ │ Accept/Reject   │ │
-│ │ Map View        │ │◄────►│ │ /api/surveyors  │ │      │ │ Location Track  │ │
-│ │ (Leaflet/OSM)   │ │ HTTP │ │ /api/availability│ │      │ │ Status Update   │ │
-│ └─────────────────┘ │      │ │ /api/mobile/*   │ │      │ └─────────────────┘ │
-│                     │      │ └─────────────────┘ │      │          │          │
-│ Production URL:     │      │                     │      │          │          │
-│ cmx-notification-   │      │ ┌─────────────────┐ │      │          ▼          │
-│ fe-production.      │      │ │ Services        │ │      │ ┌─────────────────┐ │
-│ up.railway.app      │      │ │                 │ │      │ │ QStash Service  │ │
-└─────────────────────┘      │ │ SurveyorService │ │      │ │ (Message Queue) │ │
-                             │ │ AvailabilityServ│ │      │ └────────┬────────┘ │
-                             │ │ NotificationServ│ │      │          │          │
-                             │ └─────────────────┘ │      └──────────┼──────────┘
-                             │                     │                 │
-                             │ ┌─────────────────┐ │                 │
-                             │ │ QStash Webhook  │◄┼─────────────────┘
-                             │ │ /api/webhook/   │ │      Upstash QStash
-                             │ │ qstash/location │ │      (Serverless MQ)
-                             │ └─────────────────┘ │
-                             │                     │
-                             │ ┌─────────────────┐ │
-                             │ │ Database (H2)   │ │
-                             │ │                 │ │
-                             │ │ • surveyors     │ │
-                             │ │ • availability  │ │
-                             │ │ • device_tokens │ │
-                             │ │ • notifications │ │
-                             │ └─────────────────┘ │
-                             │                     │
-                             │ ┌─────────────────┐ │
-                             │ │ Notifications   │ │
-                             │ │                 │ │
-                             │ │ • Firebase FCM  │─┼──► Push Notifications
-                             │ │ • Mailgun Email │─┼──► Email Alerts
-                             │ │ • Twilio SMS    │─┼──► SMS Messages
-                             │ └─────────────────┘ │
-                             │                     │
-                             │ Production URL:     │
-                             │ cmx-notification-   │
-                             │ be-production.      │
-                             │ up.railway.app      │
-                             └─────────────────────┘
+                              ┌──────────────────────┐
+                              │     DISPATCHER       │
+                              │    (Web Browser)     │
+                              └──────────┬───────────┘
+                                         │
+                                         ▼
+┌────────────────────────────────────────────────────────────────────────────────────┐
+│                              ANGULAR FRONTEND                                        │
+│                                                                                      │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌──────────┐ │
+│  │  Calendar   │  │   Map View  │  │   Chat      │  │  Activity   │  │ Dispatch │ │
+│  │   View      │  │  (Leaflet)  │  │   Panel     │  │    Log      │  │  Panel   │ │
+│  │             │  │             │  │             │  │             │  │          │ │
+│  │ FullCalendar│  │ Real-time   │  │ WebSocket   │  │ SSE Stream  │  │ Job      │ │
+│  │ Drag/Drop   │  │ Location    │  │ Messaging   │  │ Live Feed   │  │ Offers   │ │
+│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘  └──────────┘ │
+│                                                                                      │
+│  Production: Auto-detects backend URL based on hostname                              │
+│  Local: http://localhost:8080 | Production: Railway URL                              │
+└────────────────────────────────────────────────────────────────────────────────────┘
+                                         │
+                            HTTP REST + SSE + WebSocket
+                                         │
+                                         ▼
+┌────────────────────────────────────────────────────────────────────────────────────┐
+│                           SPRING BOOT BACKEND (Railway)                              │
+│                                                                                      │
+│  ┌───────────────────────────────────────────────────────────────────────────────┐ │
+│  │                              REST CONTROLLERS                                  │ │
+│  │  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐         │ │
+│  │  │  Surveyor    │ │ Availability │ │    Mobile    │ │    Chat      │         │ │
+│  │  │  Controller  │ │  Controller  │ │  Controller  │ │  Controller  │         │ │
+│  │  │              │ │              │ │              │ │              │         │ │
+│  │  │ GET /api/    │ │ GET/POST     │ │ POST /login  │ │ WebSocket +  │         │ │
+│  │  │ surveyors    │ │ /availability│ │ /location    │ │ REST hybrid  │         │ │
+│  │  └──────────────┘ └──────────────┘ └──────────────┘ └──────────────┘         │ │
+│  │                                                                                │ │
+│  │  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐         │ │
+│  │  │  Dispatch    │ │ Notification │ │   Activity   │ │   QStash     │         │ │
+│  │  │  Controller  │ │  Controller  │ │  Controller  │ │   Webhook    │         │ │
+│  │  │              │ │              │ │              │ │              │         │ │
+│  │  │ Job Offers   │ │ Push/Email/  │ │ Real-time    │ │ Location     │         │ │
+│  │  │ Accept/Reject│ │ SMS History  │ │ Activity Log │ │ Updates      │         │ │
+│  │  └──────────────┘ └──────────────┘ └──────────────┘ └──────────────┘         │ │
+│  └───────────────────────────────────────────────────────────────────────────────┘ │
+│                                                                                      │
+│  ┌───────────────────────────────────────────────────────────────────────────────┐ │
+│  │                              SERVICES LAYER                                    │ │
+│  │  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐         │ │
+│  │  │  Surveyor    │ │ Availability │ │ Notification │ │    Chat      │         │ │
+│  │  │   Service    │ │   Service    │ │   Service    │ │   Service    │         │ │
+│  │  └──────────────┘ └──────────────┘ └──────────────┘ └──────────────┘         │ │
+│  │  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐         │ │
+│  │  │   Dispatch   │ │   Activity   │ │ DeviceToken  │ │  SSE/Stream  │         │ │
+│  │  │   Service    │ │   Service    │ │   Service    │ │   Service    │         │ │
+│  │  └──────────────┘ └──────────────┘ └──────────────┘ └──────────────┘         │ │
+│  └───────────────────────────────────────────────────────────────────────────────┘ │
+│                                                                                      │
+│  ┌───────────────────────────────────────────────────────────────────────────────┐ │
+│  │                           RESILIENCE & SECURITY                                │ │
+│  │  • Resilience4j Circuit Breakers (Email, SMS, Push services)                  │ │
+│  │  • Rate Limiting (Login: 10/min, Mobile: 60/sec, Chat: 120/sec)               │ │
+│  │  • Caffeine Caching (5-min TTL, 500 entries max)                              │ │
+│  │  • Spring Retry (3 attempts, exponential backoff)                             │ │
+│  │  • Spring Security (Basic Auth, configurable)                                 │ │
+│  └───────────────────────────────────────────────────────────────────────────────┘ │
+│                                                                                      │
+│  ┌───────────────────────────────────────────────────────────────────────────────┐ │
+│  │                              DATABASE (PostgreSQL)                             │ │
+│  │                                                                                │ │
+│  │  surveyor            surveyor_availability     device_token                   │ │
+│  │  ├─ id               ├─ id                     ├─ id                          │ │
+│  │  ├─ code             ├─ surveyor_id (FK)       ├─ surveyor_id (FK)            │ │
+│  │  ├─ display_name     ├─ start_time             ├─ token                       │ │
+│  │  ├─ email            ├─ end_time               ├─ platform (IOS/ANDROID)      │ │
+│  │  ├─ phone            ├─ state                  └─ created_at                  │ │
+│  │  ├─ surveyor_type    ├─ title                                                 │ │
+│  │  ├─ current_status   ├─ description            notification_log               │ │
+│  │  ├─ current_lat      └─ response_status        ├─ id                          │ │
+│  │  ├─ current_lng                                ├─ surveyor_id                 │ │
+│  │  └─ password         chat_message              ├─ channel (PUSH/EMAIL/SMS)    │ │
+│  │                      ├─ id                     ├─ status (SENT/FAILED)        │ │
+│  │  surveyor_activity   ├─ conversation_id        └─ error_message               │ │
+│  │  ├─ id               ├─ sender_id                                             │ │
+│  │  ├─ surveyor_id      ├─ content                dispatch_offer                 │ │
+│  │  ├─ activity_type    └─ created_at             ├─ id                          │ │
+│  │  ├─ previous_value                             ├─ fnol_id                     │ │
+│  │  ├─ new_value                                  ├─ surveyor_id                 │ │
+│  │  ├─ appointment_id                             ├─ status                      │ │
+│  │  └─ latitude/lng                               └─ expires_at                  │ │
+│  └───────────────────────────────────────────────────────────────────────────────┘ │
+└────────────────────────────────────────────────────────────────────────────────────┘
+                                         │
+                    ┌────────────────────┼────────────────────┐
+                    │                    │                    │
+                    ▼                    ▼                    ▼
+           ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+           │   Firebase   │     │   Mailgun    │     │   Twilio     │
+           │     FCM      │     │    Email     │     │     SMS      │
+           │              │     │              │     │              │
+           │ Push Notifs  │     │ HTML Email   │     │ SMS Alerts   │
+           │ iOS/Android  │     │ Templates    │     │ +1 Number    │
+           └──────────────┘     └──────────────┘     └──────────────┘
+                    │
+                    ▼
+┌────────────────────────────────────────────────────────────────────────────────────┐
+│                           REACT NATIVE MOBILE APP (Expo)                            │
+│                                                                                      │
+│  ┌───────────────────────────────────────────────────────────────────────────────┐ │
+│  │                              TAB NAVIGATION                                    │ │
+│  │  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐         │ │
+│  │  │  Dashboard   │ │   Schedule   │ │   Inspect    │ │    Chat      │         │ │
+│  │  │              │ │              │ │              │ │              │         │ │
+│  │  │ • Weather    │ │ • Calendar   │ │ • Checklist  │ │ • Dispatcher │         │ │
+│  │  │ • Stats      │ │ • Accept/    │ │ • Photos     │ │ • Real-time  │         │ │
+│  │  │ • Progress   │ │   Reject     │ │ • Signature  │ │   Messages   │         │ │
+│  │  │ • Quick Stat │ │ • Navigate   │ │ • Submit     │ │ • Typing     │         │ │
+│  │  │ • SOS Alert  │ │ • Details    │ │ • Offline    │ │   Indicator  │         │ │
+│  │  └──────────────┘ └──────────────┘ └──────────────┘ └──────────────┘         │ │
+│  └───────────────────────────────────────────────────────────────────────────────┘ │
+│                                                                                      │
+│  ┌───────────────────────────────────────────────────────────────────────────────┐ │
+│  │                              SERVICES                                          │ │
+│  │  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐         │ │
+│  │  │   Location   │ │    Push      │ │     API      │ │   Offline    │         │ │
+│  │  │   Service    │ │   Service    │ │   Service    │ │   Storage    │         │ │
+│  │  │              │ │              │ │              │ │              │         │ │
+│  │  │ GPS Track    │ │ Expo Push +  │ │ REST Client  │ │ SQLite +     │         │ │
+│  │  │ Background   │ │ FCM Bridge   │ │ Auth Token   │ │ AsyncStorage │         │ │
+│  │  │ Geofencing   │ │ Local Notif  │ │ Retry Logic  │ │ Sync Queue   │         │ │
+│  │  └──────────────┘ └──────────────┘ └──────────────┘ └──────────────┘         │ │
+│  └───────────────────────────────────────────────────────────────────────────────┘ │
+│                                                                                      │
+│  ┌───────────────────────────────────────────────────────────────────────────────┐ │
+│  │                           ROBUSTNESS FEATURES                                  │ │
+│  │  • NaN/Infinity handling for all numeric displays                             │ │
+│  │  • Division by zero protection                                                │ │
+│  │  • GPS timeout with fallback (10s timeout)                                    │ │
+│  │  • Network connectivity detection                                             │ │
+│  │  • Offline queue with automatic sync                                          │ │
+│  │  • Error boundaries for crash prevention                                      │ │
+│  │  • Sentry error tracking integration                                          │ │
+│  └───────────────────────────────────────────────────────────────────────────────┘ │
+└────────────────────────────────────────────────────────────────────────────────────┘
+                                         │
+                                         │ Location Updates
+                                         ▼
+                              ┌──────────────────────┐
+                              │    Upstash QStash    │
+                              │   (Message Queue)    │
+                              │                      │
+                              │ • Reliable delivery  │
+                              │ • Automatic retries  │
+                              │ • Signature verify   │
+                              └──────────────────────┘
+                                         │
+                                         │ Webhook POST
+                                         ▼
+                              ┌──────────────────────┐
+                              │   Backend Webhook    │
+                              │  /api/webhook/qstash │
+                              └──────────────────────┘
+```
 
+---
 
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              DATA FLOW DIAGRAM                                   │
-└─────────────────────────────────────────────────────────────────────────────────┘
+## Data Flow Diagrams
 
-1. APPOINTMENT MANAGEMENT FLOW:
-   ┌────────┐    HTTP     ┌─────────┐    SQL     ┌──────────┐
-   │   FE   │────────────►│   BE    │───────────►│    DB    │
-   │Calendar│◄────────────│   API   │◄───────────│   (H2)   │
-   └────────┘   JSON      └─────────┘            └──────────┘
+### 1. Appointment Creation Flow
+```
+Dispatcher                   Frontend                 Backend                    Database
+    │                            │                        │                          │
+    │  1. Create Appointment     │                        │                          │
+    │ ─────────────────────────► │                        │                          │
+    │                            │  2. POST /availability │                          │
+    │                            │ ─────────────────────► │                          │
+    │                            │                        │  3. INSERT               │
+    │                            │                        │ ───────────────────────► │
+    │                            │                        │                          │
+    │                            │                        │  4. Trigger Notification │
+    │                            │                        │ ─────────┐               │
+    │                            │                        │          │               │
+    │                            │                        │ ◄────────┘               │
+    │                            │                        │                          │
+    │                            │                        │     ┌─────────────────┐  │
+    │                            │                        │ ──► │ Firebase (Push) │  │
+    │                            │                        │     │ Mailgun (Email) │  │
+    │                            │                        │     │ Twilio (SMS)    │  │
+    │                            │                        │     └─────────────────┘  │
+    │                            │                        │                          │
+    │                            │  5. 200 OK + ID        │                          │
+    │                            │ ◄───────────────────── │                          │
+    │  6. Calendar Updated       │                        │                          │
+    │ ◄───────────────────────── │                        │                          │
+```
 
-2. LOCATION TRACKING FLOW (via QStash):
-   ┌────────┐   HTTPS    ┌─────────┐   Webhook   ┌─────────┐   SQL    ┌────┐
-   │ Mobile │───────────►│ QStash  │────────────►│   BE    │─────────►│ DB │
-   │  App   │            │ (Queue) │             │ Webhook │          │    │
-   └────────┘            └─────────┘             └─────────┘          └────┘
-        │                                              │
-        │ Location + Status                            │ Update surveyor
-        │ • lat, lng                                   │ • current_lat
-        │ • AVAILABLE/BUSY/OFFLINE                     │ • current_lng
-        │ • timestamp                                  │ • current_status
-        │                                              │ • last_location_update
-        ▼                                              ▼
+### 2. Mobile Location Tracking Flow
+```
+Mobile App              QStash                  Backend               Database        Frontend (SSE)
+    │                      │                       │                      │                │
+    │  1. GPS Update       │                       │                      │                │
+    │ ───────────────────► │                       │                      │                │
+    │    (via QStash API)  │                       │                      │                │
+    │                      │  2. Webhook POST      │                      │                │
+    │                      │ ────────────────────► │                      │                │
+    │                      │    (signed request)   │                      │                │
+    │                      │                       │  3. Verify signature │                │
+    │                      │                       │ ─────────┐           │                │
+    │                      │                       │ ◄────────┘           │                │
+    │                      │                       │                      │                │
+    │                      │                       │  4. UPDATE surveyor  │                │
+    │                      │                       │ ───────────────────► │                │
+    │                      │                       │                      │                │
+    │                      │                       │  5. Log activity     │                │
+    │                      │                       │ ───────────────────► │                │
+    │                      │                       │                      │                │
+    │                      │                       │  6. Broadcast SSE    │                │
+    │                      │                       │ ──────────────────────────────────► │
+    │                      │                       │                      │                │
+    │                      │                       │                      │    7. Map Update
+    │                      │                       │                      │ ◄────────────── │
+```
 
-3. NOTIFICATION FLOW:
-   ┌─────────┐           ┌─────────┐           ┌─────────────────────┐
-   │   BE    │──────────►│ Firebase│──────────►│ Mobile Push (FCM)   │
-   │ Service │           │   FCM   │           └─────────────────────┘
-   └─────────┘           └─────────┘
-        │
-        ├───────────────►┌─────────┐           ┌─────────────────────┐
-        │                │ Mailgun │──────────►│ Email Notification  │
-        │                └─────────┘           └─────────────────────┘
-        │
-        └───────────────►┌─────────┐           ┌─────────────────────┐
-                         │ Twilio  │──────────►│ SMS Notification    │
-                         └─────────┘           └─────────────────────┘
+### 3. Chat Messaging Flow
+```
+Surveyor (Mobile)          Backend (WebSocket)           Dispatcher (Web)
+       │                          │                            │
+       │  1. Send Message         │                            │
+       │  /app/chat.send          │                            │
+       │ ───────────────────────► │                            │
+       │                          │  2. Store in DB            │
+       │                          │ ─────────┐                 │
+       │                          │ ◄────────┘                 │
+       │                          │                            │
+       │                          │  3. Broadcast to recipient │
+       │                          │  /topic/chat/{recipientId} │
+       │                          │ ─────────────────────────► │
+       │                          │                            │
+       │                          │  4. Push notification      │
+       │ ◄─────────────────────── │    (if app in background) │
+       │   (Firebase Push)        │                            │
+```
 
+---
 
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              TECHNOLOGY STACK                                    │
-└─────────────────────────────────────────────────────────────────────────────────┘
+## Technology Stack
 
-┌──────────────────┬──────────────────┬──────────────────┬──────────────────┐
-│     FRONTEND     │     BACKEND      │      MOBILE      │   INFRASTRUCTURE │
-├──────────────────┼──────────────────┼──────────────────┼──────────────────┤
-│ • Angular 17     │ • Spring Boot 3  │ • React Native   │ • Railway (PaaS) │
-│ • TypeScript     │ • Java 17        │ • Expo SDK 52    │ • Upstash QStash │
-│ • FullCalendar   │ • H2 Database    │ • TypeScript     │ • Firebase FCM   │
-│ • Leaflet Maps   │ • Liquibase      │ • Expo Location  │ • Mailgun        │
-│ • RxJS           │ • Swagger/OpenAPI│ • Expo Notify    │ • Twilio         │
-│ • SCSS           │ • Thymeleaf      │                  │ • EAS Build      │
-└──────────────────┴──────────────────┴──────────────────┴──────────────────┘
+| Layer | Technology | Version | Purpose |
+|-------|------------|---------|---------|
+| **Frontend** | Angular | 17 | SPA Dashboard |
+| | FullCalendar | 6.x | Calendar UI |
+| | Leaflet | 1.9 | Map visualization |
+| | RxJS | 7.x | Reactive state |
+| | STOMP.js | 7.x | WebSocket client |
+| **Backend** | Spring Boot | 3.3 | REST API |
+| | Java | 21 | Runtime |
+| | PostgreSQL | 14+ | Database |
+| | Liquibase | 4.x | DB migrations |
+| | Resilience4j | 2.x | Circuit breakers |
+| | Caffeine | 3.x | Caching |
+| | Spring Security | 6.x | Authentication |
+| **Mobile** | React Native | 0.76 | Cross-platform |
+| | Expo | SDK 52 | Build & deploy |
+| | TypeScript | 5.x | Type safety |
+| | SQLite | - | Offline storage |
+| **Infrastructure** | Railway | - | Backend hosting |
+| | EAS Build | - | Mobile CI/CD |
+| | Firebase | - | Push notifications |
+| | Mailgun | - | Email delivery |
+| | Twilio | - | SMS delivery |
+| | Upstash QStash | - | Message queue |
+| | Sentry | - | Error tracking |
 
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              DEPLOYMENT URLS                                     │
-└─────────────────────────────────────────────────────────────────────────────────┘
+---
 
-│ Component │ Production URL                                        │
-├───────────┼───────────────────────────────────────────────────────┤
-│ Frontend  │ https://cmx-notification-fe-production.up.railway.app │
-│ Backend   │ https://cmx-notification-be-production.up.railway.app │
-│ API Docs  │ https://cmx-notification-be-production.up.railway.app/swagger-ui.html │
-│ Mobile    │ Built via EAS Build (Expo)                            │
-└───────────┴───────────────────────────────────────────────────────┘
+## Project Structure
+
+```
+fleetinspect-pro/
+├── backend/                          # Spring Boot API
+│   ├── src/main/java/com/cmx/
+│   │   ├── controller/               # REST endpoints
+│   │   │   ├── SurveyorController.java
+│   │   │   ├── AvailabilityController.java
+│   │   │   ├── MobileController.java
+│   │   │   ├── ChatController.java
+│   │   │   ├── DispatchController.java
+│   │   │   ├── NotificationController.java
+│   │   │   ├── SurveyorActivityController.java
+│   │   │   ├── LocationStreamController.java
+│   │   │   └── QStashWebhookController.java
+│   │   ├── service/                  # Business logic
+│   │   ├── repository/               # Data access
+│   │   ├── model/                    # JPA entities
+│   │   ├── dto/                      # Data transfer objects
+│   │   └── config/                   # App configuration
+│   ├── src/main/resources/
+│   │   ├── application.properties    # Config
+│   │   ├── db/changelog/             # Liquibase migrations
+│   │   └── templates/                # Email templates
+│   └── pom.xml
+│
+├── frontend/                         # Angular Dashboard
+│   ├── src/app/
+│   │   ├── core/
+│   │   │   ├── models/               # TypeScript interfaces
+│   │   │   └── services/             # API services
+│   │   ├── shared/components/        # Reusable UI
+│   │   └── features/                 # Feature modules
+│   │       ├── calendar/
+│   │       ├── map/
+│   │       ├── chat/
+│   │       └── activity/
+│   └── package.json
+│
+├── mobile-expo/                      # React Native App
+│   ├── src/
+│   │   ├── screens/                  # Tab screens
+│   │   ├── components/               # UI components
+│   │   ├── services/                 # API & location
+│   │   ├── store/                    # State management
+│   │   └── utils/                    # Helpers
+│   ├── scripts/
+│   │   ├── eas-tokens.json          # EAS secrets config
+│   │   └── setup-eas-tokens.sh      # Secret setup script
+│   ├── app.config.js                # Expo config
+│   └── eas.json                     # Build profiles
+│
+└── .env                             # Environment variables
 ```
 
 ---
 
 ## Quick Start
 
+### Prerequisites
+- Java 21+
+- Node.js 18+
+- PostgreSQL 14+ (or use H2 for local dev)
+
+### 1. Backend
 ```bash
-# 1. Clone and configure
-cp .env.example .env
-# Edit .env with your API keys
+cd backend
+cp ../.env.example ../.env
+# Edit .env with your credentials
 
-# 2. Start both services
-./start.sh
+# Run with H2 (no PostgreSQL needed)
+mvn spring-boot:run -Dspring-boot.run.profiles=dev
+
+# API available at http://localhost:8080
+# Swagger UI at http://localhost:8080/swagger-ui/index.html
 ```
 
-- **Frontend**: http://localhost:4200
-- **Backend API**: http://localhost:8080
-- **H2 Console**: http://localhost:8080/h2-console
+### 2. Frontend
+```bash
+cd frontend
+npm install
+npm start
 
-## Project Structure
-
-```
-├── backend/                 # Spring Boot API
-│   ├── src/main/java/      # Java source code
-│   ├── src/main/resources/ # Config & Liquibase migrations
-│   └── pom.xml             # Maven dependencies
-├── frontend/               # Angular 17 SPA
-│   ├── src/app/           # Angular components & services
-│   └── package.json       # npm dependencies
-├── e2e-tests/             # Playwright E2E tests
-├── .env.example           # Environment template
-├── .env                   # Your secrets (gitignored)
-├── .gitignore            # Git ignore rules
-└── start.sh              # Startup script
+# Dashboard at http://localhost:4200
+# Auto-connects to local backend
 ```
 
-## Prerequisites
+### 3. Mobile
+```bash
+cd mobile-expo
+npm install
+npx expo start
 
-- **Java 17+** - `java -version`
-- **Maven 3.8+** - `mvn -version`
-- **Node.js 18+** - `node -version`
-- **npm 9+** - `npm -version`
-
-## Environment Variables
-
-Copy `.env.example` to `.env` and configure:
-
-| Variable | Description |
-|----------|-------------|
-| `EMAIL_FROM` | Sender email address |
-| `SMTP_USERNAME` | SMTP username (Gmail) |
-| `SMTP_PASSWORD` | SMTP app password |
-| `TWILIO_ACCOUNT_SID` | Twilio account SID |
-| `TWILIO_AUTH_TOKEN` | Twilio auth token |
-| `TWILIO_PHONE_NUMBER` | Twilio phone number |
-| `FIREBASE_CREDENTIALS_PATH` | Path to Firebase JSON |
+# Scan QR with Expo Go app
+```
 
 ---
 
-# Backend (Spring Boot)
+## Environment Variables
 
-## Tech Stack
+### Backend (Railway)
 
-- **Spring Boot 3.2** - REST API framework
-- **H2 Database** - Embedded SQL database (PostgreSQL compatible)
-- **Liquibase** - Database migrations
-- **Thymeleaf** - Email templates
-- **Firebase Admin SDK** - Push notifications
-- **Twilio SDK** - SMS notifications
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `DATABASE_URL` | Auto | PostgreSQL URL (Railway auto-sets) |
+| `TWILIO_ACCOUNT_SID` | Yes | Twilio account SID |
+| `TWILIO_AUTH_TOKEN` | Yes | Twilio auth token |
+| `TWILIO_PHONE_NUMBER` | Yes | Twilio phone number |
+| `MAILGUN_API_KEY` | Yes | Mailgun API key |
+| `MAILGUN_DOMAIN` | Yes | Mailgun domain |
+| `EMAIL_FROM` | Yes | Sender email address |
+| `FIREBASE_CREDENTIALS_JSON` | Yes | Firebase service account (minified JSON) |
+| `QSTASH_CURRENT_SIGNING_KEY` | Yes | QStash webhook signature key |
+| `QSTASH_NEXT_SIGNING_KEY` | Yes | QStash key rotation |
+| `H2_CONSOLE_ENABLED` | No | Set `false` for production |
+| `SECURITY_ENABLED` | No | Enable basic auth |
 
-## Running the Backend
+### Mobile (EAS)
 
-```bash
-cd backend
+| Variable | Visibility | Description |
+|----------|------------|-------------|
+| `EXPO_PUBLIC_QSTASH_TOKEN` | sensitive | QStash API token |
+| `EXPO_PUBLIC_IMGBB_API_KEY` | sensitive | Image upload API key |
+| `EXPO_PUBLIC_SENTRY_DSN` | sensitive | Sentry error tracking |
+| `SENTRY_ORG` | secret | Sentry organization |
+| `SENTRY_PROJECT` | secret | Sentry project name |
+| `SENTRY_AUTH_TOKEN` | secret | Source map upload token |
 
-# Development (with hot reload)
-mvn spring-boot:run
+---
 
-# Build JAR
-mvn clean package -DskipTests
+## API Documentation
 
-# Run JAR
-java -jar target/calendar-api-1.0.0.jar
-```
+Full API documentation available at:
+- **Swagger UI**: https://cmx-notification-be-production.up.railway.app/swagger-ui/index.html
+- **OpenAPI JSON**: https://cmx-notification-be-production.up.railway.app/v3/api-docs
 
-## API Endpoints
-
-### Surveyors
+### Key Endpoints
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/api/surveyors` | List all surveyors |
-| GET | `/api/surveyors?type=INTERNAL` | Filter by type |
-| GET | `/api/surveyors?currentStatus=AVAILABLE` | Filter by status |
-| GET | `/api/surveyors/{id}` | Get surveyor by ID |
-| GET | `/api/surveyors/{id}/notes` | Get surveyor notes |
-| POST | `/api/surveyors/{id}/notes` | Add/update note |
-
-### Availability
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/availability` | List appointments |
-| GET | `/api/availability?from=...&to=...` | Filter by date range |
-| GET | `/api/availability?surveyorIds=1,2,3` | Filter by surveyors |
-| POST | `/api/availability` | Create appointment |
-| PUT | `/api/availability/{id}` | Update appointment |
-| DELETE | `/api/availability/{id}` | Delete appointment |
-
-### Dispatch
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/dispatch/offer` | Create job offer |
-| POST | `/api/dispatch/accept/{offerId}` | Accept offer |
-| POST | `/api/dispatch/reject/{offerId}` | Reject offer |
-| POST | `/api/dispatch/complete/{offerId}` | Complete job |
-
-### Notifications
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/notifications/register` | Register device token |
-| POST | `/api/notifications/test` | Send test notification |
-| GET | `/api/notifications/history/{surveyorId}` | Get notification history |
-
-### Request/Response Examples
-
-**Create Appointment:**
-```json
-POST /api/availability
-{
-  "surveyorId": 1,
-  "blocks": [{
-    "startTime": "2024-12-24T09:00:00Z",
-    "endTime": "2024-12-24T17:00:00Z",
-    "state": "BUSY",
-    "title": "Client Meeting",
-    "description": "Annual review"
-  }]
-}
-```
-
-**Response:**
-```json
-{
-  "id": 123,
-  "surveyor_id": 1,
-  "start_time": "2024-12-24T09:00:00Z",
-  "end_time": "2024-12-24T17:00:00Z",
-  "state": "BUSY",
-  "title": "Client Meeting"
-}
-```
-
-## Database
-
-### H2 Console Access
-- URL: http://localhost:8080/h2-console
-- JDBC URL: `jdbc:h2:file:./data/calendar`
-- Username: `sa`
-- Password: (empty)
-
-### Schema
-Managed via Liquibase migrations in `src/main/resources/db/changelog/`
-
-**Key Tables:**
-- `surveyors` - Surveyor profiles
-- `availability` - Appointments/schedules
-- `dispatch_offers` - Job dispatch workflow
-- `notification_history` - Notification logs
-- `device_tokens` - Push notification tokens
-
-## Configuration
-
-`src/main/resources/application.properties`:
-
-```properties
-# Server
-server.port=8080
-
-# Database
-spring.datasource.url=jdbc:h2:file:./data/calendar
-
-# Email (uses env vars)
-spring.mail.username=${SMTP_USERNAME:}
-spring.mail.password=${SMTP_PASSWORD:}
-
-# Twilio (uses env vars)
-twilio.account.sid=${TWILIO_ACCOUNT_SID:}
-twilio.auth.token=${TWILIO_AUTH_TOKEN:}
-```
+| GET | `/api/availability` | Get appointments (with date range filter) |
+| POST | `/api/mobile/login` | Surveyor login + device registration |
+| POST | `/api/mobile/location` | Update surveyor GPS location |
+| POST | `/api/mobile/job-update` | Update job status |
+| GET | `/api/chat/conversations/surveyor/{id}` | Get surveyor conversations |
+| POST | `/api/fnol/{id}/offers` | Create job dispatch offers |
+| GET | `/api/activity` | Get real-time activity log |
+| GET | `/api/dispatcher/stream` | SSE stream for live updates |
 
 ---
-
-# Frontend (Angular)
-
-## Tech Stack
-
-- **Angular 17** - Standalone components
-- **FullCalendar** - Calendar UI
-- **RxJS** - Reactive state management
-- **TypeScript 5.2** - Type safety
-
-## Running the Frontend
-
-```bash
-cd frontend
-
-# Install dependencies
-npm install
-
-# Development server (hot reload)
-npm start
-# or
-ng serve --host 0.0.0.0 --port 4200
-
-# Production build
-npm run build
-```
-
-## Architecture
-
-```
-src/app/
-├── core/                    # Core module
-│   ├── models/             # TypeScript interfaces
-│   │   ├── surveyor.model.ts
-│   │   ├── appointment.model.ts
-│   │   ├── notification.model.ts
-│   │   └── dashboard.model.ts
-│   └── services/           # API & state services
-│       ├── surveyor.service.ts
-│       ├── appointment.service.ts
-│       ├── notification.service.ts
-│       └── storage.service.ts
-├── shared/                  # Shared components
-│   └── components/
-│       ├── toast/          # Toast notifications
-│       ├── modal/          # Modal dialogs
-│       ├── sidebar/        # Surveyor sidebar
-│       ├── surveyor-card/  # Surveyor card
-│       └── button/         # Reusable button
-├── features/               # Feature components
-│   ├── header/            # App header
-│   ├── calendar/          # FullCalendar view
-│   ├── timeline/          # Timeline view
-│   ├── heatmap/           # Workload heatmap
-│   └── dashboard/         # Stats dashboard
-└── app.component.ts       # Root component
-```
-
-## Key Features
-
-### Views
-- **Calendar View** - Weekly/monthly calendar with drag-drop
-- **Timeline View** - Resource timeline for multiple surveyors
-- **Heatmap View** - Visual workload distribution
-
-### Sidebar
-- Surveyor list with status indicators
-- Search and filter (by type, status)
-- Multi-select for batch operations
-- Collapsible groups (Internal/External)
-
-### Appointments
-- Create via calendar click or date selection
-- Edit/delete existing appointments
-- Drag-drop rescheduling
-- Conflict detection
-
-### Notifications
-- Toast notifications for actions
-- Push notification testing
-- Activity log
-
-## Keyboard Shortcuts
-
-| Key | Action |
-|-----|--------|
-| `R` | Refresh data |
-| `D` | Toggle dashboard |
-| `Escape` | Close modals |
-
-## State Management
-
-Uses RxJS `BehaviorSubject` for reactive state:
-
-```typescript
-// Service
-private surveyorsSubject = new BehaviorSubject<Surveyor[]>([]);
-surveyors$ = this.surveyorsSubject.asObservable();
-
-// Component
-this.surveyorService.surveyors$.subscribe(surveyors => {
-  this.surveyors = surveyors;
-});
-```
-
-## API Configuration
-
-The frontend connects to the backend at `http://localhost:8080/api`. To change:
-
-```typescript
-// In any service
-private readonly apiBase = (window as any).__API_BASE__ || 'http://localhost:8080/api';
-```
-
----
-
-# Mobile App (React Native/Expo)
-
-## Tech Stack
-
-- **React Native** - Cross-platform mobile framework
-- **Expo SDK 52** - Development and build tooling
-- **TypeScript** - Type safety
-- **Expo Location** - GPS location tracking
-- **Expo Notifications** - Push notifications
-
-## Project Structure
-
-```
-mobile-expo/
-├── src/
-│   ├── config/
-│   │   └── api.ts              # API & QStash configuration
-│   ├── services/
-│   │   ├── api.ts              # REST API service
-│   │   ├── qstash.ts           # QStash message queue service
-│   │   ├── location.ts         # Location tracking service
-│   │   ├── notifications.ts    # Push notification handling
-│   │   └── storage.ts          # AsyncStorage wrapper
-│   ├── types/
-│   │   └── index.ts            # TypeScript interfaces
-│   └── App.tsx                 # Main app component
-├── app.json                    # Expo configuration
-├── eas.json                    # EAS Build configuration
-└── package.json
-```
 
 ## Features
 
-### Surveyor Login
-- Select surveyor from dropdown list
-- Register device for push notifications
-- Persist login state
+### Dispatcher Dashboard
+- Real-time calendar with drag-drop scheduling
+- Live surveyor location map (Leaflet + OpenStreetMap)
+- Chat messaging with surveyors (WebSocket)
+- Activity log with SSE streaming
+- Job dispatch with multi-surveyor offers
+- Notification history and stats
 
-### Appointment Management
-- View upcoming appointments
-- Accept or reject appointments
-- Pull-to-refresh
+### Mobile App
+- Push notifications for new assignments
+- Accept/reject job offers
+- Quick status updates (On Way, Arrived, Inspecting, Completed)
+- GPS location tracking (foreground + background)
+- Offline mode with sync queue
+- In-app chat with dispatcher
+- Photo capture and upload
+- Digital signature capture
 
-### Location Tracking
-- Real-time GPS tracking
-- Background location updates
-- Automatic sync every 2 minutes
-
-### Status Updates
-- AVAILABLE / BUSY / OFFLINE
-- One-tap status change
-- Synced via QStash message queue
-
-## Running the App
-
-```bash
-cd mobile-expo
-
-# Install dependencies
-npm install
-
-# Start Expo development server
-npx expo start
-
-# Run on Android emulator
-npx expo start --android
-
-# Run on iOS simulator (macOS only)
-npx expo start --ios
-```
-
-## Building for Production
-
-```bash
-# Install EAS CLI
-npm install -g eas-cli
-
-# Login to Expo
-eas login
-
-# Build Android APK (preview)
-eas build --profile preview --platform android
-
-# Build Android AAB (production)
-eas build --profile production --platform android
-
-# Build iOS (requires Apple Developer account)
-eas build --profile production --platform ios
-```
-
-## QStash Integration
-
-The mobile app publishes location and status updates to Upstash QStash, which then delivers them to the backend webhook. This decouples the mobile app from the backend.
-
-**Flow:**
-```
-Mobile App → QStash API → Backend Webhook → Database
-```
-
-**Configuration** (`src/config/api.ts`):
-```typescript
-export const QSTASH_TOKEN = 'your-qstash-token';
-export const QSTASH_DESTINATION_URL = 'https://your-backend/api/webhook/qstash/location';
-```
-
-**Message Types:**
-- `location` - GPS coordinates only
-- `status` - Availability status only
-- `location_status` - Both location and status
-- `appointment_response` - Accept/reject appointments
+### Notification System
+- **Push**: Firebase Cloud Messaging (iOS + Android)
+- **Email**: Mailgun with HTML templates
+- **SMS**: Twilio with international support
+- Delivery tracking and audit log
+- Circuit breaker protection
 
 ---
 
-# E2E Tests
+## Deployment
 
-## Running Tests
+### Backend (Railway)
+1. Connect GitHub repository
+2. Add PostgreSQL addon
+3. Set environment variables
+4. Deploy automatically on push
 
+### Frontend
 ```bash
-cd e2e-tests
-
-# Install Playwright
-npm install
-npx playwright install
-
-# Run all tests
-npx playwright test
-
-# Run with UI
-npx playwright test --ui
-
-# Run specific test file
-npx playwright test tests/frontend.spec.ts
-```
-
-## Test Coverage
-
-- **API Tests** (`api.spec.ts`) - 17 tests
-  - Surveyor CRUD
-  - Availability CRUD
-  - Filtering & pagination
-  - Dispatch workflow
-  - Notifications
-
-- **Frontend Tests** (`frontend.spec.ts`) - 16 tests
-  - Page load & navigation
-  - Surveyor management
-  - Calendar views
-  - Appointment creation
-  - Keyboard shortcuts
-
-- **Integration Tests** (`integration.spec.ts`) - 6 tests
-  - End-to-end workflows
-  - Data consistency
-
-## Test Configuration
-
-`playwright.config.ts`:
-```typescript
-{
-  baseURL: 'http://localhost:4200',
-  webServer: [
-    { command: 'cd ../backend && mvn spring-boot:run', port: 8080 },
-    { command: 'cd ../frontend && npm start', port: 4200 }
-  ]
-}
-```
-
----
-
-# Development
-
-## Code Style
-
-### Backend (Java)
-- Follow Spring Boot conventions
-- Use constructor injection
-- DTOs for API requests/responses
-- Liquibase for schema changes
-
-### Frontend (Angular)
-- Standalone components
-- Barrel exports (`index.ts`)
-- Services for state management
-- Models for type safety
-
-## Adding a New Feature
-
-1. **Backend**
-   - Add entity in `model/`
-   - Add repository in `repository/`
-   - Add service in `service/`
-   - Add controller in `controller/`
-   - Add Liquibase migration
-
-2. **Frontend**
-   - Add model in `core/models/`
-   - Add service in `core/services/`
-   - Add component in `features/` or `shared/`
-   - Update barrel exports
-
-## Troubleshooting
-
-### Port already in use
-```bash
-lsof -ti:8080 | xargs kill -9
-lsof -ti:4200 | xargs kill -9
-```
-
-### Database issues
-```bash
-rm -rf backend/data/*.db
-```
-
-### Node modules issues
-```bash
-rm -rf frontend/node_modules
-npm install
-```
-
-### Environment variables not loading
-```bash
-source .env
-echo $TWILIO_ACCOUNT_SID
-```
-
----
-
-# Deployment
-
-## Production Build
-
-```bash
-# Backend
-cd backend
-mvn clean package -DskipTests
-# JAR at: target/calendar-api-1.0.0.jar
-
-# Frontend
 cd frontend
 npm run build
-# Output at: dist/
+# Deploy dist/cmx-surveyor-calendar-ui to any static host
 ```
 
-## Docker (optional)
+### Mobile
+```bash
+cd mobile-expo
+# Production build
+eas build --platform all --profile production
 
-```dockerfile
-# Backend Dockerfile
-FROM eclipse-temurin:17-jdk
-COPY target/*.jar app.jar
-ENTRYPOINT ["java", "-jar", "/app.jar"]
-
-# Frontend Dockerfile
-FROM nginx:alpine
-COPY dist/ /usr/share/nginx/html/
+# Submit to stores
+eas submit --platform ios
+eas submit --platform android
 ```
-
-## Environment Variables for Production
-
-Set these in your deployment environment:
-- `SPRING_DATASOURCE_URL` - Production database URL
-- `SMTP_*` - Email credentials
-- `TWILIO_*` - SMS credentials
-- `FIREBASE_CREDENTIALS_PATH` - Firebase service account
 
 ---
 
-# License
+## Monitoring
 
-Proprietary - CMX Internal Use Only
+- **Health Check**: `/actuator/health`
+- **Metrics**: `/actuator/prometheus`
+- **Sentry**: Error tracking for mobile
+- **Notification Stats**: `/api/notifications/stats`
+
+---
+
+## License
+
+Proprietary - All rights reserved.

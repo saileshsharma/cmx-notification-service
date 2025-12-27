@@ -1,9 +1,32 @@
+/**
+ * Image Upload Service - Enhanced with:
+ * - Retry logic with exponential backoff
+ * - Image compression
+ * - Progress tracking
+ * - Environment variable configuration
+ */
 import * as FileSystem from 'expo-file-system';
+import * as ImageManipulator from 'expo-image-manipulator';
+import { IMGBB_API_KEY, API_TIMEOUTS, RETRY_CONFIG } from '../config/api';
+import { logger } from '../utils/logger';
+import { addSentryBreadcrumb, captureException } from '../config/sentry';
 
-// ImgBB API - Free tier with unlimited storage
-// Get your free API key at: https://api.imgbb.com/
-const IMGBB_API_KEY = 'YOUR_IMGBB_API_KEY'; // Replace with actual key or use env variable
 const IMGBB_UPLOAD_URL = 'https://api.imgbb.com/1/upload';
+
+// Compression settings
+const COMPRESSION_CONFIG = {
+  maxWidth: 1920,
+  maxHeight: 1920,
+  quality: 0.8,
+  format: 'jpeg' as const,
+};
+
+// Retry settings for uploads
+const UPLOAD_RETRY_CONFIG = {
+  maxRetries: 3,
+  baseDelay: 2000, // 2 seconds
+  maxDelay: 30000, // 30 seconds
+};
 
 export interface UploadResult {
   success: boolean;
@@ -11,12 +34,15 @@ export interface UploadResult {
   thumbnail?: string;
   deleteUrl?: string;
   error?: string;
+  retryCount?: number;
 }
 
 export interface UploadProgress {
   uploaded: number;
   total: number;
   percentage: number;
+  currentFile?: string;
+  status: 'uploading' | 'compressing' | 'retrying' | 'complete' | 'error';
 }
 
 class ImageUploadService {
@@ -27,59 +53,176 @@ class ImageUploadService {
   }
 
   /**
-   * Upload a single image to ImgBB
-   * @param imageUri Local file URI from image picker
-   * @param name Optional name for the image
+   * Check if the service is properly configured
    */
-  async uploadImage(imageUri: string, name?: string): Promise<UploadResult> {
+  isConfigured(): boolean {
+    return !!this.apiKey && this.apiKey !== '';
+  }
+
+  /**
+   * Calculate retry delay with exponential backoff
+   */
+  private getRetryDelay(attempt: number): number {
+    const delay = UPLOAD_RETRY_CONFIG.baseDelay * Math.pow(2, attempt);
+    return Math.min(delay, UPLOAD_RETRY_CONFIG.maxDelay);
+  }
+
+  /**
+   * Sleep for specified milliseconds
+   */
+  private sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Compress image for faster upload and reduced storage
+   */
+  async compressImage(imageUri: string): Promise<string> {
     try {
-      // Read the image file as base64
-      const base64 = await FileSystem.readAsStringAsync(imageUri, {
-        encoding: 'base64',
-      });
+      // Get image info to check if compression is needed
+      const info = await FileSystem.getInfoAsync(imageUri);
+      const fileSizeKB = info.exists && 'size' in info ? info.size / 1024 : 0;
 
-      // Create form data
-      const formData = new FormData();
-      formData.append('key', this.apiKey);
-      formData.append('image', base64);
-      if (name) {
-        formData.append('name', name);
+      // Skip compression for small images (< 500KB)
+      if (fileSizeKB < 500) {
+        logger.debug('[ImageUpload] Skipping compression for small image', { sizeKB: fileSizeKB });
+        return imageUri;
       }
 
-      // Upload to ImgBB
-      const response = await fetch(IMGBB_UPLOAD_URL, {
-        method: 'POST',
-        body: formData,
+      logger.debug('[ImageUpload] Compressing image', { originalSizeKB: fileSizeKB });
+
+      const result = await ImageManipulator.manipulateAsync(
+        imageUri,
+        [
+          {
+            resize: {
+              width: COMPRESSION_CONFIG.maxWidth,
+              height: COMPRESSION_CONFIG.maxHeight,
+            },
+          },
+        ],
+        {
+          compress: COMPRESSION_CONFIG.quality,
+          format: ImageManipulator.SaveFormat.JPEG,
+        }
+      );
+
+      // Log compression results
+      const newInfo = await FileSystem.getInfoAsync(result.uri);
+      const newSizeKB = newInfo.exists && 'size' in newInfo ? newInfo.size / 1024 : 0;
+      logger.debug('[ImageUpload] Compression complete', {
+        originalKB: fileSizeKB,
+        compressedKB: newSizeKB,
+        reduction: `${Math.round((1 - newSizeKB / fileSizeKB) * 100)}%`,
       });
 
-      const result = await response.json();
-
-      if (result.success) {
-        return {
-          success: true,
-          url: result.data.url,
-          thumbnail: result.data.thumb?.url || result.data.medium?.url,
-          deleteUrl: result.data.delete_url,
-        };
-      } else {
-        return {
-          success: false,
-          error: result.error?.message || 'Upload failed',
-        };
-      }
+      return result.uri;
     } catch (error) {
-      console.error('Image upload error:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Upload failed',
-      };
+      logger.warn('[ImageUpload] Compression failed, using original', error);
+      return imageUri;
     }
   }
 
   /**
-   * Upload multiple images
-   * @param imageUris Array of local file URIs
-   * @param onProgress Progress callback
+   * Upload a single image to ImgBB with retry logic
+   */
+  async uploadImage(imageUri: string, name?: string): Promise<UploadResult> {
+    if (!this.isConfigured()) {
+      logger.error('[ImageUpload] API key not configured');
+      return {
+        success: false,
+        error: 'Image upload service not configured. Please set EXPO_PUBLIC_IMGBB_API_KEY.',
+      };
+    }
+
+    let lastError = '';
+    let retryCount = 0;
+
+    for (let attempt = 0; attempt <= UPLOAD_RETRY_CONFIG.maxRetries; attempt++) {
+      try {
+        // Compress image before upload (skip on retries to avoid re-compressing)
+        const compressedUri = attempt === 0 ? await this.compressImage(imageUri) : imageUri;
+
+        // Read the image file as base64
+        const base64 = await FileSystem.readAsStringAsync(compressedUri, {
+          encoding: 'base64',
+        });
+
+        // Create form data
+        const formData = new FormData();
+        formData.append('key', this.apiKey);
+        formData.append('image', base64);
+        if (name) {
+          formData.append('name', name);
+        }
+
+        // Create abort controller for timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUTS.upload);
+
+        // Upload to ImgBB
+        const response = await fetch(IMGBB_UPLOAD_URL, {
+          method: 'POST',
+          body: formData,
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        const result = await response.json();
+
+        if (result.success) {
+          addSentryBreadcrumb({
+            category: 'upload',
+            message: 'Image uploaded successfully',
+            level: 'info',
+            data: { name, retryCount },
+          });
+
+          return {
+            success: true,
+            url: result.data.url,
+            thumbnail: result.data.thumb?.url || result.data.medium?.url,
+            deleteUrl: result.data.delete_url,
+            retryCount,
+          };
+        } else {
+          lastError = result.error?.message || 'Upload failed';
+          logger.warn('[ImageUpload] Upload failed', { attempt, error: lastError });
+        }
+      } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') {
+          lastError = 'Upload timeout';
+        } else {
+          lastError = error instanceof Error ? error.message : 'Upload failed';
+        }
+        logger.warn('[ImageUpload] Upload error', { attempt, error: lastError });
+      }
+
+      // Retry if we haven't exhausted attempts
+      if (attempt < UPLOAD_RETRY_CONFIG.maxRetries) {
+        const delay = this.getRetryDelay(attempt);
+        logger.info(`[ImageUpload] Retrying in ${delay}ms (attempt ${attempt + 1}/${UPLOAD_RETRY_CONFIG.maxRetries})`);
+        await this.sleep(delay);
+        retryCount++;
+      }
+    }
+
+    // All retries exhausted
+    captureException(new Error(`Image upload failed after ${retryCount} retries: ${lastError}`), {
+      name,
+      retryCount,
+    });
+
+    return {
+      success: false,
+      error: lastError,
+      retryCount,
+    };
+  }
+
+  /**
+   * Upload multiple images with progress tracking
    */
   async uploadMultiple(
     imageUris: string[],
@@ -89,17 +232,34 @@ class ImageUploadService {
     const total = imageUris.length;
 
     for (let i = 0; i < imageUris.length; i++) {
+      // Report compression status
+      onProgress?.({
+        uploaded: i,
+        total,
+        percentage: Math.round((i / total) * 100),
+        currentFile: `Photo ${i + 1}`,
+        status: 'compressing',
+      });
+
       const result = await this.uploadImage(imageUris[i], `inspection_photo_${i + 1}`);
       results.push(result);
 
-      if (onProgress) {
-        onProgress({
-          uploaded: i + 1,
-          total,
-          percentage: Math.round(((i + 1) / total) * 100),
-        });
-      }
+      // Report upload progress
+      onProgress?.({
+        uploaded: i + 1,
+        total,
+        percentage: Math.round(((i + 1) / total) * 100),
+        currentFile: `Photo ${i + 1}`,
+        status: result.success ? 'uploading' : 'error',
+      });
     }
+
+    onProgress?.({
+      uploaded: total,
+      total,
+      percentage: 100,
+      status: 'complete',
+    });
 
     return results;
   }
@@ -116,62 +276,116 @@ class ImageUploadService {
     photoUrls: string[];
     signatureUrl?: string;
     errors: string[];
+    totalRetries: number;
   }> {
     const errors: string[] = [];
     const photoUrls: string[] = [];
     let signatureUrl: string | undefined;
+    let totalRetries = 0;
 
-    // Upload photos
     const totalItems = photos.length + (signatureBase64 ? 1 : 0);
     let uploadedCount = 0;
 
+    // Handle empty upload case
+    if (totalItems === 0) {
+      onProgress?.({
+        uploaded: 0,
+        total: 0,
+        percentage: 100,
+        status: 'complete',
+      });
+      return { success: true, photoUrls: [], errors: [], totalRetries: 0 };
+    }
+
+    // Upload photos
     for (let i = 0; i < photos.length; i++) {
+      onProgress?.({
+        uploaded: uploadedCount,
+        total: totalItems,
+        percentage: Math.round((uploadedCount / totalItems) * 100),
+        currentFile: `Photo ${i + 1}`,
+        status: 'compressing',
+      });
+
       const result = await this.uploadImage(photos[i], `inspection_photo_${Date.now()}_${i}`);
+      totalRetries += result.retryCount || 0;
+
       if (result.success && result.url) {
         photoUrls.push(result.url);
       } else {
         errors.push(`Photo ${i + 1}: ${result.error || 'Upload failed'}`);
       }
+
       uploadedCount++;
-      if (onProgress) {
-        onProgress({
-          uploaded: uploadedCount,
-          total: totalItems,
-          percentage: Math.round((uploadedCount / totalItems) * 100),
-        });
-      }
+      onProgress?.({
+        uploaded: uploadedCount,
+        total: totalItems,
+        percentage: Math.round((uploadedCount / totalItems) * 100),
+        currentFile: `Photo ${i + 1}`,
+        status: result.success ? 'uploading' : 'error',
+      });
     }
 
     // Upload signature if provided
     if (signatureBase64) {
-      try {
-        const formData = new FormData();
-        formData.append('key', this.apiKey);
-        formData.append('image', signatureBase64);
-        formData.append('name', `signature_${Date.now()}`);
+      onProgress?.({
+        uploaded: uploadedCount,
+        total: totalItems,
+        percentage: Math.round((uploadedCount / totalItems) * 100),
+        currentFile: 'Signature',
+        status: 'uploading',
+      });
 
-        const response = await fetch(IMGBB_UPLOAD_URL, {
-          method: 'POST',
-          body: formData,
-        });
+      // Signature is already base64, upload directly with retry
+      let lastError = '';
+      for (let attempt = 0; attempt <= UPLOAD_RETRY_CONFIG.maxRetries; attempt++) {
+        try {
+          const formData = new FormData();
+          formData.append('key', this.apiKey);
+          formData.append('image', signatureBase64);
+          formData.append('name', `signature_${Date.now()}`);
 
-        const result = await response.json();
-        if (result.success) {
-          signatureUrl = result.data.url;
-        } else {
-          errors.push(`Signature: ${result.error?.message || 'Upload failed'}`);
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUTS.upload);
+
+          const response = await fetch(IMGBB_UPLOAD_URL, {
+            method: 'POST',
+            body: formData,
+            signal: controller.signal,
+          });
+
+          clearTimeout(timeoutId);
+
+          const result = await response.json();
+          if (result.success) {
+            signatureUrl = result.data.url;
+            break;
+          } else {
+            lastError = result.error?.message || 'Upload failed';
+          }
+        } catch (error) {
+          lastError = error instanceof Error ? error.message : 'Upload failed';
         }
-      } catch (error) {
-        errors.push(`Signature: ${error instanceof Error ? error.message : 'Upload failed'}`);
+
+        if (attempt < UPLOAD_RETRY_CONFIG.maxRetries) {
+          const delay = this.getRetryDelay(attempt);
+          await this.sleep(delay);
+          totalRetries++;
+        }
       }
+
+      if (!signatureUrl) {
+        errors.push(`Signature: ${lastError}`);
+      }
+
       uploadedCount++;
-      if (onProgress) {
-        onProgress({
-          uploaded: uploadedCount,
-          total: totalItems,
-          percentage: 100,
-        });
-      }
+      onProgress?.({
+        uploaded: uploadedCount,
+        total: totalItems,
+        percentage: 100,
+        currentFile: 'Signature',
+        status: signatureUrl ? 'complete' : 'error',
+      });
     }
 
     return {
@@ -179,6 +393,7 @@ class ImageUploadService {
       photoUrls,
       signatureUrl,
       errors,
+      totalRetries,
     };
   }
 }

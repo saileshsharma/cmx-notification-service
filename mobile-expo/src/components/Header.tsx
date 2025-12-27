@@ -25,7 +25,7 @@ interface HeaderProps {
   onSOS?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({
+export const Header: React.FC<HeaderProps> = React.memo(({
   surveyorName,
   currentStatus,
   isOnline,
@@ -142,7 +142,7 @@ export const Header: React.FC<HeaderProps> = ({
       </LinearGradient>
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   headerContainer: {
