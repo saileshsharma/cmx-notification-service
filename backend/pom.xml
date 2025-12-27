@@ -229,13 +229,6 @@
       <groupId>io.micrometer</groupId>
       <artifactId>micrometer-tracing-bridge-brave</artifactId>
     </dependency>
-
-    <!-- Unleash - Feature Flags -->
-    <dependency>
-      <groupId>io.getunleash</groupId>
-      <artifactId>unleash-client-java</artifactId>
-      <version>9.2.4</version>
-    </dependency>
   </dependencies>
 
   <build>

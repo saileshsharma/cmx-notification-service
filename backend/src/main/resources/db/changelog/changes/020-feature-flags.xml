@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="020-1" author="system">
+        <comment>Create feature_flags table for feature flag management</comment>
+        <createTable tableName="feature_flags">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(100)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="description" type="VARCHAR(500)"/>
+            <column name="enabled" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="environment" type="VARCHAR(50)" defaultValue="all">
+                <constraints nullable="false"/>
+            </column>
+            <column name="rollout_percentage" type="INT" defaultValueNumeric="100">
+                <constraints nullable="false"/>
+            </column>
+            <column name="variant_name" type="VARCHAR(100)"/>
+            <column name="variant_payload" type="TEXT"/>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName="feature_flags" indexName="idx_feature_flags_name">
+            <column name="name"/>
+        </createIndex>
+
+        <createIndex tableName="feature_flags" indexName="idx_feature_flags_environment">
+            <column name="environment"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="020-2" author="system">
+        <comment>Create feature_flag_overrides table for user-specific flags</comment>
+        <createTable tableName="feature_flag_overrides">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="flag_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="surveyor_id" type="BIGINT"/>
+            <column name="enabled" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint
+            baseTableName="feature_flag_overrides"
+            baseColumnNames="flag_id"
+            constraintName="fk_override_flag"
+            referencedTableName="feature_flags"
+            referencedColumnNames="id"
+            onDelete="CASCADE"/>
+
+        <addForeignKeyConstraint
+            baseTableName="feature_flag_overrides"
+            baseColumnNames="surveyor_id"
+            constraintName="fk_override_surveyor"
+            referencedTableName="surveyors"
+            referencedColumnNames="id"
+            onDelete="CASCADE"/>
+
+        <createIndex tableName="feature_flag_overrides" indexName="idx_override_flag_surveyor">
+            <column name="flag_id"/>
+            <column name="surveyor_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="020-3" author="system">
+        <comment>Insert default feature flags</comment>
+        <insert tableName="feature_flags">
+            <column name="name" value="dark-mode"/>
+            <column name="description" value="Enable dark mode theme across all platforms"/>
+            <column name="enabled" valueBoolean="false"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="chat-v2"/>
+            <column name="description" value="New chat interface with enhanced features"/>
+            <column name="enabled" valueBoolean="false"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="real-time-tracking"/>
+            <column name="description" value="Enable real-time location tracking on map"/>
+            <column name="enabled" valueBoolean="true"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="offline-mode"/>
+            <column name="description" value="Allow offline data access and sync"/>
+            <column name="enabled" valueBoolean="true"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="biometric-auth"/>
+            <column name="description" value="Enable biometric authentication on mobile"/>
+            <column name="enabled" valueBoolean="false"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="bulk-assignment"/>
+            <column name="description" value="Allow bulk assignment of appointments"/>
+            <column name="enabled" valueBoolean="false"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="50"/>
+        </insert>
+        <insert tableName="feature_flags">
+            <column name="name" value="export-reports"/>
+            <column name="description" value="Enable PDF/Excel export functionality"/>
+            <column name="enabled" valueBoolean="true"/>
+            <column name="environment" value="all"/>
+            <column name="rollout_percentage" valueNumeric="100"/>
+        </insert>
+    </changeSet>
+
+</databaseChangeLog>

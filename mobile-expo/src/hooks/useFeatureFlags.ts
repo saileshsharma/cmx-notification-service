@@ -10,18 +10,17 @@ export interface VariantResponse {
   enabled: boolean;
   variantName: string;
   payload?: string;
-  payloadType?: string;
 }
 
 // Default feature flags to load on initialization
 const DEFAULT_FLAGS = [
-  'new-dashboard',
+  'dark-mode',
   'chat-v2',
   'real-time-tracking',
-  'dark-mode',
   'offline-mode',
   'biometric-auth',
-  'push-notifications-v2',
+  'bulk-assignment',
+  'export-reports',
 ];
 
 let flagsCache: FeatureFlags = {};
@@ -33,11 +32,11 @@ let isInitialized = false;
  * Usage:
  * const { isEnabled, getVariant, refresh } = useFeatureFlags(userId);
  *
- * if (isEnabled('new-chat-feature')) {
- *   // Show new chat UI
+ * if (isEnabled('dark-mode')) {
+ *   // Apply dark theme
  * }
  */
-export function useFeatureFlags(userId?: string) {
+export function useFeatureFlags(userId?: number) {
   const [flags, setFlags] = useState<FeatureFlags>(flagsCache);
   const [loading, setLoading] = useState(!isInitialized);
   const [error, setError] = useState<string | null>(null);
@@ -79,7 +78,6 @@ export function useFeatureFlags(userId?: string) {
     if (flags[flagName] !== undefined) {
       return flags[flagName];
     }
-    // Flag not in cache, return default
     return defaultValue;
   }, [flags]);
 
@@ -94,7 +92,7 @@ export function useFeatureFlags(userId?: string) {
     try {
       let url = `${API_BASE_URL}/feature-flags/${flagName}`;
       if (userId) {
-        url += `?userId=${encodeURIComponent(userId)}`;
+        url += `?userId=${userId}`;
       }
 
       const response = await fetch(url);
@@ -118,7 +116,7 @@ export function useFeatureFlags(userId?: string) {
     try {
       let url = `${API_BASE_URL}/feature-flags/${flagName}/variant`;
       if (userId) {
-        url += `?userId=${encodeURIComponent(userId)}`;
+        url += `?userId=${userId}`;
       }
 
       const response = await fetch(url);
@@ -163,7 +161,7 @@ export function useFeatureFlags(userId?: string) {
 /**
  * Load multiple flags at once (batch request).
  */
-async function loadFlags(flagNames: string[], userId?: string): Promise<FeatureFlags> {
+async function loadFlags(flagNames: string[], userId?: number): Promise<FeatureFlags> {
   try {
     const response = await fetch(`${API_BASE_URL}/feature-flags/batch`, {
       method: 'POST',
@@ -180,7 +178,6 @@ async function loadFlags(flagNames: string[], userId?: string): Promise<FeatureF
     return data.flags || {};
   } catch (err) {
     console.warn('Failed to load feature flags:', err);
-    // Return empty flags on error
     const defaults: FeatureFlags = {};
     flagNames.forEach(name => defaults[name] = false);
     return defaults;

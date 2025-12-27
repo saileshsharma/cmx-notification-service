@@ -12,7 +12,19 @@ export interface VariantResponse {
   enabled: boolean;
   variantName: string;
   payload?: string;
-  payloadType?: string;
+}
+
+export interface FeatureFlag {
+  id: number;
+  name: string;
+  description: string;
+  enabled: boolean;
+  environment: string;
+  rolloutPercentage: number;
+  variantName?: string;
+  variantPayload?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 @Injectable({
@@ -23,7 +35,7 @@ export class FeatureFlagService {
 
   // Cache of feature flags
   private flagsCache = new BehaviorSubject<FeatureFlags>({});
-  private userId: string | null = null;
+  private userId: number | null = null;
   private initialized = false;
 
   // Public observable for components to subscribe to
@@ -35,16 +47,17 @@ export class FeatureFlagService {
    * Initialize the feature flag service with user context.
    * Call this on app initialization after user login.
    */
-  initialize(userId?: string): Observable<FeatureFlags> {
+  initialize(userId?: number): Observable<FeatureFlags> {
     this.userId = userId || null;
     return this.loadFlags([
       // Add your feature flags here
-      'new-dashboard',
+      'dark-mode',
       'chat-v2',
       'real-time-tracking',
-      'dark-mode',
-      'export-reports',
+      'offline-mode',
+      'biometric-auth',
       'bulk-assignment',
+      'export-reports',
     ]);
   }
 
@@ -66,7 +79,6 @@ export class FeatureFlagService {
       }),
       catchError(error => {
         console.warn('Failed to load feature flags, using defaults', error);
-        // Return all flags as false on error
         const defaults: FeatureFlags = {};
         flagNames.forEach(name => defaults[name] = false);
         return of(defaults);
@@ -105,7 +117,7 @@ export class FeatureFlagService {
   private fetchFlag(flagName: string): Observable<boolean> {
     let url = `${this.apiBase}/feature-flags/${flagName}`;
     if (this.userId) {
-      url += `?userId=${encodeURIComponent(this.userId)}`;
+      url += `?userId=${this.userId}`;
     }
 
     return this.http.get<{ name: string; enabled: boolean }>(url).pipe(
@@ -127,7 +139,7 @@ export class FeatureFlagService {
   getVariant(flagName: string): Observable<VariantResponse> {
     let url = `${this.apiBase}/feature-flags/${flagName}/variant`;
     if (this.userId) {
-      url += `?userId=${encodeURIComponent(this.userId)}`;
+      url += `?userId=${this.userId}`;
     }
 
     return this.http.get<VariantResponse>(url).pipe(
@@ -145,10 +157,9 @@ export class FeatureFlagService {
   /**
    * Set the user ID for user-specific flags.
    */
-  setUserId(userId: string): void {
+  setUserId(userId: number): void {
     if (this.userId !== userId) {
       this.userId = userId;
-      // Refresh flags with new user context
       if (this.initialized) {
         const flagNames = Object.keys(this.flagsCache.value);
         if (flagNames.length > 0) {
@@ -176,5 +187,35 @@ export class FeatureFlagService {
       return of({});
     }
     return this.loadFlags(flagNames);
+  }
+
+  // ==================== Admin Methods ====================
+
+  /**
+   * Get all feature flags (admin).
+   */
+  getAllFlags(): Observable<FeatureFlag[]> {
+    return this.http.get<FeatureFlag[]>(`${this.apiBase}/feature-flags`);
+  }
+
+  /**
+   * Create a new flag (admin).
+   */
+  createFlag(flag: Partial<FeatureFlag>): Observable<FeatureFlag> {
+    return this.http.post<FeatureFlag>(`${this.apiBase}/feature-flags`, flag);
+  }
+
+  /**
+   * Update a flag (admin).
+   */
+  updateFlag(id: number, flag: Partial<FeatureFlag>): Observable<FeatureFlag> {
+    return this.http.put<FeatureFlag>(`${this.apiBase}/feature-flags/${id}`, flag);
+  }
+
+  /**
+   * Toggle a flag (admin).
+   */
+  toggleFlag(id: number): Observable<FeatureFlag> {
+    return this.http.post<FeatureFlag>(`${this.apiBase}/feature-flags/${id}/toggle`, {});
   }
 }

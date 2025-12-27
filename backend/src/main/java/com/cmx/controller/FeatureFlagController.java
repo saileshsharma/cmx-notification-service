@@ -1,7 +1,8 @@
 package com.cmx.controller;
 
+import com.cmx.model.FeatureFlag;
 import com.cmx.service.FeatureFlagService;
-import io.getunleash.Variant;
+import com.cmx.service.FeatureFlagService.FeatureFlagVariant;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -11,8 +12,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * REST controller for exposing feature flags to frontend clients.
- * Clients can fetch their feature flag state on app initialization.
+ * REST controller for feature flags.
+ * Provides endpoints for clients to check flags and for admins to manage them.
  */
 @RestController
 @RequestMapping("/api/feature-flags")
@@ -28,10 +29,10 @@ public class FeatureFlagController {
     @GetMapping("/{flagName}")
     public ResponseEntity<Map<String, Object>> checkFlag(
             @PathVariable String flagName,
-            @RequestParam(required = false) String userId) {
+            @RequestParam(required = false) Long userId) {
 
         boolean enabled;
-        if (userId != null && !userId.isEmpty()) {
+        if (userId != null) {
             enabled = featureFlagService.isEnabledForUser(flagName, userId);
         } else {
             enabled = featureFlagService.isEnabled(flagName);
@@ -45,26 +46,15 @@ public class FeatureFlagController {
     }
 
     /**
-     * Check multiple feature flags at once.
+     * Check multiple feature flags at once (batch request).
      * POST /api/feature-flags/batch
-     * Body: { "flags": ["flag1", "flag2"], "userId": "xxx" }
+     * Body: { "flags": ["flag1", "flag2"], "userId": 123 }
      */
     @PostMapping("/batch")
     public ResponseEntity<Map<String, Object>> checkFlags(
             @RequestBody BatchFlagRequest request) {
 
-        Map<String, Boolean> flags = new HashMap<>();
-        String userId = request.userId();
-
-        for (String flagName : request.flags()) {
-            boolean enabled;
-            if (userId != null && !userId.isEmpty()) {
-                enabled = featureFlagService.isEnabledForUser(flagName, userId);
-            } else {
-                enabled = featureFlagService.isEnabled(flagName);
-            }
-            flags.put(flagName, enabled);
-        }
+        Map<String, Boolean> flags = featureFlagService.getFlags(request.flags(), request.userId());
 
         Map<String, Object> response = new HashMap<>();
         response.put("flags", flags);
@@ -79,26 +69,94 @@ public class FeatureFlagController {
     @GetMapping("/{flagName}/variant")
     public ResponseEntity<Map<String, Object>> getVariant(
             @PathVariable String flagName,
-            @RequestParam(required = false) String userId) {
+            @RequestParam(required = false) Long userId) {
 
-        Variant variant;
-        if (userId != null && !userId.isEmpty()) {
-            variant = featureFlagService.getVariant(flagName, userId);
-        } else {
-            variant = featureFlagService.getVariant(flagName);
-        }
+        var variant = featureFlagService.getVariant(flagName, userId);
 
         Map<String, Object> response = new HashMap<>();
         response.put("name", flagName);
-        response.put("enabled", variant.isEnabled());
-        response.put("variantName", variant.getName());
-        variant.getPayload().ifPresent(payload -> {
-            response.put("payload", payload.getValue());
-            response.put("payloadType", payload.getType());
-        });
+
+        if (variant.isPresent()) {
+            FeatureFlagVariant v = variant.get();
+            response.put("enabled", v.enabled());
+            response.put("variantName", v.variantName());
+            if (v.payload() != null) {
+                response.put("payload", v.payload());
+            }
+        } else {
+            response.put("enabled", false);
+            response.put("variantName", "disabled");
+        }
 
         return ResponseEntity.ok(response);
     }
 
-    public record BatchFlagRequest(List<String> flags, String userId) {}
+    // ==================== Admin Endpoints ====================
+
+    /**
+     * Get all feature flags (admin).
+     * GET /api/feature-flags
+     */
+    @GetMapping
+    public ResponseEntity<List<FeatureFlag>> getAllFlags() {
+        return ResponseEntity.ok(featureFlagService.getAllFlags());
+    }
+
+    /**
+     * Create a new feature flag (admin).
+     * POST /api/feature-flags
+     */
+    @PostMapping
+    public ResponseEntity<FeatureFlag> createFlag(@RequestBody FeatureFlag flag) {
+        return ResponseEntity.ok(featureFlagService.createFlag(flag));
+    }
+
+    /**
+     * Update a feature flag (admin).
+     * PUT /api/feature-flags/{id}
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<FeatureFlag> updateFlag(
+            @PathVariable Long id,
+            @RequestBody FeatureFlag flag) {
+        return ResponseEntity.ok(featureFlagService.updateFlag(id, flag));
+    }
+
+    /**
+     * Toggle a feature flag (admin).
+     * POST /api/feature-flags/{id}/toggle
+     */
+    @PostMapping("/{id}/toggle")
+    public ResponseEntity<FeatureFlag> toggleFlag(@PathVariable Long id) {
+        return ResponseEntity.ok(featureFlagService.toggleFlag(id));
+    }
+
+    /**
+     * Set a user-specific override (admin).
+     * POST /api/feature-flags/{flagName}/override
+     */
+    @PostMapping("/{flagName}/override")
+    public ResponseEntity<?> setUserOverride(
+            @PathVariable String flagName,
+            @RequestBody OverrideRequest request) {
+        var override = featureFlagService.setUserOverride(
+                flagName, request.surveyorId(), request.enabled());
+        return ResponseEntity.ok(override);
+    }
+
+    /**
+     * Remove a user-specific override (admin).
+     * DELETE /api/feature-flags/{flagName}/override/{surveyorId}
+     */
+    @DeleteMapping("/{flagName}/override/{surveyorId}")
+    public ResponseEntity<Void> removeUserOverride(
+            @PathVariable String flagName,
+            @PathVariable Long surveyorId) {
+        featureFlagService.removeUserOverride(flagName, surveyorId);
+        return ResponseEntity.noContent().build();
+    }
+
+    public record BatchFlagRequest(List<String> flags, Long userId) {}
+
+    public record OverrideRequest(Long surveyorId, boolean enabled) {}
 }
