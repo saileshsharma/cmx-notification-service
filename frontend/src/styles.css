@@ -1441,6 +1441,42 @@ header {
   font-size: 24px;
 }
 
+/* Modal header for modals with separate header section */
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.modal-header h3 {
+  margin: 0;
+  padding: 0;
+  background: none;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.modal-header h3::before {
+  display: none;
+}
+
+.modal-header .close-btn {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+}
+
+.modal-header .close-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  color: white;
+}
+
+.modal-header .close-btn:active {
+  background: rgba(255, 255, 255, 0.35);
+}
+
 .modal-body {
   padding: 28px;
   max-height: 70vh;
@@ -1795,7 +1831,7 @@ header {
   height: calc(100vh - 60px);
   background: white;
   box-shadow: -4px 0 20px rgba(0,0,0,0.15);
-  z-index: 150;
+  z-index: 800;
   display: flex;
   flex-direction: column;
   animation: slideInRight 0.3s ease-out;
@@ -1819,6 +1855,20 @@ header {
   margin: 0;
   font-size: 16px;
   font-weight: 600;
+}
+
+.panel-header .close-btn {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+}
+
+.panel-header .close-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  color: white;
+}
+
+.panel-header .close-btn:active {
+  background: rgba(255, 255, 255, 0.35);
 }
 
 .panel-content {
@@ -2445,21 +2495,45 @@ textarea.invalid:focus {
 }
 
 .close-btn {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
   border: none;
   border-radius: 50%;
-  background: transparent;
+  background: rgba(0, 0, 0, 0.05);
   color: #666;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s;
+  transition: all 0.2s ease;
+  font-size: 16px;
+  font-weight: 500;
+  position: relative;
+  z-index: 10;
+  flex-shrink: 0;
 }
 
 .close-btn:hover {
-  background: #e9ecef;
+  background: rgba(0, 0, 0, 0.1);
+  color: #333;
+  transform: scale(1.05);
+}
+
+.close-btn:active {
+  transform: scale(0.95);
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.close-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+}
+
+.close-btn:focus-visible {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
 }
 
 .alerts-list {
@@ -3607,11 +3681,17 @@ textarea.invalid:focus {
 }
 
 .overview-header .close-btn {
+  background: rgba(255, 255, 255, 0.15);
   color: white;
 }
 
 .overview-header .close-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.25);
+  color: white;
+}
+
+.overview-header .close-btn:active {
+  background: rgba(255, 255, 255, 0.35);
 }
 
 .overview-legend {
@@ -3723,6 +3803,13 @@ textarea.invalid:focus {
   margin: 0;
   border: none;
   padding: 0;
+  background: none;
+  color: #1e293b;
+  font-size: 18px;
+}
+
+.keyboard-header h3::before {
+  display: none;
 }
 
 .shortcut-section {
@@ -4258,17 +4345,36 @@ textarea.invalid:focus {
     font-size: 28px;
   }
 
-  /* Activity log mobile */
+  /* Activity log mobile - main styles in activity.css */
   .activity-log-panel {
-    right: 8px;
-    left: 8px;
-    width: auto;
-    top: 60px;
-    max-height: 60vh;
+    z-index: 950;
   }
 
   .activity-item {
     padding: 10px 12px;
+  }
+
+  /* Side panels mobile (conflict, workload) */
+  .side-panel {
+    width: 100%;
+    left: 0;
+    right: 0;
+    top: 56px;
+    height: calc(100vh - 56px);
+    z-index: 850;
+    border-radius: 0;
+  }
+
+  .panel-header {
+    padding: 14px 16px;
+  }
+
+  .panel-header h3 {
+    font-size: 15px;
+  }
+
+  .panel-content {
+    padding: 12px;
   }
 
   /* Toast notifications */
@@ -4890,6 +4996,8 @@ textarea.invalid:focus {
 .activity-close-btn {
   width: 36px;
   height: 36px;
+  min-width: 36px;
+  min-height: 36px;
   border: none;
   background: rgba(255, 255, 255, 0.15);
   border-radius: 10px;
@@ -4899,6 +5007,9 @@ textarea.invalid:focus {
   justify-content: center;
   transition: all 0.2s ease;
   color: white;
+  position: relative;
+  z-index: 10;
+  flex-shrink: 0;
 }
 
 .activity-close-btn:hover {
@@ -4906,8 +5017,19 @@ textarea.invalid:focus {
   transform: scale(1.05);
 }
 
+.activity-close-btn:active {
+  transform: scale(0.95);
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.activity-close-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
+}
+
 .activity-close-btn svg {
   stroke: white;
+  pointer-events: none;
 }
 
 /* Stats Bar */
