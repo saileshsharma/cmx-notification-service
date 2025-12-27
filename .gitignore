@@ -187,3 +187,6 @@ coverage/
 firebase-service-account.json
 /backend/design-system
 /design-system
+
+# Environment keys and tokens folder
+EnvironmentKeysTokens/
