@@ -22,7 +22,8 @@ export const CompletionModal: React.FC<CompletionModalProps> = ({
   completedJob,
   onClose,
 }) => {
-  if (!completedJob) return null;
+  // Guard against null completedJob or null appointment
+  if (!completedJob || !completedJob.appointment) return null;
 
   const summaryItems = [
     {
