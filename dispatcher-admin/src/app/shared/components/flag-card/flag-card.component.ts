@@ -46,7 +46,7 @@ import { FeatureFlagUI } from '../../../models';
       <div class="flag-toggle">
         <app-toggle
           [checked]="flag.enabled"
-          [disabled]="flag.toggling"
+          [loading]="flag.toggling"
           (toggle)="onToggle($event)">
         </app-toggle>
       </div>

@@ -319,9 +319,8 @@
                         <td class="col-actions">
                           <app-toggle
                             [checked]="flag.enabled"
-                            [disabled]="flag.toggling"
+                            [loading]="flag.toggling"
                             size="small"
-                            [showIcons]="false"
                             (toggle)="toggleFlag(flag)">
                           </app-toggle>
                         </td>
@@ -438,8 +437,9 @@
         <div class="status-toggle-large">
           <app-toggle
             [checked]="flag.enabled"
-            [disabled]="flag.toggling"
+            [loading]="flag.toggling"
             size="large"
+            [showLabels]="true"
             (toggle)="toggleFlag(flag)">
           </app-toggle>
           <span class="status-text" [class.enabled]="flag.enabled">

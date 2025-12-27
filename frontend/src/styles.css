@@ -5563,8 +5563,409 @@ textarea.invalid:focus {
 }
 
 /* ============================================
-   DARK MODE SUPPORT (if user prefers)
+   DARK MODE SUPPORT
    ============================================ */
+
+/* Dark mode triggered by feature flag (applied to app-root) */
+:host-context(.dark-mode),
+.dark-mode {
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-tertiary: #334155;
+  --text-primary: #f1f5f9;
+  --text-secondary: #cbd5e1;
+  --text-tertiary: #94a3b8;
+  --border-color: #475569;
+  --shadow-color: rgba(0, 0, 0, 0.5);
+}
+
+.dark-mode {
+  background: var(--bg-primary) !important;
+  color: var(--text-primary);
+}
+
+/* Header dark mode */
+.dark-mode header {
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Sidebar dark mode */
+.dark-mode .sidebar {
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+  border-color: #334155;
+}
+
+.dark-mode .sidebar-header {
+  border-color: #334155;
+}
+
+.dark-mode .stats-bar {
+  background: #334155;
+}
+
+.dark-mode .stat {
+  background: #1e293b;
+}
+
+.dark-mode .stat-count {
+  color: #f1f5f9;
+}
+
+.dark-mode .stat-label {
+  color: #94a3b8;
+}
+
+.dark-mode .search-box input {
+  background: #334155;
+  border-color: #475569;
+  color: #f1f5f9;
+}
+
+.dark-mode .search-box input::placeholder {
+  color: #64748b;
+}
+
+.dark-mode .filter-pills .pill {
+  background: #334155;
+  color: #94a3b8;
+  border-color: #475569;
+}
+
+.dark-mode .filter-pills .pill:hover,
+.dark-mode .filter-pills .pill.active {
+  background: #6366f1;
+  color: white;
+}
+
+.dark-mode .surveyor-card {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+.dark-mode .surveyor-card:hover {
+  background: #334155;
+  border-color: #475569;
+}
+
+.dark-mode .surveyor-name {
+  color: #f1f5f9;
+}
+
+.dark-mode .surveyor-details {
+  color: #94a3b8;
+}
+
+/* Main content dark mode */
+.dark-mode .main-content {
+  background: #0f172a;
+}
+
+/* Calendar dark mode */
+.dark-mode .fc {
+  --fc-page-bg-color: transparent;
+  --fc-neutral-bg-color: #1e293b;
+  --fc-neutral-text-color: #94a3b8;
+  --fc-border-color: #334155;
+  --fc-button-bg-color: #334155;
+  --fc-button-border-color: #475569;
+  --fc-button-text-color: #f1f5f9;
+  --fc-button-hover-bg-color: #475569;
+  --fc-button-hover-border-color: #64748b;
+  --fc-today-bg-color: rgba(99, 102, 241, 0.15);
+}
+
+.dark-mode .fc-theme-standard th,
+.dark-mode .fc-theme-standard td {
+  border-color: #334155;
+}
+
+.dark-mode .fc .fc-col-header-cell-cushion {
+  color: #94a3b8;
+}
+
+.dark-mode .fc .fc-daygrid-day-number {
+  color: #cbd5e1;
+}
+
+.dark-mode .fc-timegrid-slot-label {
+  color: #64748b;
+}
+
+/* Modals dark mode */
+.dark-mode .modal-overlay {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.dark-mode .modal {
+  background: #1e293b;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+}
+
+.dark-mode .modal h3 {
+  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+}
+
+.dark-mode .modal-body {
+  color: #cbd5e1;
+}
+
+.dark-mode .modal-body label {
+  color: #94a3b8;
+}
+
+.dark-mode .modal-body input,
+.dark-mode .modal-body select,
+.dark-mode .modal-body textarea {
+  background: #334155;
+  border-color: #475569;
+  color: #f1f5f9;
+}
+
+.dark-mode .modal-body input::placeholder,
+.dark-mode .modal-body textarea::placeholder {
+  color: #64748b;
+}
+
+.dark-mode .modal-footer {
+  background: #0f172a;
+  border-color: #334155;
+}
+
+/* Side panels dark mode */
+.dark-mode .side-panel {
+  background: #1e293b;
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.4);
+}
+
+.dark-mode .panel-content {
+  background: #1e293b;
+}
+
+/* Activity log dark mode */
+.dark-mode .activity-log-panel {
+  background: #1e293b;
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.4);
+}
+
+.dark-mode .activity-header {
+  background: #0f172a;
+  border-color: #334155;
+}
+
+.dark-mode .activity-header h3 {
+  color: #f1f5f9;
+}
+
+.dark-mode .activity-filter-select {
+  background: #334155;
+  border-color: #475569;
+  color: #f1f5f9;
+}
+
+.dark-mode .activity-item {
+  border-color: #334155;
+}
+
+.dark-mode .activity-content {
+  color: #cbd5e1;
+}
+
+.dark-mode .activity-meta {
+  color: #64748b;
+}
+
+.dark-mode .activity-footer {
+  background: #0f172a;
+  border-color: #334155;
+}
+
+/* Toast notifications dark mode */
+.dark-mode .toast {
+  background: #334155;
+  border-color: #475569;
+  color: #f1f5f9;
+}
+
+.dark-mode .toast.success {
+  background: linear-gradient(135deg, #065f46 0%, #047857 100%);
+}
+
+.dark-mode .toast.error {
+  background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
+}
+
+/* Dashboard overlay dark mode */
+.dark-mode .dashboard-overlay {
+  background: rgba(0, 0, 0, 0.85);
+}
+
+.dark-mode .dashboard-panel {
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+}
+
+.dark-mode .dashboard-header {
+  background: linear-gradient(180deg, #334155 0%, transparent 100%);
+  border-color: #334155;
+}
+
+.dark-mode .dashboard-header h2 {
+  background: linear-gradient(135deg, #f1f5f9 0%, #cbd5e1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.dark-mode .widget {
+  background: linear-gradient(145deg, #334155 0%, #1e293b 100%);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.dark-mode .widget-title {
+  color: #94a3b8;
+}
+
+.dark-mode .widget-value {
+  color: #f1f5f9;
+}
+
+/* Chat panel dark mode */
+.dark-mode .chat-panel {
+  background: #1e293b;
+}
+
+.dark-mode .chat-header {
+  background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+}
+
+.dark-mode .conversations-list {
+  background: #0f172a;
+  border-color: #334155;
+}
+
+.dark-mode .conversation-item {
+  border-color: #334155;
+}
+
+.dark-mode .conversation-item:hover {
+  background: #334155;
+}
+
+.dark-mode .conversation-item.active {
+  background: rgba(59, 130, 246, 0.2);
+}
+
+.dark-mode .conversation-name {
+  color: #f1f5f9;
+}
+
+.dark-mode .conversation-preview {
+  color: #94a3b8;
+}
+
+.dark-mode .messages-container {
+  background: #0f172a;
+}
+
+.dark-mode .messages-header {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+.dark-mode .messages-header-name {
+  color: #f1f5f9;
+}
+
+.dark-mode .message-bubble.received {
+  background: #334155;
+  color: #f1f5f9;
+}
+
+.dark-mode .message-input-container {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+.dark-mode .message-input {
+  background: #334155;
+  border-color: #475569;
+  color: #f1f5f9;
+}
+
+/* Close buttons in dark mode */
+.dark-mode .close-btn {
+  background: rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+}
+
+.dark-mode .close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #f1f5f9;
+}
+
+/* Alerts panel dark mode */
+.dark-mode .alerts-panel {
+  background: #1e293b;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.dark-mode .alerts-header {
+  background: #334155;
+  border-color: #475569;
+}
+
+.dark-mode .alerts-header strong {
+  color: #f1f5f9;
+}
+
+.dark-mode .alert-item {
+  border-color: #334155;
+}
+
+/* Quick add FAB dark mode */
+.dark-mode .fab {
+  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+}
+
+.dark-mode .quick-add-menu {
+  background: #1e293b;
+  border-color: #334155;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.dark-mode .quick-add-item {
+  color: #cbd5e1;
+}
+
+.dark-mode .quick-add-item:hover {
+  background: #334155;
+}
+
+/* Scrollbar dark mode */
+.dark-mode ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.dark-mode ::-webkit-scrollbar-track {
+  background: #1e293b;
+}
+
+.dark-mode ::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 4px;
+}
+
+.dark-mode ::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* System color scheme preference (fallback) */
 @media (prefers-color-scheme: dark) {
-  /* Future dark mode styles can go here */
+  /* Only apply if no explicit class is set */
+  :root:not(.light-mode) {
+    --bg-primary: #0f172a;
+    --bg-secondary: #1e293b;
+    --text-primary: #f1f5f9;
+  }
 }

@@ -35,7 +35,10 @@ type DashboardWidget = { id: string; title: string; type: 'stat' | 'chart' | 'li
   selector: 'app-root',
   standalone: true,
   imports: [CommonModule, FormsModule, FullCalendarModule],
-  templateUrl: './app.component.html'
+  templateUrl: './app.component.html',
+  host: {
+    '[class.dark-mode]': 'isDarkMode'
+  }
 })
 export class AppComponent implements OnInit, OnDestroy {
   apiBase = API_BASE;
@@ -407,6 +410,10 @@ export class AppComponent implements OnInit, OnDestroy {
 
   isFeatureEnabled(flagName: string): boolean {
     return this.featureFlagService.isEnabled(flagName, true); // Default to true
+  }
+
+  get isDarkMode(): boolean {
+    return this.featureFlagService.isEnabled('dark-mode', false);
   }
 
   ngOnDestroy(): void {
