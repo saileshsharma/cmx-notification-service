@@ -1,6 +1,7 @@
-import { Injectable } from '@angular/core';
+import { Injectable, signal, computed } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { BehaviorSubject, Observable, tap } from 'rxjs';
+import { toObservable } from '@angular/core/rxjs-interop';
+import { Observable, tap } from 'rxjs';
 import { Surveyor, SurveyorWorkload } from '../models';
 import { API_BASE } from './api-config';
 
@@ -10,42 +11,59 @@ import { API_BASE } from './api-config';
 export class SurveyorService {
   private readonly apiBase = API_BASE;
 
-  // State management
-  private surveyorsSubject = new BehaviorSubject<Surveyor[]>([]);
-  private allSurveyorsSubject = new BehaviorSubject<Surveyor[]>([]);
-  private loadingSubject = new BehaviorSubject<boolean>(false);
-  private surveyorMapSubject = new BehaviorSubject<Map<number, Surveyor>>(new Map());
+  // Angular Signals for state management
+  private surveyorsSignal = signal<Surveyor[]>([]);
+  private allSurveyorsSignal = signal<Surveyor[]>([]);
+  private loadingSignal = signal<boolean>(false);
+  private surveyorMapSignal = signal<Map<number, Surveyor>>(new Map());
 
-  // Public observables
-  surveyors$ = this.surveyorsSubject.asObservable();
-  allSurveyors$ = this.allSurveyorsSubject.asObservable();
-  loading$ = this.loadingSubject.asObservable();
-  surveyorMap$ = this.surveyorMapSubject.asObservable();
+  // Public signals (readonly)
+  readonly surveyors = this.surveyorsSignal.asReadonly();
+  readonly allSurveyors = this.allSurveyorsSignal.asReadonly();
+  readonly loading = this.loadingSignal.asReadonly();
+  readonly surveyorMap = this.surveyorMapSignal.asReadonly();
 
-  // Stats
-  private statsSubject = new BehaviorSubject<{ available: number; busy: number; offline: number }>({
-    available: 0,
-    busy: 0,
-    offline: 0
+  // Computed signals for derived state
+  readonly stats = computed(() => {
+    const surveyors = this.allSurveyorsSignal();
+    return {
+      available: surveyors.filter(s => s.current_status === 'AVAILABLE').length,
+      busy: surveyors.filter(s => s.current_status === 'BUSY').length,
+      offline: surveyors.filter(s => s.current_status === 'OFFLINE').length
+    };
   });
-  stats$ = this.statsSubject.asObservable();
+
+  readonly internalSurveyors = computed(() =>
+    this.surveyorsSignal().filter(s => s.surveyor_type === 'INTERNAL')
+  );
+
+  readonly externalSurveyors = computed(() =>
+    this.surveyorsSignal().filter(s => s.surveyor_type === 'EXTERNAL')
+  );
+
+  // Observable bridges for backward compatibility with RxJS consumers
+  surveyors$ = toObservable(this.surveyors);
+  allSurveyors$ = toObservable(this.allSurveyors);
+  loading$ = toObservable(this.loading);
+  surveyorMap$ = toObservable(this.surveyorMap);
+  stats$ = toObservable(this.stats);
 
   constructor(private http: HttpClient) {}
 
   loadAllSurveyors(): Observable<Surveyor[]> {
     return this.http.get<Surveyor[]>(`${this.apiBase}/surveyors`).pipe(
       tap(surveyors => {
-        this.allSurveyorsSubject.next(surveyors);
+        this.allSurveyorsSignal.set(surveyors);
         const map = new Map<number, Surveyor>();
         surveyors.forEach(s => map.set(s.id, s));
-        this.surveyorMapSubject.next(map);
-        this.calculateStats(surveyors);
+        this.surveyorMapSignal.set(map);
+        // Stats are now computed automatically via computed signal
       })
     );
   }
 
   loadSurveyors(type?: string, currentStatus?: string): Observable<Surveyor[]> {
-    this.loadingSubject.next(true);
+    this.loadingSignal.set(true);
     let params = new HttpParams();
     if (type && type !== 'ALL') {
       params = params.set('type', type);
@@ -56,14 +74,14 @@ export class SurveyorService {
 
     return this.http.get<Surveyor[]>(`${this.apiBase}/surveyors`, { params }).pipe(
       tap(surveyors => {
-        this.surveyorsSubject.next(surveyors);
-        this.loadingSubject.next(false);
+        this.surveyorsSignal.set(surveyors);
+        this.loadingSignal.set(false);
       })
     );
   }
 
   getSurveyor(id: number): Surveyor | undefined {
-    return this.surveyorMapSubject.value.get(id);
+    return this.surveyorMapSignal().get(id);
   }
 
   getSurveyorName(id: number): string {
@@ -71,13 +89,24 @@ export class SurveyorService {
     return surveyor?.display_name || `Surveyor ${id}`;
   }
 
-  private calculateStats(surveyors: Surveyor[]): void {
-    const stats = {
-      available: surveyors.filter(s => s.current_status === 'AVAILABLE').length,
-      busy: surveyors.filter(s => s.current_status === 'BUSY').length,
-      offline: surveyors.filter(s => s.current_status === 'OFFLINE').length
-    };
-    this.statsSubject.next(stats);
+  // Update a single surveyor in the state (for real-time updates)
+  updateSurveyor(updatedSurveyor: Surveyor): void {
+    // Update in all surveyors
+    this.allSurveyorsSignal.update(surveyors =>
+      surveyors.map(s => s.id === updatedSurveyor.id ? updatedSurveyor : s)
+    );
+
+    // Update in filtered surveyors
+    this.surveyorsSignal.update(surveyors =>
+      surveyors.map(s => s.id === updatedSurveyor.id ? updatedSurveyor : s)
+    );
+
+    // Update in map
+    this.surveyorMapSignal.update(map => {
+      const newMap = new Map(map);
+      newMap.set(updatedSurveyor.id, updatedSurveyor);
+      return newMap;
+    });
   }
 
   // Utility methods

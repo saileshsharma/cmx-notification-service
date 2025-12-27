@@ -1,6 +1,7 @@
-import { Injectable } from '@angular/core';
+import { Injectable, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, of, tap, catchError, map } from 'rxjs';
+import { toObservable } from '@angular/core/rxjs-interop';
+import { Observable, of, tap, catchError, map } from 'rxjs';
 import { API_BASE } from './api-config';
 
 export interface FeatureFlags {
@@ -33,13 +34,24 @@ export interface FeatureFlag {
 export class FeatureFlagService {
   private readonly apiBase = API_BASE;
 
-  // Cache of feature flags
-  private flagsCache = new BehaviorSubject<FeatureFlags>({});
-  private userId: number | null = null;
-  private initialized = false;
+  // Angular Signals for state management
+  private flagsCacheSignal = signal<FeatureFlags>({});
+  private userIdSignal = signal<number | null>(null);
+  private initializedSignal = signal<boolean>(false);
 
-  // Public observable for components to subscribe to
-  flags$ = this.flagsCache.asObservable();
+  // Public signals (readonly)
+  readonly flags = this.flagsCacheSignal.asReadonly();
+  readonly userId = this.userIdSignal.asReadonly();
+  readonly initialized = this.initializedSignal.asReadonly();
+
+  // Computed signals for specific feature checks
+  readonly isDarkModeEnabled = computed(() => this.flagsCacheSignal()['dark-mode'] ?? false);
+  readonly isAnalyticsDashboardEnabled = computed(() => this.flagsCacheSignal()['analytics-dashboard'] ?? false);
+  readonly isChatV2Enabled = computed(() => this.flagsCacheSignal()['chat-v2'] ?? false);
+  readonly isPushNotificationsEnabled = computed(() => this.flagsCacheSignal()['push-notifications'] ?? false);
+
+  // Observable bridge for backward compatibility
+  flags$ = toObservable(this.flags);
 
   constructor(private http: HttpClient) {}
 
@@ -48,7 +60,7 @@ export class FeatureFlagService {
    * Call this on app initialization after user login.
    */
   initialize(userId?: number): Observable<FeatureFlags> {
-    this.userId = userId || null;
+    this.userIdSignal.set(userId || null);
     return this.loadFlags([
       // Appointments
       'bulk-create-appointments',
@@ -130,15 +142,14 @@ export class FeatureFlagService {
   loadFlags(flagNames: string[]): Observable<FeatureFlags> {
     const body = {
       flags: flagNames,
-      userId: this.userId
+      userId: this.userIdSignal()
     };
 
     return this.http.post<{ flags: FeatureFlags }>(`${this.apiBase}/feature-flags/batch`, body).pipe(
       map(response => response.flags),
       tap(flags => {
-        const current = this.flagsCache.value;
-        this.flagsCache.next({ ...current, ...flags });
-        this.initialized = true;
+        this.flagsCacheSignal.update(current => ({ ...current, ...flags }));
+        this.initializedSignal.set(true);
       }),
       catchError(error => {
         console.warn('Failed to load feature flags, using defaults (enabled)', error);
@@ -151,11 +162,11 @@ export class FeatureFlagService {
   }
 
   /**
-   * Check if a feature is enabled.
-   * Returns cached value if available, otherwise fetches from server.
+   * Check if a feature is enabled (signal-based).
+   * Returns cached value if available.
    */
   isEnabled(flagName: string, defaultValue = false): boolean {
-    const cached = this.flagsCache.value[flagName];
+    const cached = this.flagsCacheSignal()[flagName];
     if (cached !== undefined) {
       return cached;
     }
@@ -165,10 +176,18 @@ export class FeatureFlagService {
   }
 
   /**
+   * Get a computed signal for a specific feature flag.
+   * Use this in templates with signal-based components.
+   */
+  isEnabledSignal(flagName: string): () => boolean {
+    return computed(() => this.flagsCacheSignal()[flagName] ?? false);
+  }
+
+  /**
    * Check if a feature is enabled (async version).
    */
   isEnabled$(flagName: string): Observable<boolean> {
-    const cached = this.flagsCache.value[flagName];
+    const cached = this.flagsCacheSignal()[flagName];
     if (cached !== undefined) {
       return of(cached);
     }
@@ -180,15 +199,15 @@ export class FeatureFlagService {
    */
   private fetchFlag(flagName: string): Observable<boolean> {
     let url = `${this.apiBase}/feature-flags/${flagName}`;
-    if (this.userId) {
-      url += `?userId=${this.userId}`;
+    const userId = this.userIdSignal();
+    if (userId) {
+      url += `?userId=${userId}`;
     }
 
     return this.http.get<{ name: string; enabled: boolean }>(url).pipe(
       map(response => response.enabled),
       tap(enabled => {
-        const current = this.flagsCache.value;
-        this.flagsCache.next({ ...current, [flagName]: enabled });
+        this.flagsCacheSignal.update(current => ({ ...current, [flagName]: enabled }));
       }),
       catchError(error => {
         console.warn(`Failed to fetch flag ${flagName}`, error);
@@ -203,8 +222,9 @@ export class FeatureFlagService {
    */
   getVariant(flagName: string): Observable<VariantResponse> {
     let url = `${this.apiBase}/feature-flags/${flagName}/variant`;
-    if (this.userId) {
-      url += `?userId=${this.userId}`;
+    const userId = this.userIdSignal();
+    if (userId) {
+      url += `?userId=${userId}`;
     }
 
     return this.http.get<VariantResponse>(url).pipe(
@@ -223,10 +243,11 @@ export class FeatureFlagService {
    * Set the user ID for user-specific flags.
    */
   setUserId(userId: number): void {
-    if (this.userId !== userId) {
-      this.userId = userId;
-      if (this.initialized) {
-        const flagNames = Object.keys(this.flagsCache.value);
+    const currentUserId = this.userIdSignal();
+    if (currentUserId !== userId) {
+      this.userIdSignal.set(userId);
+      if (this.initializedSignal()) {
+        const flagNames = Object.keys(this.flagsCacheSignal());
         if (flagNames.length > 0) {
           this.loadFlags(flagNames).subscribe();
         }
@@ -238,16 +259,16 @@ export class FeatureFlagService {
    * Clear user context (on logout).
    */
   clearUser(): void {
-    this.userId = null;
-    this.flagsCache.next({});
-    this.initialized = false;
+    this.userIdSignal.set(null);
+    this.flagsCacheSignal.set({});
+    this.initializedSignal.set(false);
   }
 
   /**
    * Force refresh all cached flags.
    */
   refresh(): Observable<FeatureFlags> {
-    const flagNames = Object.keys(this.flagsCache.value);
+    const flagNames = Object.keys(this.flagsCacheSignal());
     if (flagNames.length === 0) {
       return of({});
     }

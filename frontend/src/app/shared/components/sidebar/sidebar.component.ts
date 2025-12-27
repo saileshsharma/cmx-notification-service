@@ -1,6 +1,7 @@
 import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ScrollingModule } from '@angular/cdk/scrolling';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { Surveyor } from '../../../core/models';
@@ -10,7 +11,7 @@ import { SurveyorCardComponent } from '../surveyor-card/surveyor-card.component'
 @Component({
   selector: 'app-sidebar',
   standalone: true,
-  imports: [CommonModule, FormsModule, SurveyorCardComponent],
+  imports: [CommonModule, FormsModule, ScrollingModule, SurveyorCardComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <aside class="sidebar" [class.collapsed]="isCollapsed">
@@ -120,16 +121,20 @@ import { SurveyorCardComponent } from '../surveyor-card/surveyor-card.component'
             </div>
           </ng-container>
 
-          <!-- Ungrouped List -->
-          <ng-container *ngIf="!groupByType">
+          <!-- Ungrouped List with Virtual Scrolling -->
+          <cdk-virtual-scroll-viewport
+            *ngIf="!groupByType"
+            itemSize="64"
+            class="virtual-scroll-viewport"
+            [style.height.px]="getViewportHeight()">
             <app-surveyor-card
-              *ngFor="let s of filteredSurveyors"
+              *cdkVirtualFor="let s of filteredSurveyors; trackBy: trackBySurveyorId"
               [surveyor]="s"
               [isSelected]="isSurveyorSelected(s.id)"
               [searchQuery]="searchQuery"
               (cardClick)="onSurveyorClick($event)">
             </app-surveyor-card>
-          </ng-container>
+          </cdk-virtual-scroll-viewport>
         </div>
 
         <!-- Loading State -->
@@ -307,6 +312,18 @@ import { SurveyorCardComponent } from '../surveyor-card/surveyor-card.component'
       display: flex;
       flex-direction: column;
       gap: 8px;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .virtual-scroll-viewport {
+      width: 100%;
+    }
+
+    .virtual-scroll-viewport .cdk-virtual-scroll-content-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
     }
 
     .surveyor-group {
@@ -539,5 +556,18 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   isGroupCollapsed(groupId: string): boolean {
     return this.storageService.isGroupCollapsed(groupId);
+  }
+
+  // Virtual scrolling helpers
+  trackBySurveyorId(index: number, surveyor: Surveyor): number {
+    return surveyor.id;
+  }
+
+  getViewportHeight(): number {
+    // Calculate viewport height based on available space
+    // Stats bar (~80px) + Search (~56px) + Filter pills (~40px) + padding (~40px) = ~216px
+    const headerHeight = 216;
+    const viewportHeight = Math.max(300, window.innerHeight - 60 - headerHeight);
+    return viewportHeight;
   }
 }
