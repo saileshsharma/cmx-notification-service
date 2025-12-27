@@ -5,7 +5,8 @@
  * - Progress tracking
  * - Environment variable configuration
  */
-import { File } from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
+import { EncodingType } from 'expo-file-system/legacy';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { IMGBB_API_KEY, API_TIMEOUTS, RETRY_CONFIG } from '../config/api';
 import { logger } from '../utils/logger';
@@ -80,8 +81,8 @@ class ImageUploadService {
   async compressImage(imageUri: string): Promise<string> {
     try {
       // Get image info to check if compression is needed
-      const file = new File(imageUri);
-      const fileSizeKB = file.exists ? (file.size ?? 0) / 1024 : 0;
+      const fileInfo = await FileSystem.getInfoAsync(imageUri);
+      const fileSizeKB = fileInfo.exists ? (fileInfo.size ?? 0) / 1024 : 0;
 
       // Skip compression for small images (< 500KB)
       if (fileSizeKB < 500) {
@@ -108,12 +109,12 @@ class ImageUploadService {
       );
 
       // Log compression results
-      const newFile = new File(result.uri);
-      const newSizeKB = newFile.exists ? (newFile.size ?? 0) / 1024 : 0;
+      const newFileInfo = await FileSystem.getInfoAsync(result.uri);
+      const newSizeKB = newFileInfo.exists ? (newFileInfo.size ?? 0) / 1024 : 0;
       logger.debug('[ImageUpload] Compression complete', {
         originalKB: fileSizeKB,
         compressedKB: newSizeKB,
-        reduction: `${Math.round((1 - newSizeKB / fileSizeKB) * 100)}%`,
+        reduction: fileSizeKB > 0 ? `${Math.round((1 - newSizeKB / fileSizeKB) * 100)}%` : 'N/A',
       });
 
       return result.uri;
@@ -144,8 +145,9 @@ class ImageUploadService {
         const compressedUri = attempt === 0 ? await this.compressImage(imageUri) : imageUri;
 
         // Read the image file as base64
-        const file = new File(compressedUri);
-        const base64 = await file.base64();
+        const base64 = await FileSystem.readAsStringAsync(compressedUri, {
+          encoding: EncodingType.Base64,
+        });
 
         // Create form data
         const formData = new FormData();

@@ -206,7 +206,7 @@ export function useChat(surveyorId: number | null, surveyorName: string | null):
       setActiveConversationId(conversationId);
       chatService.setActiveConversation(conversationId);
 
-      // Load existing messages
+      // Load existing messages (backend returns oldest first)
       const messages = await chatService.loadMessages(conversationId);
       const localMessages: LocalChatMessage[] = messages.map(m => ({
         id: m.id?.toString() || Date.now().toString(),
@@ -214,7 +214,7 @@ export function useChat(surveyorId: number | null, surveyorName: string | null):
         sender: m.senderType === 'SURVEYOR' ? 'surveyor' : 'dispatcher',
         timestamp: safeParseDate(m.sentAt),
       }));
-      setChatMessages(localMessages.reverse());
+      setChatMessages(localMessages);
     } catch (error) {
       logger.error('[useChat] Failed to start dispatcher conversation:', error);
       // Don't crash - just show empty chat
@@ -233,7 +233,7 @@ export function useChat(surveyorId: number | null, surveyorName: string | null):
         sender: m.senderType === 'SURVEYOR' ? 'surveyor' : 'dispatcher',
         timestamp: safeParseDate(m.sentAt),
       }));
-      setChatMessages(localMessages.reverse());
+      setChatMessages(localMessages);  // Backend returns oldest first
     } catch (error) {
       logger.error('[useChat] Failed to refresh chat messages:', error);
       // Don't crash - keep existing messages

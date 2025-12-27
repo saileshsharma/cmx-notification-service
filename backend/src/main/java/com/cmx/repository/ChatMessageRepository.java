@@ -14,9 +14,9 @@ import java.util.List;
 public interface ChatMessageRepository extends CrudRepository<ChatMessage, Long> {
 
     /**
-     * Find messages in a conversation, ordered by sent time descending
+     * Find messages in a conversation, ordered by sent time ascending (oldest first for chat display)
      */
-    @Query("SELECT * FROM chat_message WHERE conversation_id = :conversationId ORDER BY sent_at DESC LIMIT :limit OFFSET :offset")
+    @Query("SELECT * FROM chat_message WHERE conversation_id = :conversationId ORDER BY sent_at ASC LIMIT :limit OFFSET :offset")
     List<ChatMessage> findByConversationId(@Param("conversationId") String conversationId,
                                             @Param("limit") int limit,
                                             @Param("offset") int offset);
