@@ -1,10 +1,11 @@
-import { Component, Input, Output, EventEmitter, HostListener } from '@angular/core';
+import { Component, Input, Output, EventEmitter, HostListener, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-modal',
   standalone: true,
   imports: [CommonModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="modal-overlay" (click)="onOverlayClick($event)" *ngIf="isOpen">
       <div class="modal" [class]="modalClass" (click)="$event.stopPropagation()">

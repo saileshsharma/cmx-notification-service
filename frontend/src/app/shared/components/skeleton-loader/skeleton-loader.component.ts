@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 type SkeletonType = 'text' | 'circle' | 'card' | 'calendar' | 'list' | 'table';
@@ -7,6 +7,7 @@ type SkeletonType = 'text' | 'circle' | 'card' | 'calendar' | 'list' | 'table';
   selector: 'app-skeleton-loader',
   standalone: true,
   imports: [CommonModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="skeleton-wrapper" [ngClass]="type">
       <!-- Text skeleton -->

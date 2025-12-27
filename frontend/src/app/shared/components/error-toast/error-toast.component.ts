@@ -1,19 +1,18 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { Subscription } from 'rxjs';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
+import { CommonModule, AsyncPipe } from '@angular/common';
 import { ErrorHandlerService, AppError } from '../../../core/services/error-handler.service';
 
 @Component({
   selector: 'app-error-toast',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, AsyncPipe],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="error-toast-container">
       <div
-        *ngFor="let error of errors; trackBy: trackById"
+        *ngFor="let error of errors$ | async; trackBy: trackById"
         class="error-toast"
         [ngClass]="error.type"
-        [@slideIn]
       >
         <div class="error-icon">
           <svg *ngIf="error.type === 'error'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -170,21 +169,11 @@ import { ErrorHandlerService, AppError } from '../../../core/services/error-hand
     }
   `]
 })
-export class ErrorToastComponent implements OnInit, OnDestroy {
-  errors: AppError[] = [];
-  private subscription?: Subscription;
+export class ErrorToastComponent {
+  // Use observable directly with async pipe for OnPush compatibility
+  errors$ = this.errorHandler.errors$;
 
   constructor(private errorHandler: ErrorHandlerService) {}
-
-  ngOnInit(): void {
-    this.subscription = this.errorHandler.errors$.subscribe(
-      errors => this.errors = errors
-    );
-  }
-
-  ngOnDestroy(): void {
-    this.subscription?.unsubscribe();
-  }
 
   dismiss(id: string): void {
     this.errorHandler.dismissError(id);

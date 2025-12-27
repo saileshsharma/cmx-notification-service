@@ -1,7 +1,8 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnDestroy } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Subscription } from 'rxjs';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { Surveyor } from '../../../core/models';
 import { SurveyorService, StorageService } from '../../../core/services';
 import { SurveyorCardComponent } from '../surveyor-card/surveyor-card.component';
@@ -10,6 +11,7 @@ import { SurveyorCardComponent } from '../surveyor-card/surveyor-card.component'
   selector: 'app-sidebar',
   standalone: true,
   imports: [CommonModule, FormsModule, SurveyorCardComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <aside class="sidebar" [class.collapsed]="isCollapsed">
       <div class="sidebar-header">
@@ -385,8 +387,9 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   stats = { available: 0, busy: 0, offline: 0 };
 
-  private subscriptions: Subscription[] = [];
+  private destroy$ = new Subject<void>();
   private searchDebounceTimer: any;
+  private cdr = inject(ChangeDetectorRef);
 
   constructor(
     private surveyorService: SurveyorService,
@@ -394,34 +397,38 @@ export class SidebarComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    // Subscribe to surveyors (for display)
-    this.subscriptions.push(
-      this.surveyorService.surveyors$.subscribe(surveyors => {
+    // Subscribe to surveyors with automatic cleanup
+    this.surveyorService.surveyors$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(surveyors => {
         this.surveyors = surveyors;
         this.applyFilters();
-      })
-    );
+        this.cdr.markForCheck();
+      });
 
     // Subscribe to stats
-    this.subscriptions.push(
-      this.surveyorService.stats$.subscribe(stats => {
+    this.surveyorService.stats$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(stats => {
         this.stats = stats;
-      })
-    );
+        this.cdr.markForCheck();
+      });
 
     // Subscribe to loading state
-    this.subscriptions.push(
-      this.surveyorService.loading$.subscribe(loading => {
+    this.surveyorService.loading$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(loading => {
         this.loading = loading;
-      })
-    );
+        this.cdr.markForCheck();
+      });
 
     // Subscribe to sidebar collapsed state
-    this.subscriptions.push(
-      this.storageService.sidebarCollapsed$.subscribe(collapsed => {
+    this.storageService.sidebarCollapsed$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(collapsed => {
         this.isCollapsed = collapsed;
-      })
-    );
+        this.cdr.markForCheck();
+      });
 
     // Load initial data
     this.surveyorService.loadAllSurveyors().subscribe();
@@ -429,7 +436,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.subscriptions.forEach(s => s.unsubscribe());
+    this.destroy$.next();
+    this.destroy$.complete();
     if (this.searchDebounceTimer) {
       clearTimeout(this.searchDebounceTimer);
     }

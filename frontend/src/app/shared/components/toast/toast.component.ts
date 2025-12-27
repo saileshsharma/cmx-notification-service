@@ -1,16 +1,16 @@
-import { Component, OnDestroy } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { Subscription } from 'rxjs';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
+import { CommonModule, AsyncPipe } from '@angular/common';
 import { NotificationService } from '../../../core/services';
 import { Toast } from '../../../core/models';
 
 @Component({
   selector: 'app-toast',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, AsyncPipe],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="toast-container">
-      <div *ngFor="let toast of toasts" class="toast" [class]="toast.type" (click)="removeToast(toast.id)">
+      <div *ngFor="let toast of toasts$ | async" class="toast" [class]="toast.type" (click)="removeToast(toast.id)">
         <div class="toast-icon">
           <span *ngIf="toast.type === 'success'">&#10003;</span>
           <span *ngIf="toast.type === 'error'">&#10007;</span>
@@ -100,21 +100,13 @@ import { Toast } from '../../../core/models';
     }
   `]
 })
-export class ToastComponent implements OnDestroy {
-  toasts: Toast[] = [];
-  private subscription: Subscription;
+export class ToastComponent {
+  // Use observable directly with async pipe for OnPush compatibility
+  toasts$ = this.notificationService.toasts$;
 
-  constructor(private notificationService: NotificationService) {
-    this.subscription = this.notificationService.toasts$.subscribe(toasts => {
-      this.toasts = toasts;
-    });
-  }
+  constructor(private notificationService: NotificationService) {}
 
   removeToast(id: number): void {
     this.notificationService.removeToast(id);
-  }
-
-  ngOnDestroy(): void {
-    this.subscription.unsubscribe();
   }
 }

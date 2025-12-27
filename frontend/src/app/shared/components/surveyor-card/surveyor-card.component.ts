@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Surveyor } from '../../../core/models';
 import { SurveyorService } from '../../../core/services';
@@ -7,6 +7,7 @@ import { SurveyorService } from '../../../core/services';
   selector: 'app-surveyor-card',
   standalone: true,
   imports: [CommonModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="surveyor-card"
          [class.selected]="isSelected"

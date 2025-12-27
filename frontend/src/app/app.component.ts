@@ -1,9 +1,10 @@
-// CMX Surveyor Calendar v1.0.5
-import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
+// CMX Surveyor Calendar v1.1.0 - Robustness & Scalability Update
+import { Component, OnInit, OnDestroy, HostListener, ChangeDetectionStrategy, inject, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
-import { Subscription } from 'rxjs';
+import { Subject } from 'rxjs';
+import { takeUntil, finalize } from 'rxjs/operators';
 import { API_BASE } from './core/services/api-config';
 import { SurveyorActivityService, SurveyorActivity } from './core/services/surveyor-activity.service';
 import { ChatService, ChatMessage, ChatConversation, TypingIndicator } from './core/services/chat.service';
@@ -172,7 +173,9 @@ export class AppComponent implements OnInit, OnDestroy {
   sseConnected = false;
   activityFilter: 'ALL' | 'STATUS_CHANGE' | 'JOB_UPDATE' | 'LOGIN' = 'ALL';
   loadingActivities = false;
-  private activitySubscriptions: Subscription[] = [];
+
+// Unified destroy subject for subscription cleanup
+  private destroy$ = new Subject<void>();
 
   // Activity History Modal
   showActivityHistoryModal = false;
@@ -194,7 +197,6 @@ export class AppComponent implements OnInit, OnDestroy {
   chatTypingUser: string | null = null;
   showNewConversationPicker = false;
   chatSurveyorSearch = '';
-  private chatSubscriptions: Subscription[] = [];
   private typingTimeout: any;
   private chatPollingInterval: any;
 
@@ -373,7 +375,6 @@ export class AppComponent implements OnInit, OnDestroy {
 
   // Feature Flags
   featureFlags: FeatureFlags = {};
-  private featureFlagSubscription: Subscription | null = null;
 
   constructor(
     private http: HttpClient,
@@ -401,19 +402,23 @@ export class AppComponent implements OnInit, OnDestroy {
 
   // ============ FEATURE FLAGS ============
   initFeatureFlags(): void {
-    // Subscribe to flag updates
-    this.featureFlagSubscription = this.featureFlagService.flags$.subscribe(flags => {
-      this.featureFlags = flags;
-      // Update calendar drag-drop based on feature flag
-      const dragDropEnabled = this.featureFlagService.isEnabled('drag-drop-scheduling', true);
-      this.calendarOptions = {
-        ...this.calendarOptions,
-        editable: dragDropEnabled,
-        eventResizableFromStart: dragDropEnabled
-      };
-    });
+    // Subscribe to flag updates with automatic cleanup
+    this.featureFlagService.flags$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(flags => {
+        this.featureFlags = flags;
+        // Update calendar drag-drop based on feature flag
+        const dragDropEnabled = this.featureFlagService.isEnabled('drag-drop-scheduling', true);
+        this.calendarOptions = {
+          ...this.calendarOptions,
+          editable: dragDropEnabled,
+          eventResizableFromStart: dragDropEnabled
+        };
+      });
     // Load initial flags
-    this.featureFlagService.initialize().subscribe();
+    this.featureFlagService.initialize()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe();
   }
 
   isFeatureEnabled(flagName: string): boolean {
@@ -435,11 +440,21 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    // Complete the destroy subject to clean up all subscriptions using takeUntil
+    this.destroy$.next();
+    this.destroy$.complete();
+
+    // Disconnect real-time services
     this.surveyorActivityService.disconnect();
-    this.activitySubscriptions.forEach(sub => sub.unsubscribe());
     this.chatService.disconnect();
-    this.chatSubscriptions.forEach(sub => sub.unsubscribe());
-    this.featureFlagSubscription?.unsubscribe();
+
+    // Clear any pending timeouts
+    if (this.typingTimeout) {
+      clearTimeout(this.typingTimeout);
+    }
+    if (this.chatPollingInterval) {
+      clearInterval(this.chatPollingInterval);
+    }
   }
 
   // Load all surveyors for stats calculation
@@ -3590,24 +3605,33 @@ export class AppComponent implements OnInit, OnDestroy {
 
   // ============ SURVEYOR ACTIVITY (REAL-TIME) ============
   initSurveyorActivity(): void {
-    // Subscribe to activities from service
-    this.activitySubscriptions.push(
-      this.surveyorActivityService.activities$.subscribe(activities => {
+    // Subscribe to activities with automatic cleanup via takeUntil
+    this.surveyorActivityService.activities$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(activities => {
         this.surveyorActivities = activities;
-      }),
-      this.surveyorActivityService.connected$.subscribe(connected => {
+      });
+
+    this.surveyorActivityService.connected$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(connected => {
         this.sseConnected = connected;
-      }),
-      this.surveyorActivityService.loading$.subscribe(loading => {
+      });
+
+    this.surveyorActivityService.loading$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(loading => {
         this.loadingActivities = loading;
-      }),
-      this.surveyorActivityService.liveEvent$.subscribe(event => {
+      });
+
+    this.surveyorActivityService.liveEvent$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(event => {
         // Show prominent toast for real-time surveyor activity events
         this.showToast('surveyor', event.message, 'Surveyor Activity');
         // Also refresh surveyor stats as status may have changed
         this.loadAllSurveyors();
-      })
-    );
+      });
 
     // Connect to SSE stream
     this.surveyorActivityService.connect();
@@ -3741,21 +3765,34 @@ export class AppComponent implements OnInit, OnDestroy {
 
   // ============ CHAT FUNCTIONALITY ============
   initChat(): void {
-    // Subscribe to chat observables
-    this.chatSubscriptions.push(
-      this.chatService.connected$.subscribe(connected => {
+    // Subscribe to chat observables with automatic cleanup via takeUntil
+    this.chatService.connected$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(connected => {
         this.chatConnected = connected;
-      }),
-      this.chatService.conversations$.subscribe(conversations => {
+      });
+
+    this.chatService.conversations$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(conversations => {
         this.chatConversations = conversations;
-      }),
-      this.chatService.messages$.subscribe(messages => {
+      });
+
+    this.chatService.messages$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(messages => {
         this.chatMessages = messages;
-      }),
-      this.chatService.unreadCount$.subscribe(count => {
+      });
+
+    this.chatService.unreadCount$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(count => {
         this.chatUnreadCount = count;
-      }),
-      this.chatService.typing$.subscribe(indicator => {
+      });
+
+    this.chatService.typing$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(indicator => {
         if (indicator.conversationId === this.activeConversationId && indicator.isTyping) {
           this.chatTypingUser = indicator.userName;
           // Clear typing indicator after 3 seconds
@@ -3766,8 +3803,7 @@ export class AppComponent implements OnInit, OnDestroy {
         } else if (indicator.conversationId === this.activeConversationId && !indicator.isTyping) {
           this.chatTypingUser = null;
         }
-      })
-    );
+      });
 
     // Connect as dispatcher (ID 1 by default)
     this.chatService.connectAsDispatcher(1, 'Dispatcher');

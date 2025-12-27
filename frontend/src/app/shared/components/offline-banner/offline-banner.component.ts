@@ -1,14 +1,16 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, ChangeDetectionStrategy, ChangeDetectorRef, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Subscription } from 'rxjs';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { NetworkService } from '../../../core/services/network.service';
 
 @Component({
   selector: 'app-offline-banner',
   standalone: true,
   imports: [CommonModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="offline-banner" *ngIf="!isOnline" [@slideDown]>
+    <div class="offline-banner" *ngIf="!isOnline">
       <div class="offline-content">
         <svg class="offline-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <line x1="1" y1="1" x2="23" y2="23"/>
@@ -30,7 +32,7 @@ import { NetworkService } from '../../../core/services/network.service';
       </button>
     </div>
 
-    <div class="slow-connection-banner" *ngIf="isOnline && isSlowConnection" [@slideDown]>
+    <div class="slow-connection-banner" *ngIf="isOnline && isSlowConnection">
       <svg class="warning-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
         <line x1="12" y1="9" x2="12" y2="13"/>
@@ -39,7 +41,7 @@ import { NetworkService } from '../../../core/services/network.service';
       <span>Slow connection detected. Data may take longer to load.</span>
     </div>
 
-    <div class="back-online-banner" *ngIf="showBackOnline" [@slideDown]>
+    <div class="back-online-banner" *ngIf="showBackOnline">
       <svg class="success-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
         <polyline points="22 4 12 14.01 9 11.01"/>
@@ -136,37 +138,44 @@ import { NetworkService } from '../../../core/services/network.service';
   `]
 })
 export class OfflineBannerComponent implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
+  private cdr = inject(ChangeDetectorRef);
+
   isOnline = true;
   isSlowConnection = false;
   showBackOnline = false;
-
-  private subscription?: Subscription;
   private wasOffline = false;
 
   constructor(private networkService: NetworkService) {}
 
   ngOnInit(): void {
-    this.subscription = this.networkService.status$.subscribe(status => {
-      const wasOnline = this.isOnline;
-      this.isOnline = status.online;
-      this.isSlowConnection = this.networkService.isSlowConnection();
+    this.networkService.status$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(status => {
+        const wasOnline = this.isOnline;
+        this.isOnline = status.online;
+        this.isSlowConnection = this.networkService.isSlowConnection();
 
-      // Show "back online" message
-      if (!wasOnline && status.online && this.wasOffline) {
-        this.showBackOnline = true;
-        setTimeout(() => {
-          this.showBackOnline = false;
-        }, 3000);
-      }
+        // Show "back online" message
+        if (!wasOnline && status.online && this.wasOffline) {
+          this.showBackOnline = true;
+          setTimeout(() => {
+            this.showBackOnline = false;
+            this.cdr.markForCheck();
+          }, 3000);
+        }
 
-      if (!status.online) {
-        this.wasOffline = true;
-      }
-    });
+        if (!status.online) {
+          this.wasOffline = true;
+        }
+
+        this.cdr.markForCheck();
+      });
   }
 
   ngOnDestroy(): void {
-    this.subscription?.unsubscribe();
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   checkConnection(): void {
