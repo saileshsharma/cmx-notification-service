@@ -5969,3 +5969,334 @@ textarea.invalid:focus {
     --text-primary: #f1f5f9;
   }
 }
+
+/* =====================================================
+   Travel Time Panel Styles
+   ===================================================== */
+
+.travel-time-panel {
+  z-index: 1000;
+}
+
+.travel-time-panel .panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.travel-time-panel .panel-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.travel-time-panel .close-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: #fff;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.travel-time-panel .close-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.travel-time-panel .panel-summary {
+  display: flex;
+  gap: 20px;
+  padding: 16px 20px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.travel-time-panel .summary-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.travel-time-panel .summary-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.travel-time-panel .summary-value.warning {
+  color: #ea580c;
+}
+
+.travel-time-panel .summary-label {
+  font-size: 12px;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.travel-time-panel .panel-content {
+  padding: 16px;
+  overflow-y: auto;
+  max-height: calc(100vh - 200px);
+}
+
+.travel-time-panel .empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #64748b;
+}
+
+.travel-time-panel .empty-state p {
+  margin: 0 0 8px 0;
+}
+
+.travel-time-panel .empty-state .hint {
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+/* Travel Surveyor Section */
+.travel-surveyor-section {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.travel-surveyor-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.travel-surveyor-header .avatar.small {
+  width: 32px;
+  height: 32px;
+  font-size: 12px;
+}
+
+.travel-surveyor-header .surveyor-name {
+  font-weight: 600;
+  color: #1e293b;
+  flex: 1;
+}
+
+.travel-warning-count {
+  background: #fef3c7;
+  color: #d97706;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Travel Routes */
+.travel-routes {
+  padding: 12px;
+}
+
+.travel-route {
+  padding: 14px;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  transition: all 0.2s;
+}
+
+.travel-route:last-child {
+  margin-bottom: 0;
+}
+
+.travel-route.tight {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.travel-route.ok {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.route-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.route-from,
+.route-to {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.route-icon {
+  font-size: 14px;
+  width: 20px;
+  text-align: center;
+}
+
+.route-label {
+  font-weight: 500;
+  color: #1e293b;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.route-time {
+  font-size: 12px;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.route-arrow {
+  color: #94a3b8;
+  font-size: 16px;
+  text-align: center;
+  padding: 4px 0;
+}
+
+.route-timing {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-top: 12px;
+  border-top: 1px dashed #e2e8f0;
+}
+
+.travel-time {
+  font-size: 13px;
+  color: #3b82f6;
+  font-weight: 500;
+}
+
+.gap-time {
+  font-size: 13px;
+  color: #22c55e;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.gap-time.tight {
+  color: #ea580c;
+}
+
+.status-icon {
+  font-size: 12px;
+}
+
+/* Dark mode for Travel Time Panel */
+.dark-mode .travel-time-panel .panel-summary {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+.dark-mode .travel-time-panel .summary-value {
+  color: #f1f5f9;
+}
+
+.dark-mode .travel-time-panel .summary-label {
+  color: #94a3b8;
+}
+
+.dark-mode .travel-surveyor-section {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+.dark-mode .travel-surveyor-header {
+  background: #0f172a;
+  border-color: #334155;
+}
+
+.dark-mode .travel-surveyor-header .surveyor-name {
+  color: #f1f5f9;
+}
+
+.dark-mode .travel-warning-count {
+  background: #451a03;
+  color: #fbbf24;
+}
+
+.dark-mode .travel-route {
+  background: #0f172a;
+  border-color: #334155;
+}
+
+.dark-mode .travel-route.tight {
+  background: #450a0a;
+  border-color: #7f1d1d;
+}
+
+.dark-mode .travel-route.ok {
+  background: #052e16;
+  border-color: #166534;
+}
+
+.dark-mode .route-label {
+  color: #f1f5f9;
+}
+
+.dark-mode .route-time {
+  color: #94a3b8;
+}
+
+.dark-mode .route-arrow {
+  color: #64748b;
+}
+
+.dark-mode .route-timing {
+  border-color: #334155;
+}
+
+.dark-mode .travel-time-panel .empty-state {
+  color: #94a3b8;
+}
+
+.dark-mode .travel-time-panel .empty-state .hint {
+  color: #64748b;
+}
+
+/* Responsive adjustments for Travel Time Panel */
+@media (max-width: 768px) {
+  .travel-time-panel {
+    width: 100%;
+    left: 0;
+    right: 0;
+  }
+
+  .travel-time-panel .panel-summary {
+    flex-wrap: wrap;
+  }
+
+  .route-info {
+    gap: 6px;
+  }
+
+  .route-timing {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+}

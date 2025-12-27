@@ -282,6 +282,7 @@ export class AppComponent implements OnInit, OnDestroy {
   // Travel Time Estimation (based on surveyor home location)
   travelTimeEstimates: Map<number, { fromEvent: any; toEvent: any; travelMinutes: number }[]> = new Map();
   showTravelTimes = true;
+  showTravelTimePanel = false;
 
   // Workload Balance
   workloadBalance: { surveyorId: number; surveyorName: string; hoursToday: number; hoursWeek: number; appointmentsToday: number; appointmentsWeek: number }[] = [];
@@ -3156,10 +3157,58 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   toggleTravelTimes() {
-    this.showTravelTimes = !this.showTravelTimes;
-    if (this.showTravelTimes) {
+    this.showTravelTimePanel = !this.showTravelTimePanel;
+    if (this.showTravelTimePanel) {
+      this.showTravelTimes = true;
       this.calculateTravelTimes();
     }
+  }
+
+  getTravelTimeSummary(): { surveyorId: number; surveyorName: string; estimates: { fromEvent: any; toEvent: any; travelMinutes: number; gapMinutes: number; isTight: boolean }[] }[] {
+    const summary: { surveyorId: number; surveyorName: string; estimates: { fromEvent: any; toEvent: any; travelMinutes: number; gapMinutes: number; isTight: boolean }[] }[] = [];
+
+    this.travelTimeEstimates.forEach((estimates, surveyorId) => {
+      const surveyor = this.surveyorMap.get(surveyorId);
+      if (!surveyor) return;
+
+      const detailedEstimates = estimates.map(est => {
+        let gapMinutes = 0;
+        if (est.fromEvent && est.toEvent) {
+          const fromEnd = new Date(est.fromEvent.end);
+          const toStart = new Date(est.toEvent.start);
+          gapMinutes = Math.round((toStart.getTime() - fromEnd.getTime()) / 60000);
+        }
+        return {
+          ...est,
+          gapMinutes,
+          isTight: gapMinutes > 0 && gapMinutes < est.travelMinutes
+        };
+      });
+
+      summary.push({
+        surveyorId,
+        surveyorName: surveyor.display_name,
+        estimates: detailedEstimates
+      });
+    });
+
+    // Sort by number of tight schedules (descending)
+    return summary.sort((a, b) => {
+      const aTight = a.estimates.filter(e => e.isTight).length;
+      const bTight = b.estimates.filter(e => e.isTight).length;
+      return bTight - aTight;
+    });
+  }
+
+  formatEventTime(event: any): string {
+    if (!event) return 'Home';
+    const start = new Date(event.start);
+    return start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  }
+
+  getEventTitle(event: any): string {
+    if (!event) return 'Starting from Home';
+    return event.title || 'Appointment';
   }
 
   getTravelTimeWarning(surveyorId: number): { warning: boolean; message: string } | null {
