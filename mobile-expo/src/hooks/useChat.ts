@@ -124,25 +124,30 @@ export function useChat(surveyorId: number | null, surveyorName: string | null):
 
     // Subscribe to messages
     const unsubMessages = chatService.subscribeToMessages((message: APIChatMessage) => {
-      const msgId = message.id?.toString() || `ws-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      const localMessage: LocalChatMessage = {
-        id: msgId,
-        text: message.content,
-        sender: message.senderType === 'SURVEYOR' ? 'surveyor' : 'dispatcher',
-        timestamp: new Date(message.sentAt),
-      };
+      try {
+        const msgId = message.id?.toString() || `ws-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        const timestamp = message.sentAt ? new Date(message.sentAt) : new Date();
+        const localMessage: LocalChatMessage = {
+          id: msgId,
+          text: message.content || '',
+          sender: message.senderType === 'SURVEYOR' ? 'surveyor' : 'dispatcher',
+          timestamp: isNaN(timestamp.getTime()) ? new Date() : timestamp,
+        };
 
-      // Add message only if it doesn't already exist
-      setChatMessages(prev => {
-        if (prev.some(m => m.id === msgId || (m.text === localMessage.text && m.sender === localMessage.sender && Math.abs(m.timestamp.getTime() - localMessage.timestamp.getTime()) < 5000))) {
-          return prev;
+        // Add message only if it doesn't already exist
+        setChatMessages(prev => {
+          if (prev.some(m => m.id === msgId || (m.text === localMessage.text && m.sender === localMessage.sender && Math.abs(m.timestamp.getTime() - localMessage.timestamp.getTime()) < 5000))) {
+            return prev;
+          }
+          return [...prev, localMessage];
+        });
+
+        // Haptic feedback for new dispatcher message
+        if (message.senderType === 'DISPATCHER') {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }
-        return [...prev, localMessage];
-      });
-
-      // Haptic feedback for new dispatcher message
-      if (message.senderType === 'DISPATCHER') {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } catch (error) {
+        logger.error('[useChat] Error processing message:', error);
       }
     });
     unsubscribersRef.current.push(unsubMessages);
@@ -187,6 +192,13 @@ export function useChat(surveyorId: number | null, surveyorName: string | null):
     startDispatcherConversation();
   }, [surveyorId, surveyorName, cleanupSubscriptions]);
 
+  // Helper to safely parse timestamps
+  const safeParseDate = (dateStr: string | undefined): Date => {
+    if (!dateStr) return new Date();
+    const parsed = new Date(dateStr);
+    return isNaN(parsed.getTime()) ? new Date() : parsed;
+  };
+
   const startDispatcherConversation = useCallback(async () => {
     try {
       const conversationId = await chatService.startConversation(1); // Dispatcher ID 1
@@ -197,13 +209,15 @@ export function useChat(surveyorId: number | null, surveyorName: string | null):
       const messages = await chatService.loadMessages(conversationId);
       const localMessages: LocalChatMessage[] = messages.map(m => ({
         id: m.id?.toString() || Date.now().toString(),
-        text: m.content,
+        text: m.content || '',
         sender: m.senderType === 'SURVEYOR' ? 'surveyor' : 'dispatcher',
-        timestamp: new Date(m.sentAt),
+        timestamp: safeParseDate(m.sentAt),
       }));
       setChatMessages(localMessages.reverse());
     } catch (error) {
       logger.error('[useChat] Failed to start dispatcher conversation:', error);
+      // Don't crash - just show empty chat
+      setChatMessages([]);
     }
   }, []);
 
@@ -214,13 +228,14 @@ export function useChat(surveyorId: number | null, surveyorName: string | null):
       const messages = await chatService.loadMessages(activeConversationId);
       const localMessages: LocalChatMessage[] = messages.map(m => ({
         id: m.id?.toString() || Date.now().toString(),
-        text: m.content,
+        text: m.content || '',
         sender: m.senderType === 'SURVEYOR' ? 'surveyor' : 'dispatcher',
-        timestamp: new Date(m.sentAt),
+        timestamp: safeParseDate(m.sentAt),
       }));
       setChatMessages(localMessages.reverse());
     } catch (error) {
       logger.error('[useChat] Failed to refresh chat messages:', error);
+      // Don't crash - keep existing messages
     }
   }, [activeConversationId]);
 

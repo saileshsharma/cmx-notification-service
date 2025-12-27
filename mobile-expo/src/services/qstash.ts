@@ -21,7 +21,8 @@ class QStashService {
   private async publish(payload: object): Promise<{ success: boolean; messageId?: string; error?: string }> {
     try {
       // QStash publish endpoint format: POST /v2/publish/{destination}
-      const response = await fetch(`${this.qstashUrl}/${encodeURIComponent(QSTASH_DESTINATION_URL)}`, {
+      // Note: QStash expects the raw URL, not URL-encoded
+      const response = await fetch(`${this.qstashUrl}/${QSTASH_DESTINATION_URL}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${QSTASH_TOKEN}`,

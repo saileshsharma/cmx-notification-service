@@ -189,15 +189,31 @@ class Logger {
   }
 
   error(message: string, error?: unknown): void {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    const errorStack = error instanceof Error ? error.stack : undefined;
-    this.log('error', message, { error: errorMessage, stack: errorStack });
+    let errorData: unknown;
+    let errorMessage: string;
+
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      errorData = { error: error.message, stack: error.stack };
+    } else if (error && typeof error === 'object') {
+      // Handle plain objects (like { type: 'error', url: '...' })
+      errorMessage = JSON.stringify(error);
+      errorData = error;
+    } else if (error !== undefined) {
+      errorMessage = String(error);
+      errorData = { error: errorMessage };
+    } else {
+      errorMessage = 'Unknown error';
+      errorData = undefined;
+    }
+
+    this.log('error', message, errorData);
 
     // Send error to Sentry
     if (this.sentryEnabled && error instanceof Error) {
       captureException(error, { logMessage: message });
     } else if (this.sentryEnabled && error) {
-      captureMessage(`${message}: ${errorMessage}`, 'error', { error: errorMessage });
+      captureMessage(`${message}: ${errorMessage}`, 'error', errorData as Record<string, unknown>);
     }
   }
 

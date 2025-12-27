@@ -131,9 +131,19 @@ class ChatService {
         this.handleMessage(event.data);
       };
 
-      this.ws.onerror = (error) => {
-        logger.error('[Chat] WebSocket error', error);
-        captureException(new Error('WebSocket error'), { surveyorId });
+      this.ws.onerror = (event) => {
+        // WebSocket onerror provides an Event, not an Error object
+        // Extract meaningful info for logging
+        const errorInfo = {
+          type: event.type,
+          url: wsUrl,
+          readyState: this.ws?.readyState,
+          surveyorId,
+        };
+        logger.error('[Chat] WebSocket error', errorInfo);
+        captureException(new Error(`WebSocket error: ${event.type}`), {
+          extra: errorInfo,
+        });
       };
 
       this.ws.onclose = (event) => {
@@ -142,8 +152,9 @@ class ChatService {
         this.handleDisconnect(reason);
       };
     } catch (error) {
-      logger.error('[Chat] Failed to create WebSocket', error);
-      captureException(error instanceof Error ? error : new Error('WebSocket creation failed'));
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error('[Chat] Failed to create WebSocket', { error: errorMessage, surveyorId });
+      captureException(error instanceof Error ? error : new Error(`WebSocket creation failed: ${errorMessage}`));
       this.handleDisconnect('Connection failed');
     }
   }
@@ -590,7 +601,8 @@ class ChatService {
         this.loadConversations();
       }
     } catch (error) {
-      logger.error('[Chat] Failed to parse STOMP message', error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error('[Chat] Failed to parse STOMP message', { error: errorMessage, body: body.substring(0, 200) });
     }
   }
 
@@ -709,7 +721,8 @@ class ChatService {
       try {
         await this.sendMessage(msg.recipientId, msg.recipientType, msg.content);
       } catch (error) {
-        logger.error('[Chat] Failed to send queued message', error);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        logger.error('[Chat] Failed to send queued message', { error: errorMessage, recipientId: msg.recipientId });
         // Re-queue if still within time window (5 minutes)
         if (Date.now() - msg.timestamp < 300000) {
           this.messageQueue.push(msg);

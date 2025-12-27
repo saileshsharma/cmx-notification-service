@@ -3,6 +3,7 @@
  * Wraps all context providers in proper order for dependency injection
  */
 import React, { ReactNode } from 'react';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from './AuthContext';
 import { NetworkProvider } from './NetworkContext';
 import { NotificationProvider } from './NotificationContext';
@@ -22,6 +23,7 @@ interface AppProvidersProps {
  * Order matters: inner providers can depend on outer providers.
  *
  * Provider hierarchy:
+ * 0. SafeAreaProvider - Required for useSafeAreaInsets hook
  * 1. NetworkProvider - No dependencies, needed by all
  * 2. FeatureFlagProvider - No dependencies, provides feature flags
  * 3. AuthProvider - Needs network, provides auth state
@@ -36,23 +38,25 @@ export const AppProviders: React.FC<AppProvidersProps> = ({
   onNewNotification,
 }) => {
   return (
-    <NetworkProvider>
-      <FeatureFlagProvider>
-        <AuthProvider>
-          <NotificationProvider onNewNotification={onNewNotification}>
-            <AppointmentProvider>
-              <InspectionProvider>
-                <LocationProvider>
-                  <ChatProvider>
-                    {children}
-                  </ChatProvider>
-                </LocationProvider>
-              </InspectionProvider>
-            </AppointmentProvider>
-          </NotificationProvider>
-        </AuthProvider>
-      </FeatureFlagProvider>
-    </NetworkProvider>
+    <SafeAreaProvider>
+      <NetworkProvider>
+        <FeatureFlagProvider>
+          <AuthProvider>
+            <NotificationProvider onNewNotification={onNewNotification}>
+              <AppointmentProvider>
+                <InspectionProvider>
+                  <LocationProvider>
+                    <ChatProvider>
+                      {children}
+                    </ChatProvider>
+                  </LocationProvider>
+                </InspectionProvider>
+              </AppointmentProvider>
+            </NotificationProvider>
+          </AuthProvider>
+        </FeatureFlagProvider>
+      </NetworkProvider>
+    </SafeAreaProvider>
   );
 };
 

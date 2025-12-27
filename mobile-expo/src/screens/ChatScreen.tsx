@@ -16,6 +16,9 @@ import { colors, gradients, spacing, fontSize, fontWeight, borderRadius, shadows
 import { ChatMessage } from '../context/AppContext';
 import { useFeatureFlagContext, FLAGS } from '../context/FeatureFlagContext';
 
+// Bottom navigation bar height to ensure input is always visible above it
+const BOTTOM_NAV_HEIGHT = Platform.OS === 'ios' ? 85 : 70;
+
 interface ChatScreenProps {
   messages: ChatMessage[];
   newMessage: string;
@@ -49,25 +52,38 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
     }, 100);
   }, [messages.length]);
 
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString('en-US', {
+  // Safe date helper - ensures we have a valid Date object
+  const ensureDate = (date: Date | string | undefined): Date => {
+    if (!date) return new Date();
+    if (date instanceof Date && !isNaN(date.getTime())) return date;
+    if (typeof date === 'string') {
+      const parsed = new Date(date);
+      return isNaN(parsed.getTime()) ? new Date() : parsed;
+    }
+    return new Date();
+  };
+
+  const formatTime = (date: Date | string | undefined) => {
+    const safeDate = ensureDate(date);
+    return safeDate.toLocaleTimeString('en-US', {
       hour: 'numeric',
       minute: '2-digit',
     });
   };
 
-  const formatDate = (date: Date) => {
+  const formatDate = (date: Date | string | undefined) => {
+    const safeDate = ensureDate(date);
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
 
-    if (date.toDateString() === today.toDateString()) {
+    if (safeDate.toDateString() === today.toDateString()) {
       return 'Today';
     }
-    if (date.toDateString() === yesterday.toDateString()) {
+    if (safeDate.toDateString() === yesterday.toDateString()) {
       return 'Yesterday';
     }
-    return date.toLocaleDateString('en-US', {
+    return safeDate.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
     });
@@ -75,16 +91,20 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
 
   const shouldShowDate = (index: number) => {
     if (index === 0) return true;
-    const currentDate = messages[index].timestamp;
-    const prevDate = messages[index - 1].timestamp;
-    return currentDate.toDateString() !== prevDate.toDateString();
+    try {
+      const currentDate = ensureDate(messages[index]?.timestamp);
+      const prevDate = ensureDate(messages[index - 1]?.timestamp);
+      return currentDate.toDateString() !== prevDate.toDateString();
+    } catch {
+      return false;
+    }
   };
 
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
     >
       {/* Chat Header */}
       <View style={styles.header}>
@@ -205,7 +225,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
       </View>
 
       {/* Input Bar */}
-      <View style={[styles.inputWrapper, { paddingBottom: Math.max(insets.bottom, spacing.lg) }]}>
+      <View style={[styles.inputWrapper, { paddingBottom: BOTTOM_NAV_HEIGHT }]}>
         <View style={styles.inputContainer}>
           {/* Attachments button (controlled by chat-attachments flag) */}
           {chatAttachmentsEnabled && (
@@ -331,7 +351,7 @@ const styles = StyleSheet.create({
   },
   messagesContent: {
     padding: spacing.lg,
-    paddingBottom: spacing.xl,
+    paddingBottom: spacing.xxxl,
   },
   dateDivider: {
     flexDirection: 'row',
