@@ -15,7 +15,7 @@ module.exports = {
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.ch.cmx",
-      buildNumber: "12",
+      buildNumber: "13",
       infoPlist: {
         NSCameraUsageDescription: "FleetInspect Pro needs camera access to capture vehicle inspection photos",
         NSPhotoLibraryUsageDescription: "FleetInspect Pro needs photo library access to save and upload inspection photos",

@@ -1,0 +1,567 @@
+<div class="admin-container" [class.dark-mode]="darkMode()">
+  <!-- Top Navigation Bar -->
+  <nav class="top-nav">
+    <div class="nav-brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <span class="brand-name">Dispatcher Admin</span>
+        <span class="brand-version">Enterprise v3.0</span>
+      </div>
+    </div>
+
+    <div class="nav-center">
+      <div class="search-global">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+        <input
+          type="text"
+          [ngModel]="searchQuery()"
+          (ngModelChange)="searchQuery.set($event)"
+          placeholder="Search flags, categories, or descriptions..."
+          class="search-input-global">
+        <kbd class="search-shortcut">/</kbd>
+      </div>
+    </div>
+
+    <div class="nav-actions">
+      <div class="health-indicator" [class]="systemHealth().status" [title]="'API: ' + systemHealth().apiLatency + 'ms'">
+        <span class="health-dot"></span>
+        <span class="health-text">{{ systemHealth().status | titlecase }}</span>
+      </div>
+
+      <button class="nav-btn" (click)="toggleDarkMode()" [title]="darkMode() ? 'Light Mode' : 'Dark Mode'">
+        @if (!darkMode()) {
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+        } @else {
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+          </svg>
+        }
+      </button>
+
+      <button class="nav-btn" (click)="showAuditLog.set(!showAuditLog())" [class.active]="showAuditLog()" title="Audit Log">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+        </svg>
+        @if (auditLogService.count() > 0) {
+          <span class="badge">{{ auditLogService.count() }}</span>
+        }
+      </button>
+
+      <button class="nav-btn" (click)="refresh()" [disabled]="flagService.loading()" title="Refresh">
+        <svg [class.spinning]="flagService.loading()" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+        </svg>
+      </button>
+
+      <div class="user-menu">
+        <div class="user-avatar">A</div>
+        <span class="user-name">Admin</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Layout -->
+  <div class="main-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar" [class.collapsed]="sidebarCollapsed()">
+      <div class="sidebar-header">
+        @if (!sidebarCollapsed()) {
+          <h3>Navigation</h3>
+        }
+        <button class="collapse-btn" (click)="sidebarCollapsed.set(!sidebarCollapsed())">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline [attr.points]="sidebarCollapsed() ? '9 18 15 12 9 6' : '15 18 9 12 15 6'"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="sidebar-section">
+        @if (!sidebarCollapsed()) {
+          <div class="section-title">Platforms</div>
+        }
+        <div class="nav-items">
+          @for (tab of platformTabs(); track tab.id) {
+            <button
+              class="nav-item"
+              [class.active]="activeTab() === tab.id"
+              (click)="setActiveTab(tab.id)"
+              [title]="tab.label">
+              <span class="nav-icon" [innerHTML]="tab.icon"></span>
+              @if (!sidebarCollapsed()) {
+                <span class="nav-label">{{ tab.label }}</span>
+                <span class="nav-count">{{ tab.count }}</span>
+              }
+            </button>
+          }
+        </div>
+      </div>
+
+      @if (!sidebarCollapsed()) {
+        <div class="sidebar-section">
+          <div class="section-title">Quick Filters</div>
+          <div class="filter-chips">
+            <button class="chip" [class.active]="quickFilter() === 'enabled'" (click)="setQuickFilter('enabled')">
+              <span class="chip-dot enabled"></span> Enabled
+            </button>
+            <button class="chip" [class.active]="quickFilter() === 'disabled'" (click)="setQuickFilter('disabled')">
+              <span class="chip-dot disabled"></span> Disabled
+            </button>
+            <button class="chip" [class.active]="quickFilter() === 'production'" (click)="setQuickFilter('production')">
+              Production
+            </button>
+            <button class="chip" [class.active]="quickFilter() === 'development'" (click)="setQuickFilter('development')">
+              Development
+            </button>
+          </div>
+        </div>
+
+        <div class="sidebar-section sidebar-stats">
+          <div class="section-title">Statistics</div>
+          <div class="stat-item">
+            <span class="stat-label">Total Flags</span>
+            <span class="stat-value">{{ flagService.totalCount() }}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Enabled</span>
+            <span class="stat-value enabled">{{ flagService.enabledCount() }}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Disabled</span>
+            <span class="stat-value disabled">{{ flagService.disabledCount() }}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Last Sync</span>
+            <span class="stat-value">{{ getRelativeTime(flagService.lastSync()) }}</span>
+          </div>
+        </div>
+
+        <div class="sidebar-footer">
+          <a [href]="frontendAppUrl" target="_blank" class="external-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+            </svg>
+            Open Frontend App
+          </a>
+        </div>
+      }
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <h1 class="page-title">
+            {{ activeTabLabel() }}
+            <span class="title-count">({{ visibleFlagsCount() }} flags)</span>
+          </h1>
+        </div>
+
+        <div class="toolbar-center">
+          <div class="view-toggle">
+            @for (mode of viewModes; track mode.id) {
+              <button
+                class="view-btn"
+                [class.active]="viewMode() === mode.id"
+                (click)="viewMode.set(mode.id)"
+                [title]="mode.label">
+                <span [innerHTML]="mode.icon"></span>
+              </button>
+            }
+          </div>
+
+          <div class="sort-dropdown">
+            <select [ngModel]="sortBy()" (ngModelChange)="sortBy.set($event)">
+              <option value="name">Sort by Name</option>
+              <option value="updated">Sort by Updated</option>
+              <option value="status">Sort by Status</option>
+              <option value="environment">Sort by Environment</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="toolbar-right">
+          @if (selectedFlags().length > 0) {
+            <div class="bulk-actions">
+              <span class="selected-count">{{ selectedFlags().length }} selected</span>
+              <button class="bulk-btn enable" (click)="bulkEnable()">Enable All</button>
+              <button class="bulk-btn disable" (click)="bulkDisable()">Disable All</button>
+              <button class="bulk-btn clear" (click)="clearSelection()">Clear</button>
+            </div>
+          }
+
+          <button class="action-btn primary" (click)="showCreateModal.set(true)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            New Flag
+          </button>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      @if (flagService.loading() && flagService.totalCount() === 0) {
+        <app-loading [overlay]="true" message="Loading feature flags..."></app-loading>
+      }
+
+      <!-- Error State -->
+      @if (flagService.error() && !flagService.loading()) {
+        <div class="error-state">
+          <div class="error-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+          </div>
+          <h3>Connection Error</h3>
+          <p>{{ flagService.error() }}</p>
+          <button class="action-btn primary" (click)="loadFlags()">Retry Connection</button>
+        </div>
+      }
+
+      <!-- Content -->
+      @if (!flagService.loading() || flagService.totalCount() > 0) {
+        <div class="content-area" [class.loading]="flagService.loading()">
+          <!-- Grid View -->
+          @if (viewMode() === 'grid') {
+            <div class="flags-grid">
+              @for (category of filteredCategories(); track category.prefix) {
+                <div class="category-card" [class.expanded]="category.expanded">
+                  <div class="category-header" (click)="toggleCategory(category)">
+                    <div class="category-info">
+                      <span class="category-icon">{{ category.icon }}</span>
+                      <div class="category-text">
+                        <h3>{{ category.name }}</h3>
+                        <span class="category-meta">
+                          <span class="platform-badge" [class]="category.platform">{{ category.platform }}</span>
+                          <span class="flag-count">{{ getEnabledCount(category) }}/{{ category.flags.length }} enabled</span>
+                        </span>
+                      </div>
+                    </div>
+                    <div class="category-actions">
+                      <div class="mini-progress">
+                        <div class="progress-bar" [style.width.%]="(getEnabledCount(category) / category.flags.length) * 100"></div>
+                      </div>
+                      <svg class="expand-icon" [class.rotated]="category.expanded" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"/>
+                      </svg>
+                    </div>
+                  </div>
+
+                  @if (category.expanded) {
+                    <div class="category-content">
+                      @for (flag of category.flags; track flag.id) {
+                        <app-flag-card
+                          [flag]="flag"
+                          (toggle)="toggleFlag(flag)"
+                          (select)="toggleSelection(flag)"
+                          (details)="openFlagDetail(flag)">
+                        </app-flag-card>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          }
+
+          <!-- List View -->
+          @if (viewMode() === 'list') {
+            <div class="flags-list">
+              <table class="flags-table">
+                <thead>
+                  <tr>
+                    <th class="col-select">
+                      <input type="checkbox" (change)="toggleSelectAll($event)" [checked]="allSelected()">
+                    </th>
+                    <th class="col-status">Status</th>
+                    <th class="col-name">Name</th>
+                    <th class="col-description">Description</th>
+                    <th class="col-env">Environment</th>
+                    <th class="col-platform">Platform</th>
+                    <th class="col-updated">Updated</th>
+                    <th class="col-actions">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (category of filteredCategories(); track category.prefix) {
+                    @for (flag of category.flags; track flag.id) {
+                      <tr [class.selected]="flag.selected">
+                        <td class="col-select">
+                          <input type="checkbox" [checked]="flag.selected" (change)="toggleSelection(flag)">
+                        </td>
+                        <td class="col-status">
+                          <span class="status-indicator" [class.enabled]="flag.enabled" [class.disabled]="!flag.enabled">
+                            {{ flag.enabled ? 'ON' : 'OFF' }}
+                          </span>
+                        </td>
+                        <td class="col-name">
+                          <div class="name-cell">
+                            <span class="flag-icon">{{ category.icon }}</span>
+                            <span class="flag-name">{{ getFlagDisplayName(flag.name) }}</span>
+                          </div>
+                        </td>
+                        <td class="col-description">{{ flag.description }}</td>
+                        <td class="col-env">
+                          <span class="env-badge" [class]="flag.environment">{{ flag.environment }}</span>
+                        </td>
+                        <td class="col-platform">
+                          <span class="platform-badge" [class]="category.platform">{{ category.platform }}</span>
+                        </td>
+                        <td class="col-updated">{{ getRelativeTime(flag.updatedAt) }}</td>
+                        <td class="col-actions">
+                          <app-toggle
+                            [checked]="flag.enabled"
+                            [disabled]="flag.toggling"
+                            size="small"
+                            [showIcons]="false"
+                            (toggle)="toggleFlag(flag)">
+                          </app-toggle>
+                        </td>
+                      </tr>
+                    }
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+
+          <!-- Compact View -->
+          @if (viewMode() === 'compact') {
+            <div class="flags-compact">
+              <div class="compact-grid">
+                @for (flag of allFlags(); track flag.id) {
+                  <div class="compact-card" [class.enabled]="flag.enabled" (click)="toggleFlag(flag)">
+                    <span class="compact-name">{{ getFlagDisplayName(flag.name) }}</span>
+                    <span class="compact-status">{{ flag.enabled ? 'ON' : 'OFF' }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- Empty State -->
+          @if (filteredCategories().length === 0 && !flagService.loading()) {
+            <div class="empty-state">
+              <div class="empty-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                </svg>
+              </div>
+              <h3>No flags found</h3>
+              @if (searchQuery()) {
+                <p>No results for "{{ searchQuery() }}"</p>
+              } @else {
+                <p>No feature flags match your current filters</p>
+              }
+              <button class="action-btn secondary" (click)="clearFilters()">Clear Filters</button>
+            </div>
+          }
+        </div>
+      }
+    </main>
+
+    <!-- Audit Log Panel -->
+    @if (showAuditLog()) {
+      <aside class="audit-panel">
+        <div class="panel-header">
+          <h3>Activity Log</h3>
+          <button class="close-btn" (click)="showAuditLog.set(false)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+        <div class="panel-content">
+          @if (auditLogService.count() > 0) {
+            <div class="audit-list">
+              @for (entry of auditLogService.entries(); track entry.id) {
+                <div class="audit-entry" [class]="entry.action">
+                  <div class="audit-icon">
+                    @if (entry.action === 'enabled') {
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                    }
+                    @if (entry.action === 'disabled') {
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+                      </svg>
+                    }
+                    @if (entry.action === 'created') {
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                      </svg>
+                    }
+                  </div>
+                  <div class="audit-content">
+                    <div class="audit-title">
+                      <strong>{{ entry.flagName }}</strong>
+                      <span class="audit-action">{{ entry.action }}</span>
+                    </div>
+                    <div class="audit-meta">
+                      <span class="audit-user">{{ entry.user }}</span>
+                      <span class="audit-time">{{ getRelativeTime(entry.timestamp) }}</span>
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+          } @else {
+            <div class="audit-empty">
+              <p>No recent activity</p>
+            </div>
+          }
+        </div>
+      </aside>
+    }
+  </div>
+
+  <!-- Flag Detail Modal -->
+  <app-modal
+    [isOpen]="!!selectedFlag()"
+    [title]="selectedFlag() ? getFlagDisplayName(selectedFlag()!.name) : ''"
+    [subtitle]="selectedFlag()?.name || ''"
+    size="large"
+    (close)="closeFlagDetail()">
+
+    @if (selectedFlag(); as flag) {
+      <div class="detail-section">
+        <label>Status</label>
+        <div class="status-toggle-large">
+          <app-toggle
+            [checked]="flag.enabled"
+            [disabled]="flag.toggling"
+            size="large"
+            (toggle)="toggleFlag(flag)">
+          </app-toggle>
+          <span class="status-text" [class.enabled]="flag.enabled">
+            {{ flag.enabled ? 'Enabled' : 'Disabled' }}
+          </span>
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <label>Description</label>
+        <p>{{ flag.description }}</p>
+      </div>
+
+      <div class="detail-grid">
+        <div class="detail-item">
+          <label>Environment</label>
+          <span class="env-badge large" [class]="flag.environment">{{ flag.environment }}</span>
+        </div>
+        <div class="detail-item">
+          <label>Rollout</label>
+          <div class="rollout-display">
+            <div class="rollout-bar">
+              <div class="rollout-fill" [style.width.%]="flag.rolloutPercentage"></div>
+            </div>
+            <span>{{ flag.rolloutPercentage }}%</span>
+          </div>
+        </div>
+        <div class="detail-item">
+          <label>Created</label>
+          <span>{{ flag.createdAt | date:'medium' }}</span>
+        </div>
+        <div class="detail-item">
+          <label>Last Updated</label>
+          <span>{{ flag.updatedAt | date:'medium' }}</span>
+        </div>
+      </div>
+
+      @if (flag.variantPayload) {
+        <div class="detail-section">
+          <label>Variant Payload</label>
+          <pre class="code-block">{{ flag.variantPayload | json }}</pre>
+        </div>
+      }
+    }
+
+    <div modal-footer>
+      <button class="action-btn secondary" (click)="closeFlagDetail()">Close</button>
+      @if (selectedFlag(); as flag) {
+        <button
+          class="action-btn"
+          [class.danger]="flag.enabled"
+          [class.primary]="!flag.enabled"
+          (click)="toggleFlag(flag)">
+          {{ flag.enabled ? 'Disable Flag' : 'Enable Flag' }}
+        </button>
+      }
+    </div>
+  </app-modal>
+
+  <!-- Create Flag Modal -->
+  <app-modal
+    [isOpen]="showCreateModal()"
+    title="Create New Flag"
+    size="medium"
+    (close)="showCreateModal.set(false)">
+
+    <div class="form-group">
+      <label>Flag Name</label>
+      <input
+        type="text"
+        [ngModel]="newFlag().name"
+        (ngModelChange)="updateNewFlagName($event)"
+        placeholder="e.g., feature.new-dashboard">
+      <span class="form-hint">Use dot notation for categorization (e.g., ui.dark-mode, mobile.offline-sync)</span>
+    </div>
+
+    <div class="form-group">
+      <label>Description</label>
+      <textarea
+        [ngModel]="newFlag().description"
+        (ngModelChange)="updateNewFlagDescription($event)"
+        placeholder="Describe what this flag controls..."></textarea>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Environment</label>
+        <select
+          [ngModel]="newFlag().environment"
+          (ngModelChange)="updateNewFlagEnvironment($event)">
+          <option value="all">All</option>
+          <option value="production">Production</option>
+          <option value="development">Development</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Rollout %</label>
+        <input
+          type="number"
+          [ngModel]="newFlag().rolloutPercentage"
+          (ngModelChange)="updateNewFlagRollout($event)"
+          min="0"
+          max="100">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="checkbox-label">
+        <input
+          type="checkbox"
+          [ngModel]="newFlag().enabled"
+          (ngModelChange)="updateNewFlagEnabled($event)">
+        Enable immediately after creation
+      </label>
+    </div>
+
+    <div modal-footer>
+      <button class="action-btn secondary" (click)="showCreateModal.set(false)">Cancel</button>
+      <button class="action-btn primary" (click)="createFlag()" [disabled]="!newFlag().name">Create Flag</button>
+    </div>
+  </app-modal>
+
+  <!-- Toast Container -->
+  <app-toast-container></app-toast-container>
+</div>
