@@ -13,6 +13,7 @@ import { useAppointmentContext } from '../context/AppointmentContext';
 import { useInspectionContext } from '../context/InspectionContext';
 import { useLocationContext } from '../context/LocationContext';
 import { useChatContext } from '../context/ChatContext';
+import { useFeatureFlagContext, FLAGS } from '../context/FeatureFlagContext';
 
 // Screens
 import {
@@ -58,6 +59,15 @@ export const MainContainer: React.FC = () => {
   const inspection = useInspectionContext();
   const location = useLocationContext();
   const chat = useChatContext();
+  const featureFlags = useFeatureFlagContext();
+
+  // Feature flag checks
+  const chatEnabled = featureFlags.isEnabled(FLAGS.CHAT_V2);
+  const signatureEnabled = featureFlags.isEnabled(FLAGS.SIGNATURE_CAPTURE);
+  const locationTrackingEnabled = featureFlags.isEnabled(FLAGS.LIVE_TRACKING);
+  const pushNotificationsEnabled = featureFlags.isEnabled(FLAGS.PUSH_NOTIFICATIONS);
+  const biometricEnabled = featureFlags.isEnabled(FLAGS.BIOMETRIC_LOGIN);
+  const mapEnabled = featureFlags.isEnabled(FLAGS.LIVE_TRACKING);
 
   // Load inspection history on mount
   useEffect(() => {
@@ -198,7 +208,7 @@ export const MainContainer: React.FC = () => {
             onViewReport={(id) => console.log('View report', id)}
           />
         )}
-        {activeTab === 'chat' && (
+        {activeTab === 'chat' && chatEnabled && (
           <ChatScreen
             messages={chat.chatMessages}
             newMessage={chat.newMessage}
@@ -208,6 +218,11 @@ export const MainContainer: React.FC = () => {
             typingUser={chat.chatTypingUser}
           />
         )}
+        {activeTab === 'chat' && !chatEnabled && (
+          <View style={styles.disabledFeature}>
+            {/* Chat feature is disabled */}
+          </View>
+        )}
         {activeTab === 'profile' && (
           <ProfileScreen
             surveyorName={auth.surveyorName}
@@ -215,9 +230,9 @@ export const MainContainer: React.FC = () => {
             surveyorPhone={auth.surveyorPhone}
             surveyorCode={auth.surveyorCode}
             onPasswordChange={handlePasswordChange}
-            biometricSupported={auth.biometricSupported}
+            biometricSupported={auth.biometricSupported && biometricEnabled}
             biometricEnabled={auth.biometricEnabled}
-            onToggleBiometric={auth.toggleBiometricLogin}
+            onToggleBiometric={biometricEnabled ? auth.toggleBiometricLogin : undefined}
             onLogout={auth.logout}
           />
         )}
@@ -239,14 +254,16 @@ export const MainContainer: React.FC = () => {
         onClearAll={notifications.clearAllNotifications}
       />
 
-      <MapModal
-        visible={location.showMapModal}
-        activeJob={inspection.activeJob}
-        destinationLocation={location.destinationLocation}
-        onClose={() => location.setShowMapModal(false)}
-        onOpenExternalNav={location.openExternalNavigation}
-        onArrived={location.handleArrivedAtLocation}
-      />
+      {mapEnabled && (
+        <MapModal
+          visible={location.showMapModal}
+          activeJob={inspection.activeJob}
+          destinationLocation={location.destinationLocation}
+          onClose={() => location.setShowMapModal(false)}
+          onOpenExternalNav={location.openExternalNavigation}
+          onArrived={location.handleArrivedAtLocation}
+        />
+      )}
 
       <CompletionModal
         visible={showCompletionModal}
@@ -254,11 +271,13 @@ export const MainContainer: React.FC = () => {
         onClose={handleCloseCompletion}
       />
 
-      <SignatureModal
-        visible={showSignatureModal}
-        onClose={() => setShowSignatureModal(false)}
-        onConfirm={handleSignatureConfirm}
-      />
+      {signatureEnabled && (
+        <SignatureModal
+          visible={showSignatureModal}
+          onClose={() => setShowSignatureModal(false)}
+          onConfirm={handleSignatureConfirm}
+        />
+      )}
 
       {/* Upload Overlay */}
       <UploadingOverlay
@@ -276,5 +295,11 @@ const styles = StyleSheet.create({
   },
   mainContent: {
     flex: 1,
+  },
+  disabledFeature: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.gray[100],
   },
 });

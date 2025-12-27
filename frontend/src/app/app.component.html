@@ -100,7 +100,7 @@
         </svg>
         <span>Heatmap</span>
       </button>
-      <button [class.active]="currentView === 'map'" (click)="setView('map')" title="Surveyor Location Map">
+      <button *ngIf="isFeatureEnabled('real-time-tracking')" [class.active]="currentView === 'map'" (click)="setView('map')" title="Surveyor Location Map">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
           <circle cx="12" cy="10" r="3"></circle>
@@ -185,15 +185,15 @@
         <line x1="16" y1="17" x2="8" y2="17"></line>
       </svg>
     </button>
-    <!-- Chat -->
-    <button class="btn-icon chat-toggle-btn" (click)="toggleChatPanel()" title="Chat" [class.active]="showChatPanel">
+    <!-- Chat (controlled by feature flag) -->
+    <button *ngIf="isFeatureEnabled('chat-v2')" class="btn-icon chat-toggle-btn" (click)="toggleChatPanel()" title="Chat" [class.active]="showChatPanel">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
       </svg>
       <span class="chat-badge" *ngIf="chatUnreadCount > 0">{{chatUnreadCount}}</span>
     </button>
-    <!-- Export -->
-    <button class="btn-icon" (click)="openExportModal()" title="Export Data">
+    <!-- Export (controlled by feature flag) -->
+    <button *ngIf="isFeatureEnabled('pdf-export') || isFeatureEnabled('excel-export')" class="btn-icon" (click)="openExportModal()" title="Export Data">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
         <polyline points="7 10 12 15 17 10"></polyline>
@@ -1667,8 +1667,8 @@
   </div>
 </div>
 
-<!-- Chat Panel -->
-<div class="chat-panel" *ngIf="showChatPanel">
+<!-- Chat Panel (controlled by feature flag) -->
+<div class="chat-panel" *ngIf="showChatPanel && isFeatureEnabled('chat-v2')">
   <div class="chat-header">
     <h3>
       <span class="connection-status" [class.disconnected]="!chatConnected" [class.connecting]="!chatConnected"></span>

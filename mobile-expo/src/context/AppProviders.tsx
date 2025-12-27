@@ -10,6 +10,7 @@ import { AppointmentProvider } from './AppointmentContext';
 import { InspectionProvider } from './InspectionContext';
 import { LocationProvider } from './LocationContext';
 import { ChatProvider } from './ChatContext';
+import { FeatureFlagProvider } from './FeatureFlagContext';
 
 interface AppProvidersProps {
   children: ReactNode;
@@ -22,12 +23,13 @@ interface AppProvidersProps {
  *
  * Provider hierarchy:
  * 1. NetworkProvider - No dependencies, needed by all
- * 2. AuthProvider - Needs network, provides auth state
- * 3. NotificationProvider - Needs auth for push tokens
- * 4. AppointmentProvider - Needs auth for surveyor ID
- * 5. InspectionProvider - Needs appointments
- * 6. LocationProvider - Needs auth and inspection
- * 7. ChatProvider - Needs auth for surveyor info
+ * 2. FeatureFlagProvider - No dependencies, provides feature flags
+ * 3. AuthProvider - Needs network, provides auth state
+ * 4. NotificationProvider - Needs auth for push tokens
+ * 5. AppointmentProvider - Needs auth for surveyor ID
+ * 6. InspectionProvider - Needs appointments
+ * 7. LocationProvider - Needs auth and inspection
+ * 8. ChatProvider - Needs auth for surveyor info
  */
 export const AppProviders: React.FC<AppProvidersProps> = ({
   children,
@@ -35,19 +37,21 @@ export const AppProviders: React.FC<AppProvidersProps> = ({
 }) => {
   return (
     <NetworkProvider>
-      <AuthProvider>
-        <NotificationProvider onNewNotification={onNewNotification}>
-          <AppointmentProvider>
-            <InspectionProvider>
-              <LocationProvider>
-                <ChatProvider>
-                  {children}
-                </ChatProvider>
-              </LocationProvider>
-            </InspectionProvider>
-          </AppointmentProvider>
-        </NotificationProvider>
-      </AuthProvider>
+      <FeatureFlagProvider>
+        <AuthProvider>
+          <NotificationProvider onNewNotification={onNewNotification}>
+            <AppointmentProvider>
+              <InspectionProvider>
+                <LocationProvider>
+                  <ChatProvider>
+                    {children}
+                  </ChatProvider>
+                </LocationProvider>
+              </InspectionProvider>
+            </AppointmentProvider>
+          </NotificationProvider>
+        </AuthProvider>
+      </FeatureFlagProvider>
     </NetworkProvider>
   );
 };
@@ -55,6 +59,7 @@ export const AppProviders: React.FC<AppProvidersProps> = ({
 // Re-export all context hooks for convenience
 export { useAuthContext } from './AuthContext';
 export { useNetworkContext } from './NetworkContext';
+export { useFeatureFlagContext, useFeatureFlag, FLAGS } from './FeatureFlagContext';
 export { useNotificationContext } from './NotificationContext';
 export { useAppointmentContext } from './AppointmentContext';
 export { useInspectionContext } from './InspectionContext';

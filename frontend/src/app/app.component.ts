@@ -7,6 +7,7 @@ import { Subscription } from 'rxjs';
 import { API_BASE } from './core/services/api-config';
 import { SurveyorActivityService, SurveyorActivity } from './core/services/surveyor-activity.service';
 import { ChatService, ChatMessage, ChatConversation, TypingIndicator } from './core/services/chat.service';
+import { FeatureFlagService, FeatureFlags } from './core/services/feature-flag.service';
 
 import { FullCalendarModule } from '@fullcalendar/angular';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -366,13 +367,19 @@ export class AppComponent implements OnInit, OnDestroy {
     eventColor: '#3788d8'
   };
 
+  // Feature Flags
+  featureFlags: FeatureFlags = {};
+  private featureFlagSubscription: Subscription | null = null;
+
   constructor(
     private http: HttpClient,
     private surveyorActivityService: SurveyorActivityService,
-    private chatService: ChatService
+    private chatService: ChatService,
+    private featureFlagService: FeatureFlagService
   ) {}
 
   ngOnInit(): void {
+    this.initFeatureFlags();
     this.loadAllSurveyors();
     this.loadSurveyors();
     this.refreshEvents();
@@ -388,11 +395,26 @@ export class AppComponent implements OnInit, OnDestroy {
     this.initChat();
   }
 
+  // ============ FEATURE FLAGS ============
+  initFeatureFlags(): void {
+    // Subscribe to flag updates
+    this.featureFlagSubscription = this.featureFlagService.flags$.subscribe(flags => {
+      this.featureFlags = flags;
+    });
+    // Load initial flags
+    this.featureFlagService.initialize().subscribe();
+  }
+
+  isFeatureEnabled(flagName: string): boolean {
+    return this.featureFlagService.isEnabled(flagName, true); // Default to true
+  }
+
   ngOnDestroy(): void {
     this.surveyorActivityService.disconnect();
     this.activitySubscriptions.forEach(sub => sub.unsubscribe());
     this.chatService.disconnect();
     this.chatSubscriptions.forEach(sub => sub.unsubscribe());
+    this.featureFlagSubscription?.unsubscribe();
   }
 
   // Load all surveyors for stats calculation
