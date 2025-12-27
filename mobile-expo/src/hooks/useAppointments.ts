@@ -1,11 +1,13 @@
 /**
  * useAppointments Hook - Appointment management logic
  * Handles loading, refreshing, responding to appointments
+ * Now with offline caching support
  */
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import * as Haptics from 'expo-haptics';
 import { Alert } from 'react-native';
 import { apiService } from '../services/api';
+import { offlineStorage, OfflineAppointment } from '../services/offlineStorage';
 import { Appointment, AppointmentResponseStatus } from '../types';
 import { logger } from '../utils/logger';
 
@@ -21,6 +23,8 @@ export interface UseAppointmentsReturn {
   appointments: Appointment[];
   isRefreshing: boolean;
   todayStats: TodayStats;
+  isOffline: boolean;
+  lastSyncTime: number | null;
 
   // Actions
   loadAppointments: () => Promise<void>;
@@ -39,26 +43,101 @@ export interface UseAppointmentsReturn {
 export function useAppointments(surveyorId: number | null): UseAppointmentsReturn {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState<number | null>(null);
+  const networkUnsubscribe = useRef<(() => void) | null>(null);
 
-  // Load appointments when surveyor ID changes
+  // Subscribe to network changes
+  useEffect(() => {
+    networkUnsubscribe.current = offlineStorage.onNetworkChange((online) => {
+      setIsOffline(!online);
+      if (online && surveyorId) {
+        logger.info('[Appointments] Back online, refreshing...');
+        loadAppointments();
+      }
+    });
+    setIsOffline(!offlineStorage.getIsOnline());
+
+    return () => {
+      networkUnsubscribe.current?.();
+    };
+  }, [surveyorId]);
+
+  // Load cached appointments on mount, then fetch fresh data
   useEffect(() => {
     if (surveyorId) {
-      loadAppointments();
+      loadCachedAppointments().then(() => {
+        loadAppointments();
+      });
     }
   }, [surveyorId]);
 
+  // Load cached appointments from offline storage
+  const loadCachedAppointments = useCallback(async () => {
+    try {
+      const cached = await offlineStorage.getCachedAppointments();
+      const syncTime = await offlineStorage.getLastSyncTime();
+      setLastSyncTime(syncTime);
+
+      if (cached.length > 0) {
+        // Convert OfflineAppointment to Appointment format
+        const appointments: Appointment[] = cached.map(c => ({
+          id: c.id,
+          title: c.title,
+          description: c.description || '',
+          start_time: c.startTime,
+          end_time: c.endTime,
+          state: c.state,
+          surveyor_id: c.surveyorId,
+          source: 'cached',
+          updated_at: new Date(c.cachedAt).toISOString(),
+          response_status: 'PENDING' as const,
+          responded_at: null,
+        }));
+        setAppointments(appointments);
+        logger.debug('[Appointments] Loaded from cache:', cached.length);
+      }
+    } catch (error) {
+      logger.error('[Appointments] Error loading cached:', error);
+    }
+  }, []);
+
   const loadAppointments = useCallback(async () => {
     if (!surveyorId) return;
+
+    // If offline, use cached data
+    if (!offlineStorage.getIsOnline()) {
+      logger.debug('[Appointments] Offline, using cached data');
+      await loadCachedAppointments();
+      return;
+    }
 
     try {
       logger.debug('Loading appointments for surveyor:', surveyorId);
       const data = await apiService.getAppointments(surveyorId, true);
       setAppointments(data);
       logger.info('Loaded appointments:', data.length);
+
+      // Cache appointments for offline use
+      const toCache: OfflineAppointment[] = data.map(a => ({
+        id: a.id,
+        title: a.title,
+        description: a.description,
+        startTime: a.start_time,
+        endTime: a.end_time,
+        state: a.state,
+        surveyorId: a.surveyor_id,
+        cachedAt: Date.now(),
+      }));
+      await offlineStorage.cacheAppointments(toCache);
+      setLastSyncTime(Date.now());
+      logger.debug('[Appointments] Cached for offline use');
     } catch (error) {
       logger.error('Error loading appointments:', error);
+      // Fall back to cached data on error
+      await loadCachedAppointments();
     }
-  }, [surveyorId]);
+  }, [surveyorId, loadCachedAppointments]);
 
   const refreshAppointments = useCallback(async () => {
     setIsRefreshing(true);
@@ -71,6 +150,23 @@ export function useAppointments(surveyorId: number | null): UseAppointmentsRetur
     response: AppointmentResponseStatus
   ): Promise<boolean> => {
     if (!surveyorId) return false;
+
+    // If offline, queue the action for later
+    if (!offlineStorage.getIsOnline()) {
+      await offlineStorage.queueAction({
+        type: 'APPOINTMENT_RESPONSE',
+        payload: { appointmentId, surveyorId, response },
+      });
+
+      // Optimistic update - update local state immediately
+      setAppointments(prev => prev.map(a =>
+        a.id === appointmentId ? { ...a, response_status: response } : a
+      ));
+
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert('Saved Offline', 'Your response will be sent when you\'re back online.');
+      return true;
+    }
 
     try {
       const result = await apiService.respondToAppointment(appointmentId, surveyorId, response);
@@ -86,8 +182,13 @@ export function useAppointments(surveyorId: number | null): UseAppointmentsRetur
       return false;
     } catch (error) {
       logger.error('Error responding to appointment:', error);
-      Alert.alert('Error', 'Could not respond to appointment');
-      return false;
+      // Queue for retry
+      await offlineStorage.queueAction({
+        type: 'APPOINTMENT_RESPONSE',
+        payload: { appointmentId, surveyorId, response },
+      });
+      Alert.alert('Network Error', 'Your response will be sent when connection is restored.');
+      return true; // Return true since we queued it
     }
   }, [surveyorId, loadAppointments]);
 
@@ -162,6 +263,8 @@ export function useAppointments(surveyorId: number | null): UseAppointmentsRetur
     appointments,
     isRefreshing,
     todayStats,
+    isOffline,
+    lastSyncTime,
     loadAppointments,
     refreshAppointments,
     respondToAppointment,

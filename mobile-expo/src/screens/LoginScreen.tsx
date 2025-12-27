@@ -11,12 +11,12 @@ import {
   StatusBar,
   Dimensions,
   ScrollView,
-  Image,
   ImageBackground,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as LocalAuthentication from 'expo-local-authentication';
+import { CachedImage } from '../components/CachedImage';
 import { colors, gradients, spacing, fontSize, fontWeight, borderRadius, shadows } from '../constants/theme';
 
 const { width, height } = Dimensions.get('window');
@@ -115,10 +115,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
 
       {/* Car Image Background */}
       <View style={styles.imageContainer}>
-        <Image
-          source={{ uri: CAR_IMAGE_URL }}
+        <CachedImage
+          uri={CAR_IMAGE_URL}
           style={styles.carImage}
-          resizeMode="cover"
+          contentFit="cover"
+          showLoadingIndicator={false}
           onLoad={() => setImageLoaded(true)}
         />
         <LinearGradient
