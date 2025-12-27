@@ -3232,6 +3232,23 @@ export class AppComponent implements OnInit, OnDestroy {
     return null;
   }
 
+  // Helper methods for travel time panel (Angular templates don't support arrow functions)
+  hasTightSchedules(): boolean {
+    return this.getTravelTimeSummary().some(s => s.estimates.some(e => e.isTight));
+  }
+
+  getTightScheduleCount(): number {
+    return this.getTravelTimeSummary().reduce((sum, s) => sum + s.estimates.filter(e => e.isTight).length, 0);
+  }
+
+  hasTightEstimates(estimates: { isTight: boolean }[]): boolean {
+    return estimates.some(e => e.isTight);
+  }
+
+  getTightEstimateCount(estimates: { isTight: boolean }[]): number {
+    return estimates.filter(e => e.isTight).length;
+  }
+
   // ============ WORKLOAD BALANCE ============
   calculateWorkloadBalance() {
     const today = new Date();

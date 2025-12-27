@@ -163,7 +163,7 @@
         <circle cx="12" cy="12" r="10"></circle>
         <polyline points="12 6 12 12 16 14"></polyline>
       </svg>
-      <span class="alerts-badge" *ngIf="getTravelTimeSummary().some(s => s.estimates.some(e => e.isTight))">!</span>
+      <span class="alerts-badge" *ngIf="hasTightSchedules()">!</span>
     </button>
 
     <div class="header-divider"></div>
@@ -1596,10 +1596,10 @@
       <span class="summary-label">Surveyors</span>
     </div>
     <div class="summary-stat">
-      <span class="summary-value warning" *ngIf="getTravelTimeSummary().some(s => s.estimates.some(e => e.isTight))">
-        {{getTravelTimeSummary().reduce((sum, s) => sum + s.estimates.filter(e => e.isTight).length, 0)}}
+      <span class="summary-value warning" *ngIf="hasTightSchedules()">
+        {{getTightScheduleCount()}}
       </span>
-      <span class="summary-value" *ngIf="!getTravelTimeSummary().some(s => s.estimates.some(e => e.isTight))">0</span>
+      <span class="summary-value" *ngIf="!hasTightSchedules()">0</span>
       <span class="summary-label">Tight Schedules</span>
     </div>
   </div>
@@ -1614,8 +1614,8 @@
           {{getInitials(s.surveyorName)}}
         </div>
         <span class="surveyor-name">{{s.surveyorName}}</span>
-        <span class="travel-warning-count" *ngIf="s.estimates.some(e => e.isTight)">
-          {{s.estimates.filter(e => e.isTight).length}} warning{{s.estimates.filter(e => e.isTight).length > 1 ? 's' : ''}}
+        <span class="travel-warning-count" *ngIf="hasTightEstimates(s.estimates)">
+          {{getTightEstimateCount(s.estimates)}} warning{{getTightEstimateCount(s.estimates) > 1 ? 's' : ''}}
         </span>
       </div>
       <div class="travel-routes">
