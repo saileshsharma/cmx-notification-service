@@ -41,10 +41,11 @@ public class FeatureFlagService {
 
     /**
      * Check if a feature flag is enabled globally.
+     * Defaults to true (enabled) if flag doesn't exist.
      */
     @Cacheable(value = "featureFlags", key = "#flagName")
     public boolean isEnabled(String flagName) {
-        return isEnabled(flagName, false);
+        return isEnabled(flagName, true);
     }
 
     /**
@@ -64,10 +65,11 @@ public class FeatureFlagService {
     /**
      * Check if a feature flag is enabled for a specific surveyor.
      * Checks for user-specific overrides first, then falls back to global flag.
+     * Defaults to true (enabled) if flag doesn't exist.
      */
     @Cacheable(value = "featureFlagsUser", key = "#flagName + '_' + #surveyorId")
     public boolean isEnabledForUser(String flagName, Long surveyorId) {
-        return isEnabledForUser(flagName, surveyorId, false);
+        return isEnabledForUser(flagName, surveyorId, true);
     }
 
     /**
@@ -119,7 +121,9 @@ public class FeatureFlagService {
         for (String flagName : flagNames) {
             FeatureFlag flag = flagMap.get(flagName);
             if (flag == null) {
-                result.put(flagName, false);
+                // Flag doesn't exist in database - default to true (enabled)
+                // This ensures features work by default until explicitly disabled
+                result.put(flagName, true);
                 continue;
             }
 

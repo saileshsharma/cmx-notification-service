@@ -241,9 +241,10 @@ async function loadFlags(flagNames: string[], userId?: number): Promise<FeatureF
     const data = await response.json();
     return data.flags || {};
   } catch (err) {
-    console.warn('Failed to load feature flags:', err);
+    console.warn('Failed to load feature flags, using defaults (enabled):', err);
+    // Default to true (enabled) so features work by default until explicitly disabled
     const defaults: FeatureFlags = {};
-    flagNames.forEach(name => defaults[name] = false);
+    flagNames.forEach(name => defaults[name] = true);
     return defaults;
   }
 }

@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, gradients, spacing, fontSize, fontWeight, borderRadius, shadows } from '../constants/theme';
 import { InspectionStep, JobState } from '../context/AppContext';
 import { Appointment } from '../types';
+import { useFeatureFlagContext, FLAGS } from '../context/FeatureFlagContext';
 
 const { width } = Dimensions.get('window');
 
@@ -57,6 +58,13 @@ export const InspectionScreen: React.FC<InspectionScreenProps> = ({
   const completedSteps = inspectionSteps.filter(s => s.completed).length;
   const progress = (completedSteps / inspectionSteps.length) * 100;
   const [expandedStep, setExpandedStep] = useState<string | null>(null);
+  const featureFlags = useFeatureFlagContext();
+
+  // Feature flag checks
+  const photoCaptureEnabled = featureFlags.isEnabled(FLAGS.PHOTO_CAPTURE);
+  const photoAnnotationEnabled = featureFlags.isEnabled(FLAGS.PHOTO_ANNOTATION);
+  const signatureCaptureEnabled = featureFlags.isEnabled(FLAGS.SIGNATURE_CAPTURE);
+  const signatureRequired = featureFlags.isEnabled(FLAGS.SIGNATURE_REQUIRED);
 
   const getStepIcon = (step: InspectionStep, index: number) => {
     const icons: { [key: string]: keyof typeof Ionicons.glyphMap } = {
@@ -233,56 +241,58 @@ export const InspectionScreen: React.FC<InspectionScreenProps> = ({
           </View>
         </View>
 
-        {/* Photo Documentation - Grid Style */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeaderRow}>
-            <View style={styles.sectionTitleWithIcon}>
-              <View style={styles.sectionIcon}>
-                <Ionicons name="images" size={18} color={colors.white} />
-              </View>
-              <Text style={styles.sectionTitle}>Photo Evidence</Text>
-            </View>
-            {capturedPhotos.length > 0 && (
-              <View style={styles.photoBadge}>
-                <Text style={styles.photoBadgeText}>{capturedPhotos.length} captured</Text>
-              </View>
-            )}
-          </View>
-
-          <View style={styles.photoSection}>
-            <View style={styles.photoGrid}>
-              {capturedPhotos.map((uri, index) => (
-                <View key={index} style={styles.photoCard}>
-                  <Image source={{ uri }} style={styles.photoImage} />
-                  <View style={styles.photoOverlay}>
-                    <TouchableOpacity
-                      style={styles.photoDeleteBtn}
-                      onPress={() => onDeletePhoto(index)}
-                    >
-                      <Ionicons name="trash" size={16} color={colors.white} />
-                    </TouchableOpacity>
-                  </View>
-                  <View style={styles.photoIndex}>
-                    <Text style={styles.photoIndexText}>{index + 1}</Text>
-                  </View>
+        {/* Photo Documentation - Grid Style (controlled by photo-capture flag) */}
+        {photoCaptureEnabled && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeaderRow}>
+              <View style={styles.sectionTitleWithIcon}>
+                <View style={styles.sectionIcon}>
+                  <Ionicons name="images" size={18} color={colors.white} />
                 </View>
-              ))}
+                <Text style={styles.sectionTitle}>Photo Evidence</Text>
+              </View>
+              {capturedPhotos.length > 0 && (
+                <View style={styles.photoBadge}>
+                  <Text style={styles.photoBadgeText}>{capturedPhotos.length} captured</Text>
+                </View>
+              )}
+            </View>
 
-              <TouchableOpacity style={styles.addPhotoCard} onPress={onTakePhoto}>
-                <LinearGradient
-                  colors={['rgba(0,102,255,0.1)', 'rgba(0,102,255,0.05)']}
-                  style={styles.addPhotoGradient}
-                >
-                  <View style={styles.addPhotoIconWrapper}>
-                    <Ionicons name="camera" size={28} color={colors.primary} />
+            <View style={styles.photoSection}>
+              <View style={styles.photoGrid}>
+                {capturedPhotos.map((uri, index) => (
+                  <View key={index} style={styles.photoCard}>
+                    <Image source={{ uri }} style={styles.photoImage} />
+                    <View style={styles.photoOverlay}>
+                      <TouchableOpacity
+                        style={styles.photoDeleteBtn}
+                        onPress={() => onDeletePhoto(index)}
+                      >
+                        <Ionicons name="trash" size={16} color={colors.white} />
+                      </TouchableOpacity>
+                    </View>
+                    <View style={styles.photoIndex}>
+                      <Text style={styles.photoIndexText}>{index + 1}</Text>
+                    </View>
                   </View>
-                  <Text style={styles.addPhotoText}>Add Photo</Text>
-                  <Text style={styles.addPhotoHint}>Tap to capture</Text>
-                </LinearGradient>
-              </TouchableOpacity>
+                ))}
+
+                <TouchableOpacity style={styles.addPhotoCard} onPress={onTakePhoto}>
+                  <LinearGradient
+                    colors={['rgba(0,102,255,0.1)', 'rgba(0,102,255,0.05)']}
+                    style={styles.addPhotoGradient}
+                  >
+                    <View style={styles.addPhotoIconWrapper}>
+                      <Ionicons name="camera" size={28} color={colors.primary} />
+                    </View>
+                    <Text style={styles.addPhotoText}>Add Photo</Text>
+                    <Text style={styles.addPhotoHint}>Tap to capture</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
+        )}
 
         {/* Notes Section - Professional Input */}
         <View style={styles.section}>
@@ -313,31 +323,33 @@ export const InspectionScreen: React.FC<InspectionScreenProps> = ({
           </View>
         </View>
 
-        {/* Signature Section */}
-        <View style={styles.section}>
-          <TouchableOpacity style={styles.signatureCard} onPress={onCaptureSignature}>
-            <View style={styles.signatureLeft}>
-              <View style={[styles.signatureIconBg, signatureData && styles.signatureIconBgSuccess]}>
-                <Ionicons
-                  name={signatureData ? "checkmark-circle" : "create"}
-                  size={24}
-                  color={signatureData ? colors.success : colors.primary}
-                />
+        {/* Signature Section (controlled by signature-capture flag) */}
+        {signatureCaptureEnabled && (
+          <View style={styles.section}>
+            <TouchableOpacity style={styles.signatureCard} onPress={onCaptureSignature}>
+              <View style={styles.signatureLeft}>
+                <View style={[styles.signatureIconBg, signatureData && styles.signatureIconBgSuccess]}>
+                  <Ionicons
+                    name={signatureData ? "checkmark-circle" : "create"}
+                    size={24}
+                    color={signatureData ? colors.success : colors.primary}
+                  />
+                </View>
+                <View style={styles.signatureInfo}>
+                  <Text style={styles.signatureTitle}>
+                    {signatureData ? 'Signature Captured' : 'Owner Signature'}
+                  </Text>
+                  <Text style={styles.signatureSubtitle}>
+                    {signatureData ? 'Tap to recapture if needed' : signatureRequired ? 'Required for report submission' : 'Optional for report submission'}
+                  </Text>
+                </View>
               </View>
-              <View style={styles.signatureInfo}>
-                <Text style={styles.signatureTitle}>
-                  {signatureData ? 'Signature Captured' : 'Owner Signature'}
-                </Text>
-                <Text style={styles.signatureSubtitle}>
-                  {signatureData ? 'Tap to recapture if needed' : 'Required for report submission'}
-                </Text>
+              <View style={styles.signatureArrow}>
+                <Ionicons name="chevron-forward" size={20} color={colors.gray[400]} />
               </View>
-            </View>
-            <View style={styles.signatureArrow}>
-              <Ionicons name="chevron-forward" size={20} color={colors.gray[400]} />
-            </View>
-          </TouchableOpacity>
-        </View>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Submit Button - Professional CTA */}
         <View style={styles.submitSection}>

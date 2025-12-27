@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, gradients, spacing, fontSize, fontWeight, borderRadius, shadows } from '../constants/theme';
 import { ChatMessage } from '../context/AppContext';
+import { useFeatureFlagContext, FLAGS } from '../context/FeatureFlagContext';
 
 interface ChatScreenProps {
   messages: ChatMessage[];
@@ -34,6 +35,13 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
 }) => {
   const scrollViewRef = useRef<ScrollView>(null);
   const insets = useSafeAreaInsets();
+  const featureFlags = useFeatureFlagContext();
+
+  // Feature flag checks
+  const typingIndicatorsEnabled = featureFlags.isEnabled(FLAGS.TYPING_INDICATORS);
+  const chatAttachmentsEnabled = featureFlags.isEnabled(FLAGS.CHAT_ATTACHMENTS);
+  const voiceMessagesEnabled = featureFlags.isEnabled(FLAGS.VOICE_MESSAGES);
+  const readReceiptsEnabled = featureFlags.isEnabled(FLAGS.READ_RECEIPTS);
 
   useEffect(() => {
     setTimeout(() => {
@@ -100,7 +108,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
       <View style={styles.statusBar}>
         <View style={[styles.statusDot, { backgroundColor: isConnected ? colors.success : colors.gray[500] }]} />
         <Text style={styles.statusText}>
-          {isConnected ? (typingUser ? `${typingUser} is typing...` : 'Dispatch Online') : 'Connecting...'}
+          {isConnected ? (typingUser && typingIndicatorsEnabled ? `${typingUser} is typing...` : 'Dispatch Online') : 'Connecting...'}
         </Text>
       </View>
 
@@ -158,8 +166,8 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
           </View>
         ))}
 
-        {/* Typing Indicator */}
-        {typingUser && (
+        {/* Typing Indicator (controlled by typing-indicators flag) */}
+        {typingUser && typingIndicatorsEnabled && (
           <View style={styles.typingIndicator}>
             <View style={styles.aiAvatar}>
               <Ionicons name="sparkles" size={12} color={colors.accent} />
@@ -199,9 +207,12 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
       {/* Input Bar */}
       <View style={[styles.inputWrapper, { paddingBottom: Math.max(insets.bottom, spacing.lg) }]}>
         <View style={styles.inputContainer}>
-          <TouchableOpacity style={styles.inputAction}>
-            <Ionicons name="attach" size={22} color={colors.text.tertiary} />
-          </TouchableOpacity>
+          {/* Attachments button (controlled by chat-attachments flag) */}
+          {chatAttachmentsEnabled && (
+            <TouchableOpacity style={styles.inputAction}>
+              <Ionicons name="attach" size={22} color={colors.text.tertiary} />
+            </TouchableOpacity>
+          )}
 
           <View style={styles.textInputWrapper}>
             <TextInput

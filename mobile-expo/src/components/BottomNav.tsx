@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, TouchableOpacity, Text, StyleSheet, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, gradients, spacing, fontSize, fontWeight, borderRadius, shadows } from '../constants/theme';
 import { TabType } from '../context/AppContext';
+import { useFeatureFlagContext, FLAGS } from '../context/FeatureFlagContext';
 
 interface BottomNavProps {
   activeTab: TabType;
@@ -11,12 +12,19 @@ interface BottomNavProps {
   unreadMessages?: number;
 }
 
-const tabs: { key: TabType; icon: string; label: string }[] = [
+interface TabConfig {
+  key: TabType;
+  icon: string;
+  label: string;
+  flagName?: string;
+}
+
+const allTabs: TabConfig[] = [
   { key: 'dashboard', icon: 'home', label: 'Home' },
   { key: 'appointments', icon: 'calendar', label: 'Schedule' },
   { key: 'inspection', icon: 'clipboard', label: 'Inspect' },
   { key: 'history', icon: 'time', label: 'History' },
-  { key: 'chat', icon: 'chatbubbles', label: 'Chat' },
+  { key: 'chat', icon: 'chatbubbles', label: 'Chat', flagName: FLAGS.CHAT_V2 },
 ];
 
 export const BottomNav: React.FC<BottomNavProps> = React.memo(({
@@ -24,13 +32,25 @@ export const BottomNav: React.FC<BottomNavProps> = React.memo(({
   onTabChange,
   unreadMessages = 0,
 }) => {
+  const featureFlags = useFeatureFlagContext();
+
+  // Filter tabs based on feature flags
+  const visibleTabs = useMemo(() => {
+    return allTabs.filter(tab => {
+      // If no flag specified, always show
+      if (!tab.flagName) return true;
+      // Otherwise check the flag
+      return featureFlags.isEnabled(tab.flagName);
+    });
+  }, [featureFlags]);
+
   return (
     <View style={styles.bottomNav}>
       <LinearGradient
         colors={gradients.header}
         style={styles.navGradient}
       >
-        {tabs.map(tab => {
+        {visibleTabs.map(tab => {
           const isActive = activeTab === tab.key;
           return (
             <TouchableOpacity

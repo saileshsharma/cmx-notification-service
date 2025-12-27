@@ -141,9 +141,10 @@ export class FeatureFlagService {
         this.initialized = true;
       }),
       catchError(error => {
-        console.warn('Failed to load feature flags, using defaults', error);
+        console.warn('Failed to load feature flags, using defaults (enabled)', error);
+        // Default to true (enabled) so features work by default until explicitly disabled
         const defaults: FeatureFlags = {};
-        flagNames.forEach(name => defaults[name] = false);
+        flagNames.forEach(name => defaults[name] = true);
         return of(defaults);
       })
     );
@@ -191,7 +192,8 @@ export class FeatureFlagService {
       }),
       catchError(error => {
         console.warn(`Failed to fetch flag ${flagName}`, error);
-        return of(false);
+        // Default to true (enabled) so feature works by default
+        return of(true);
       })
     );
   }

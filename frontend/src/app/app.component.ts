@@ -416,11 +416,21 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   isFeatureEnabled(flagName: string): boolean {
-    return this.featureFlagService.isEnabled(flagName, true); // Default to true
+    // Use the reactive featureFlags object that's updated via subscription
+    // This ensures Angular change detection picks up flag changes
+    if (this.featureFlags[flagName] !== undefined) {
+      return this.featureFlags[flagName];
+    }
+    // Default to true if flag not loaded yet (show features by default)
+    return true;
   }
 
   get isDarkMode(): boolean {
-    return this.featureFlagService.isEnabled('dark-mode', false);
+    // Use the reactive featureFlags object for dark mode
+    if (this.featureFlags['dark-mode'] !== undefined) {
+      return this.featureFlags['dark-mode'];
+    }
+    return false; // Default to light mode
   }
 
   ngOnDestroy(): void {
