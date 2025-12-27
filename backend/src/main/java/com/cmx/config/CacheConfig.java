@@ -25,6 +25,8 @@ public class CacheConfig {
     public static final String APPOINTMENTS_CACHE = "appointmentsCache";
     public static final String CHAT_MESSAGES_CACHE = "chatMessagesCache";
     public static final String NOTIFICATION_STATS_CACHE = "notificationStatsCache";
+    public static final String FEATURE_FLAGS_CACHE = "featureFlags";
+    public static final String FEATURE_FLAGS_USER_CACHE = "featureFlagsUser";
 
     @Bean
     public Caffeine<Object, Object> caffeineConfig() {
@@ -61,7 +63,9 @@ public class CacheConfig {
                 SURVEYOR_DETAILS_CACHE,
                 APPOINTMENTS_CACHE,
                 CHAT_MESSAGES_CACHE,
-                NOTIFICATION_STATS_CACHE
+                NOTIFICATION_STATS_CACHE,
+                FEATURE_FLAGS_CACHE,
+                FEATURE_FLAGS_USER_CACHE
         ));
         return cacheManager;
     }
