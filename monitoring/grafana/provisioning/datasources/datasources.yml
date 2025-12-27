@@ -4,6 +4,7 @@ datasources:
   - name: Prometheus
     type: prometheus
     access: proxy
-    url: http://prometheus:9090
+    # Railway private networking - use PROMETHEUS_URL env var
+    url: ${PROMETHEUS_URL:-http://prometheus.railway.internal:9090}
     isDefault: true
     editable: false

@@ -1,0 +1,31 @@
+# Prometheus Configuration for FleetInspect Pro (Railway Production)
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+# Alertmanager configuration (optional)
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []
+
+# Rule files (optional)
+rule_files: []
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Spring Boot Backend Metrics (Railway Production)
+  - job_name: 'fleetinspect-backend'
+    metrics_path: '/actuator/prometheus'
+    scrape_interval: 30s
+    scheme: https
+    static_configs:
+      - targets: ['cmx-notification-be-production.up.railway.app']
+        labels:
+          application: 'fleetinspect-backend'
+          environment: 'production'
