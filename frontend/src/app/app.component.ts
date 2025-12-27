@@ -198,6 +198,7 @@ export class AppComponent implements OnInit, OnDestroy {
   showNewConversationPicker = false;
   chatSurveyorSearch = '';
   private typingTimeout: any;
+  private lastTypingIndicatorSent = 0;  // Throttle typing indicators
   private chatPollingInterval: any;
 
   // Export
@@ -3940,11 +3941,16 @@ export class AppComponent implements OnInit, OnDestroy {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
       this.sendChatMessage();
+      return;
     }
 
-    // Send typing indicator
+    // Send typing indicator with throttling (max once per 2 seconds)
     if (this.activeConversationId) {
-      this.chatService.sendTypingIndicator(this.activeConversationId, true);
+      const now = Date.now();
+      if (now - this.lastTypingIndicatorSent > 2000) {
+        this.lastTypingIndicatorSent = now;
+        this.chatService.sendTypingIndicator(this.activeConversationId, true);
+      }
     }
   }
 

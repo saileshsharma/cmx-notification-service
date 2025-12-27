@@ -51,6 +51,7 @@ export function useChat(surveyorId: number | null, surveyorName: string | null):
 
   const appStateRef = useRef(AppState.currentState);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastTypingIndicatorSent = useRef(0);  // Throttle typing indicators
   const unsubscribersRef = useRef<(() => void)[]>([]);
   const isInitializedRef = useRef(false);
 
@@ -268,8 +269,13 @@ export function useChat(surveyorId: number | null, surveyorName: string | null):
 
   const handleMessageChange = useCallback((text: string) => {
     setNewMessage(text);
+    // Send typing indicator with throttling (max once per 2 seconds)
     if (activeConversationId && text.length > 0) {
-      chatService.sendTypingIndicator(activeConversationId, true);
+      const now = Date.now();
+      if (now - lastTypingIndicatorSent.current > 2000) {
+        lastTypingIndicatorSent.current = now;
+        chatService.sendTypingIndicator(activeConversationId, true);
+      }
     }
   }, [activeConversationId]);
 

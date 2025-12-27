@@ -47,12 +47,12 @@ import { ChatService, ChatMessage, ChatConversation, TypingIndicator } from '../
           class="conversation-item"
           [class.unread]="conv.unreadCount > 0"
           (click)="selectConversation.emit(conv)">
-          <div class="conv-avatar" [style.background-color]="getAvatarColor(conv.participantName)">
-            {{getInitials(conv.participantName)}}
+          <div class="conv-avatar" [style.background-color]="getAvatarColor(conv.otherPartyName)">
+            {{getInitials(conv.otherPartyName)}}
           </div>
           <div class="conv-info">
-            <span class="conv-name">{{conv.participantName}}</span>
-            <span class="conv-preview">{{conv.lastMessage?.content || 'No messages'}}</span>
+            <span class="conv-name">{{conv.otherPartyName}}</span>
+            <span class="conv-preview">{{conv.lastMessage || 'No messages'}}</span>
           </div>
           <div class="conv-meta">
             <span class="conv-time" *ngIf="conv.lastMessageAt">{{formatTime(conv.lastMessageAt)}}</span>
@@ -78,7 +78,7 @@ import { ChatService, ChatMessage, ChatConversation, TypingIndicator } from '../
           <div *ngFor="let msg of messages" class="message" [class.own]="msg.senderId === currentUserId">
             <div class="message-content">{{msg.content}}</div>
             <div class="message-meta">
-              <span class="message-time">{{formatMessageTime(msg.createdAt)}}</span>
+              <span class="message-time">{{formatMessageTime(msg.sentAt)}}</span>
               <span class="message-status" *ngIf="msg.senderId === currentUserId">
                 {{msg.status === 'SENT' ? '&#10003;' : '&#10003;&#10003;'}}
               </span>
@@ -496,7 +496,7 @@ export class ChatPanelComponent implements AfterViewChecked {
     }
     const query = this.searchQuery.toLowerCase();
     return this.conversations.filter(c =>
-      c.participantName.toLowerCase().includes(query)
+      c.otherPartyName.toLowerCase().includes(query)
     );
   }
 
