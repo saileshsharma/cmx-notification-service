@@ -38,6 +38,23 @@ class ApiService {
     return response.data || { success: false, message: 'No response data' };
   }
 
+  async logout(surveyorId: number, pushToken?: string): Promise<UpdateResponse> {
+    const response = await apiClient.post<UpdateResponse>('/mobile/logout', {
+      surveyorId,
+      pushToken,
+    }, {
+      timeout: API_TIMEOUTS.login,
+      skipRetry: true,
+    });
+
+    if (!response.ok) {
+      logger.warn('[API] Logout failed', { error: response.error });
+      return { success: false, message: response.error || 'Logout failed' };
+    }
+
+    return response.data || { success: true };
+  }
+
   async register(request: {
     name: string;
     email: string;

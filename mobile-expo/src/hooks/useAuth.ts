@@ -356,6 +356,18 @@ export function useAuth(): UseAuthReturn {
             level: 'info',
           });
 
+          // Notify backend of logout (for activity tracking)
+          if (state.surveyorId) {
+            try {
+              const pushToken = await storageService.getPushToken();
+              await apiService.logout(state.surveyorId, pushToken || undefined);
+              logger.info('[Logout] Backend notified successfully');
+            } catch (error) {
+              // Don't block logout if backend call fails
+              logger.warn('[Logout] Failed to notify backend:', error);
+            }
+          }
+
           locationService.stopTracking();
           chatService.disconnect();
           await storageService.setDeviceRegistered(false);
@@ -376,7 +388,7 @@ export function useAuth(): UseAuthReturn {
         },
       },
     ]);
-  }, []);
+  }, [state.surveyorId]);
 
   const updateStatus = useCallback(async (newStatus: SurveyorStatus) => {
     if (!state.surveyorId) return;

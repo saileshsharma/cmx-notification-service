@@ -130,6 +130,51 @@ public class MobileController {
     }
 
     @Operation(
+        summary = "Logout surveyor",
+        description = "Logs out a surveyor and records the logout activity"
+    )
+    @ApiResponse(responseCode = "200", description = "Logout successful")
+    @PostMapping("/logout")
+    public ResponseEntity<Map<String, Object>> logout(@RequestBody Map<String, Object> request) {
+        Long surveyorId = request.get("surveyorId") != null
+            ? ((Number) request.get("surveyorId")).longValue()
+            : null;
+        String pushToken = (String) request.get("pushToken");
+
+        if (surveyorId == null) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", "Surveyor ID is required"
+            ));
+        }
+
+        try {
+            // Log logout activity
+            activityService.logLogout(surveyorId);
+
+            // Optionally unregister the push token
+            if (pushToken != null && !pushToken.isEmpty()) {
+                deviceTokenService.unregisterToken(surveyorId, pushToken);
+            }
+
+            org.slf4j.LoggerFactory.getLogger(MobileController.class)
+                .info("Surveyor {} logged out successfully", surveyorId);
+
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Logout successful"
+            ));
+        } catch (Exception e) {
+            org.slf4j.LoggerFactory.getLogger(MobileController.class)
+                .warn("Error during logout for surveyor {}: {}", surveyorId, e.getMessage());
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Logout recorded"
+            ));
+        }
+    }
+
+    @Operation(
         summary = "Register device token",
         description = "Registers a mobile device push notification token for a surveyor"
     )
