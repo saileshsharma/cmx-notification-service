@@ -10,6 +10,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
+import com.google.firebase.messaging.AndroidConfig;
+import com.google.firebase.messaging.AndroidNotification;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.Message;
@@ -596,6 +598,16 @@ public class NotificationService {
                 .setNotification(Notification.builder()
                         .setTitle(title)
                         .setBody(body)
+                        .build())
+                // Android-specific configuration (required for Android 8.0+)
+                .setAndroidConfig(AndroidConfig.builder()
+                        .setPriority(AndroidConfig.Priority.HIGH)
+                        .setNotification(AndroidNotification.builder()
+                                .setChannelId("appointments")  // Must match channel created in mobile app
+                                .setIcon("notification_icon")
+                                .setColor("#1976D2")
+                                .setSound("default")
+                                .build())
                         .build())
                 .putAllData(data)
                 .setToken(token)

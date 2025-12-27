@@ -82,6 +82,27 @@ export function useAuth(): UseAuthReturn {
     loadSavedState();
   }, []);
 
+  // Register push token when it becomes available and user is logged in
+  // This handles the case where the token is obtained after auto-login
+  useEffect(() => {
+    const registerTokenIfNeeded = async () => {
+      if (state.surveyorId && state.expoPushToken && state.isRegistered) {
+        logger.info('[Auth] Registering push token for logged-in user');
+        try {
+          await apiService.registerDevice({
+            surveyorId: state.surveyorId,
+            token: state.expoPushToken,
+            platform: Platform.OS === 'ios' ? 'IOS' : 'ANDROID',
+          });
+          logger.info('[Auth] Push token registered successfully');
+        } catch (error) {
+          logger.warn('[Auth] Failed to register push token:', error);
+        }
+      }
+    };
+    registerTokenIfNeeded();
+  }, [state.surveyorId, state.expoPushToken, state.isRegistered]);
+
   const checkBiometricSupport = async () => {
     try {
       const compatible = await LocalAuthentication.hasHardwareAsync();
