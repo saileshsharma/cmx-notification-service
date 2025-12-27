@@ -1,4 +1,4 @@
-// CMX Surveyor Calendar v1.0.4 - Feature Flags Admin
+// CMX Surveyor Calendar v1.0.5
 import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -7,7 +7,6 @@ import { Subscription } from 'rxjs';
 import { API_BASE } from './core/services/api-config';
 import { SurveyorActivityService, SurveyorActivity } from './core/services/surveyor-activity.service';
 import { ChatService, ChatMessage, ChatConversation, TypingIndicator } from './core/services/chat.service';
-import { FeatureFlagsComponent } from './features/admin/feature-flags/feature-flags.component';
 
 import { FullCalendarModule } from '@fullcalendar/angular';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -34,7 +33,7 @@ type DashboardWidget = { id: string; title: string; type: 'stat' | 'chart' | 'li
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, FullCalendarModule, FeatureFlagsComponent],
+  imports: [CommonModule, FormsModule, FullCalendarModule],
   templateUrl: './app.component.html'
 })
 export class AppComponent implements OnInit, OnDestroy {
@@ -117,7 +116,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private toastId = 0;
 
   // View toggle
-  currentView: 'calendar' | 'timeline' | 'heatmap' | 'map' | 'admin' = 'calendar';
+  currentView: 'calendar' | 'timeline' | 'heatmap' | 'map' = 'calendar';
 
   // Upcoming alerts
   upcomingAlerts: UpcomingAlert[] = [];
